@@ -1,0 +1,79 @@
+.hit {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--star-hit);
+  height: var(--star-hit);
+  margin-left: calc(var(--star-hit) / -2);
+  margin-top: calc(var(--star-hit) / -2);
+  border-radius: 50%;
+  cursor: pointer;
+
+  /* Fora da tela o navegador pula layout, estilo e pintura, mas o elemento
+     continua no DOM, na ordem de Tab e no Ctrl+F. */
+  content-visibility: auto;
+  contain-intrinsic-size: var(--star-hit) var(--star-hit);
+
+  transition: opacity var(--dur-filter) var(--ease);
+}
+
+.hit[data-dimmed='true'] {
+  opacity: 0.07;
+  pointer-events: none;
+  cursor: default;
+}
+
+.core {
+  display: block;
+  width: var(--star-core);
+  height: var(--star-core);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 38%,
+    #ffffff 0%,
+    var(--star-color) 42%,
+    transparent 78%
+  );
+  box-shadow: 0 0 22px 4px color-mix(in srgb, var(--star-color) 27%, transparent);
+  transition: all var(--dur-star) var(--ease);
+}
+
+.hit[data-featured='true'] .core {
+  width: var(--star-core-featured);
+  height: var(--star-core-featured);
+}
+
+.ring {
+  position: absolute;
+  width: var(--star-ring);
+  height: var(--star-ring);
+  border: 1px solid transparent;
+  border-radius: 50%;
+  transition: all var(--dur-star) var(--ease);
+}
+
+.hit[data-featured='true'] .ring {
+  width: var(--star-ring-featured);
+  height: var(--star-ring-featured);
+  border-color: color-mix(in srgb, var(--star-color) 23%, transparent);
+}
+
+.hit:hover .core,
+.hit:focus-visible .core {
+  width: calc(var(--star-core) + 7px);
+  height: calc(var(--star-core) + 7px);
+  box-shadow: 0 0 40px 10px color-mix(in srgb, var(--star-color) 50%, transparent);
+}
+
+.hit[data-featured='true']:hover .core,
+.hit[data-featured='true']:focus-visible .core {
+  width: calc(var(--star-core-featured) + 7px);
+  height: calc(var(--star-core-featured) + 7px);
+}
+
+.hit:hover .ring,
+.hit:focus-visible .ring {
+  border-color: color-mix(in srgb, var(--star-color) 40%, transparent);
+  transform: scale(1.25);
+}
