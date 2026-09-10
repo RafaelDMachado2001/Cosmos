@@ -24,11 +24,3 @@
   height: 100%;
   padding: 0 24px 40px;
 }
-
-.kicker {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: var(--tracking-kicker);
-}

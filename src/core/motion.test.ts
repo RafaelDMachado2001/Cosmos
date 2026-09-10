@@ -6,7 +6,11 @@ import {
   MAX_FRAME_DELTA_S,
   OPEN_DELAY_MS,
   PER_FRAME_K,
+  PULSE_DECAY_PER_FRAME,
+  PULSE_INTERVAL_S,
   REFERENCE_FPS,
+  TIME_SCALE,
+  decayPulse,
   lambdaFor,
   lambdas,
   stepInertia,
@@ -113,5 +117,36 @@ describe('constantes de interação', () => {
 
   it('limita o delta de quadro para a aba em segundo plano não dar salto', () => {
     expect(MAX_FRAME_DELTA_S).toBe(0.05);
+  });
+});
+
+describe('pulso de energia do núcleo', () => {
+  it('mantém os valores do handoff', () => {
+    expect(PULSE_DECAY_PER_FRAME.normal).toBe(0.965);
+    expect(PULSE_DECAY_PER_FRAME.reduced).toBe(0.9);
+    expect(PULSE_INTERVAL_S.min).toBe(1.4);
+    expect(PULSE_INTERVAL_S.max).toBe(5);
+  });
+
+  it('num quadro de 60fps decai exatamente o valor especificado', () => {
+    expect(decayPulse(1, false, 1 / 60)).toBeCloseTo(PULSE_DECAY_PER_FRAME.normal, 12);
+    expect(decayPulse(1, true, 1 / 60)).toBeCloseTo(PULSE_DECAY_PER_FRAME.reduced, 12);
+  });
+
+  it('não depende do framerate', () => {
+    let at60 = 1;
+    for (let i = 0; i < 60; i += 1) at60 = decayPulse(at60, false, 1 / 60);
+    let at144 = 1;
+    for (let i = 0; i < 144; i += 1) at144 = decayPulse(at144, false, 1 / 144);
+    expect(at144).toBeCloseTo(at60, 9);
+  });
+
+  it('some mais rápido com movimento reduzido', () => {
+    expect(decayPulse(1, true, 0.5)).toBeLessThan(decayPulse(1, false, 0.5));
+  });
+
+  it('o shader roda em câmera lenta com movimento reduzido', () => {
+    expect(TIME_SCALE.normal).toBe(1);
+    expect(TIME_SCALE.reduced).toBe(0.25);
   });
 });

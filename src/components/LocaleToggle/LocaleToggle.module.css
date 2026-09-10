@@ -1,0 +1,31 @@
+.toggle {
+  display: flex;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-nav);
+  backdrop-filter: blur(var(--blur-header));
+}
+
+.option {
+  padding: 4px 9px;
+  border-radius: var(--radius-menu);
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-nav);
+  cursor: pointer;
+  transition:
+    color var(--dur-ui) var(--ease),
+    background var(--dur-ui) var(--ease);
+}
+
+.option:hover {
+  color: var(--color-text-secondary);
+}
+
+.option[aria-pressed='true'] {
+  background: var(--color-accent-active);
+  color: var(--color-accent-soft);
+}

@@ -83,3 +83,36 @@ export const OPEN_DELAY_MS = { normal: 760, reduced: 120 } as const;
  * segundo plano produziria um salto enorme numa única interpolação.
  */
 export const MAX_FRAME_DELTA_S = 0.05;
+
+// ---------------------------------------------------------------------------
+// Pulso de energia do núcleo
+// ---------------------------------------------------------------------------
+
+/** Decaimento do pulso por quadro, conforme o handoff. */
+export const PULSE_DECAY_PER_FRAME = { normal: 0.965, reduced: 0.9 } as const;
+
+/** Intervalo aleatório entre disparos, em segundos. */
+export const PULSE_INTERVAL_S = { min: 1.4, max: 5 } as const;
+
+/** O tempo do shader roda a 25% da velocidade com movimento reduzido. */
+export const TIME_SCALE = { normal: 1, reduced: 0.25 } as const;
+
+const PULSE_LAMBDA = {
+  normal: -REFERENCE_FPS * Math.log(PULSE_DECAY_PER_FRAME.normal),
+  reduced: -REFERENCE_FPS * Math.log(PULSE_DECAY_PER_FRAME.reduced),
+} as const;
+
+/**
+ * Decaimento do pulso, independente de framerate — pelo mesmo motivo das
+ * interpolações: a 144Hz o decaimento por quadro apagaria o pulso rápido
+ * demais e a energia deixaria de se ler percorrendo a superfície.
+ */
+export function decayPulse(pulse: number, reduced: boolean, deltaSeconds: number): number {
+  const lambda = reduced ? PULSE_LAMBDA.reduced : PULSE_LAMBDA.normal;
+  return pulse * Math.exp(-lambda * deltaSeconds);
+}
+
+/** Próximo disparo, em segundos a partir de agora. */
+export function nextPulseAt(now: number, random: () => number = Math.random): number {
+  return now + PULSE_INTERVAL_S.min + random() * (PULSE_INTERVAL_S.max - PULSE_INTERVAL_S.min);
+}

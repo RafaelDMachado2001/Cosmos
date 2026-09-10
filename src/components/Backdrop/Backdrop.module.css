@@ -1,0 +1,31 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-canvas);
+  pointer-events: none;
+}
+
+/**
+ * Substituto do núcleo sem WebGL: um gradiente radial respirando. Mantém a
+ * composição de pé — o handoff pede fallback, não ausência.
+ */
+.fallback {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  /* Espelha os dois limites do enquadramento real (computeFraming):
+     a banda entre header e texto, e 28% da largura. */
+  width: min(43vh, 56vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 42% 38%,
+    rgba(120, 84, 255, 0.42) 0%,
+    rgba(42, 30, 101, 0.34) 38%,
+    rgba(11, 8, 28, 0.18) 62%,
+    transparent 76%
+  );
+  filter: blur(6px);
+  animation: rdmBreathe 7s var(--ease) infinite;
+}
