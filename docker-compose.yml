@@ -1,0 +1,98 @@
+# A chave 'version' é obsoleta no Compose v2+; 'name' identifica o projeto.
+name: rdm-labs
+
+services:
+  ### Vite dev server ########################################################
+  node:
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+      args:
+        UID: ${DOCKER_UID:-1000}
+        GID: ${DOCKER_GID:-1000}
+    working_dir: /app
+    # npm ci fica no command, não na imagem: o volume nomeado nasce vazio e
+    # precisa ser populado dentro do container, não copiado do host.
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev"
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    ports:
+      # Mesma porta dos dois lados: o cliente do HMR acerta o websocket sozinho.
+      - "${VITE_PORT:-5174}:${VITE_PORT:-5174}"
+    environment:
+      - VITE_PORT=${VITE_PORT:-5174}
+      - VITE_SITE_URL=${VITE_SITE_URL:-http://localhost:5174}
+      # Polling só onde inotify não atravessa o bind mount (WSL2 sob /mnt/c).
+      - VITE_POLLING=${VITE_POLLING:-0}
+    networks:
+      - rdm-network
+    restart: unless-stopped
+
+  ### Build de produção servido pelo Nginx ###################################
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+      args:
+        # Assado no bundle: trocar de domínio exige rebuild da imagem.
+        VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
+    ports:
+      - "${WEB_HTTP_PORT:-8080}:80"
+    networks:
+      - rdm-network
+    restart: unless-stopped
+
+  ### Backend — escrito, mas fora do conjunto padrão #########################
+  ### Sobe com: docker compose --profile backend up
+  app:
+    image: php:8.3-fpm-alpine
+    profiles: [backend]
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-rdm_labs}
+      - DB_USERNAME=${DB_USERNAME:-rdm}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rdm-network
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    profiles: [backend]
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-rdm_labs}
+      - POSTGRES_USER=${DB_USERNAME:-rdm}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - PGTZ=${TIMEZONE:-America/Sao_Paulo}
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-rdm} -d ${DB_DATABASE:-rdm_labs}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rdm-network
+    restart: unless-stopped
+
+volumes:
+  node_modules:
+  postgres:
+
+networks:
+  rdm-network:
+    driver: bridge

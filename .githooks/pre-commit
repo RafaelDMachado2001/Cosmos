@@ -1,0 +1,5 @@
+#!/bin/sh
+# Gate de qualidade antes de cada commit: typecheck + lint + testes.
+# Roda no container, que é onde o toolchain é válido (o Node do host difere).
+# Pular pontualmente com: git commit --no-verify
+exec docker compose run --rm -T node npm run check

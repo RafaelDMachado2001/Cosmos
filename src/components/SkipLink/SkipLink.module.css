@@ -1,0 +1,24 @@
+.link {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 100;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border-accent);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  backdrop-filter: blur(var(--blur-header));
+  color: var(--color-accent-soft);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
+
+  /* Fora da tela até receber foco: presente para o teclado, invisível ao mouse. */
+  transform: translateY(-200%);
+  transition: transform var(--dur-ui) var(--ease);
+}
+
+.link:focus-visible {
+  transform: translateY(0);
+}
