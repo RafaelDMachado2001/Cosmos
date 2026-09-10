@@ -120,3 +120,59 @@ export function coreScale(baseScale: number, enter: number): number {
 export function dustZ(enter: number): number {
   return enter * 6;
 }
+
+// ---------------------------------------------------------------------------
+// Tradução de entrada
+// ---------------------------------------------------------------------------
+
+export type KeyAction =
+  | { readonly kind: 'delta'; readonly value: number }
+  | { readonly kind: 'home' }
+  | { readonly kind: 'end' };
+
+/** Traduz uma tecla em ação de navegação, ou `null` se não for nossa. */
+export function keyToDelta(key: string): KeyAction | null {
+  switch (key) {
+    case 'ArrowRight':
+    case 'PageDown':
+      return { kind: 'delta', value: INPUT.keyStepPx };
+    case 'ArrowLeft':
+    case 'PageUp':
+      return { kind: 'delta', value: -INPUT.keyStepPx };
+    case 'Home':
+      return { kind: 'home' };
+    case 'End':
+      return { kind: 'end' };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Num arraste por toque, vale o eixo de maior deslocamento.
+ *
+ * No empate fica o horizontal: é o eixo da constelação, e hesitar entre os
+ * dois faria o gesto parecer travado.
+ */
+export function dominantAxisDelta(deltaX: number, deltaY: number): number {
+  return Math.abs(deltaX) >= Math.abs(deltaY) ? deltaX : deltaY;
+}
+
+export interface RailRect {
+  readonly left: number;
+  readonly width: number;
+}
+
+/** Arrastar a régua mapeia a posição horizontal direto para o pan. */
+export function scrubToPan(clientX: number, rail: RailRect, bounds: PanBounds): number {
+  if (rail.width <= 0) return bounds.min;
+  const fraction = Math.min(1, Math.max(0, (clientX - rail.left) / rail.width));
+  return bounds.min + fraction * (bounds.max - bounds.min);
+}
+
+/** Posição do marcador na régua, de 0 a 1. */
+export function panToScrubFraction(pan: number, bounds: PanBounds): number {
+  const span = bounds.max - bounds.min;
+  if (span <= 0) return 0;
+  return Math.min(1, Math.max(0, (pan - bounds.min) / span));
+}

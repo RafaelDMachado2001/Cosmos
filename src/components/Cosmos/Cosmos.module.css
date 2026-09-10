@@ -1,0 +1,51 @@
+.cosmos {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-cosmos);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+/* Movido só por transform, nunca por left/top: é o que mantém a animação
+   fora do caminho do layout. */
+.layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.axis {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(124, 92, 255, 0.02),
+    rgba(124, 92, 255, 0.14) 30%,
+    rgba(124, 92, 255, 0.28)
+  );
+}
+
+.link {
+  position: absolute;
+  height: 1px;
+  transform-origin: 0 0;
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.3), rgba(124, 92, 255, 0.06));
+}
+
+/**
+ * Faixa própria, logo acima da régua. No protótipo os rótulos ficavam a 44px
+ * do eixo e as estrelas da banda central sentavam em cima deles.
+ */
+.year {
+  position: absolute;
+  bottom: 72px;
+  padding: 6px 0 6px 10px;
+  border-left: 1px solid var(--color-accent-filet);
+  color: var(--color-text-year);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-year);
+}
