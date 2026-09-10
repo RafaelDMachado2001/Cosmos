@@ -1,0 +1,71 @@
+.scrub {
+  position: absolute;
+  right: 28px;
+  bottom: 14px;
+  left: 28px;
+  z-index: var(--z-scrub);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  opacity: 0;
+}
+
+.edge {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-hint);
+}
+
+.rail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  /* Alvo de arraste de 44px, ainda que a trilha visível tenha 1px. */
+  height: 44px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.track {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(124, 92, 255, 0.06),
+    rgba(124, 92, 255, 0.18) 40%,
+    rgba(124, 92, 255, 0.42)
+  );
+}
+
+.marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: #c4b5ff;
+  box-shadow: 0 0 12px 3px rgba(196, 181, 255, 0.5);
+}
+
+/* Absoluta: em grid-row 2 ela criava uma segunda linha e empurrava a régua
+   para fora do rodapé. */
+.hint {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: var(--tracking-hint);
+}
+
+@media (max-width: 560px) {
+  .hint {
+    display: none;
+  }
+}

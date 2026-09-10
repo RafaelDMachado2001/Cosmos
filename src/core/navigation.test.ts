@@ -8,7 +8,11 @@ import {
   coreOpacity,
   coreScale,
   cosmosReveal,
+  dominantAxisDelta,
   heroFade,
+  keyToDelta,
+  panToScrubFraction,
+  scrubToPan,
   innerOpacity,
   phaseFor,
   push,
@@ -137,5 +141,88 @@ describe('funções de transferência do portal', () => {
         expect(value).toBeLessThanOrEqual(1);
       }
     }
+  });
+});
+
+describe('keyToDelta', () => {
+  it('avança com seta direita e PageDown', () => {
+    expect(keyToDelta('ArrowRight')).toEqual({ kind: 'delta', value: INPUT.keyStepPx });
+    expect(keyToDelta('PageDown')).toEqual({ kind: 'delta', value: INPUT.keyStepPx });
+  });
+
+  it('recua com seta esquerda e PageUp', () => {
+    expect(keyToDelta('ArrowLeft')).toEqual({ kind: 'delta', value: -INPUT.keyStepPx });
+    expect(keyToDelta('PageUp')).toEqual({ kind: 'delta', value: -INPUT.keyStepPx });
+  });
+
+  it('Home volta ao início', () => {
+    expect(keyToDelta('Home')).toEqual({ kind: 'home' });
+  });
+
+  it('End vai para o presente', () => {
+    expect(keyToDelta('End')).toEqual({ kind: 'end' });
+  });
+
+  it('ignora o resto', () => {
+    for (const key of ['a', 'Enter', 'Shift', 'ArrowUp', 'Tab']) {
+      expect(keyToDelta(key)).toBeNull();
+    }
+  });
+});
+
+describe('dominantAxisDelta', () => {
+  it('escolhe o eixo de maior deslocamento', () => {
+    expect(dominantAxisDelta(30, 5)).toBe(30);
+    expect(dominantAxisDelta(5, 30)).toBe(30);
+  });
+
+  it('preserva o sinal do eixo escolhido', () => {
+    expect(dominantAxisDelta(-30, 5)).toBe(-30);
+    expect(dominantAxisDelta(5, -30)).toBe(-30);
+  });
+
+  it('no empate fica com o horizontal, que é o eixo da constelação', () => {
+    expect(dominantAxisDelta(20, -20)).toBe(20);
+  });
+
+  it('devolve zero quando não houve movimento', () => {
+    expect(dominantAxisDelta(0, 0)).toBe(0);
+  });
+});
+
+describe('scrubToPan', () => {
+  const rail = { left: 100, width: 800 };
+  const bounds = { min: 0, max: 5000 };
+
+  it('mapeia a posição do ponteiro direto para o pan', () => {
+    expect(scrubToPan(100, rail, bounds)).toBe(0);
+    expect(scrubToPan(500, rail, bounds)).toBe(2500);
+    expect(scrubToPan(900, rail, bounds)).toBe(5000);
+  });
+
+  it('prende nas pontas quando o ponteiro sai da trilha', () => {
+    expect(scrubToPan(-400, rail, bounds)).toBe(0);
+    expect(scrubToPan(9999, rail, bounds)).toBe(5000);
+  });
+
+  it('respeita limite mínimo negativo', () => {
+    expect(scrubToPan(100, rail, { min: -600, max: 400 })).toBe(-600);
+  });
+
+  it('não divide por zero com trilha sem largura', () => {
+    expect(scrubToPan(300, { left: 100, width: 0 }, bounds)).toBe(bounds.min);
+  });
+});
+
+describe('panToScrubFraction', () => {
+  it('é o inverso de scrubToPan', () => {
+    const bounds = { min: 0, max: 5000 };
+    expect(panToScrubFraction(0, bounds)).toBe(0);
+    expect(panToScrubFraction(2500, bounds)).toBe(0.5);
+    expect(panToScrubFraction(5000, bounds)).toBe(1);
+  });
+
+  it('devolve zero quando não há o que percorrer', () => {
+    expect(panToScrubFraction(0, { min: 0, max: 0 })).toBe(0);
   });
 });
