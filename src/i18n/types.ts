@@ -1,6 +1,9 @@
-export const LOCALES = ['pt', 'en'] as const;
+import { LOCALES } from '../core/types';
+import type { Locale } from '../core/types';
 
-export type Locale = (typeof LOCALES)[number];
+// O idioma é do domínio (o conteúdo é bilíngue), não da camada de tradução.
+export { LOCALES };
+export type { Locale };
 
 export const DEFAULT_LOCALE: Locale = 'pt';
 
