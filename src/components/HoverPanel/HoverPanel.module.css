@@ -1,0 +1,85 @@
+.panel {
+  position: absolute;
+  width: var(--hover-panel-width);
+  padding: 18px 20px;
+  border: 1px solid var(--color-border-accent);
+  border-radius: var(--radius-hover);
+  background: var(--color-surface);
+  backdrop-filter: blur(var(--blur-hover));
+  box-shadow: var(--shadow-panel);
+
+  /* O cartão nunca recebe o ponteiro: ele cobre a estrela que o invocou, e
+     capturar o clique ali seria perder a abertura da publicação. */
+  pointer-events: none;
+
+  animation: cardIn var(--dur-ui) var(--ease);
+}
+
+/* Ancorado ao lado da estrela, centrado na altura dela. Inverte perto da borda
+   direita — o limite está em HOVER_FLIP_PX, em src/core/reader.ts. */
+.panel[data-side='right'] {
+  transform: translate(26px, -50%);
+}
+
+.panel[data-side='left'] {
+  transform: translate(calc(-100% - 26px), -50%);
+}
+
+/* Só a opacidade: animar o transform brigaria com o posicionamento acima. */
+@keyframes cardIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--star-color);
+}
+
+.date {
+  margin-left: auto;
+  color: var(--color-text-faint);
+}
+
+.title {
+  margin: 0 0 8px;
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.summary {
+  margin: 0 0 14px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-accent-soft);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-hint);
+}

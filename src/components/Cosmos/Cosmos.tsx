@@ -13,6 +13,8 @@ import {
 } from '../../core/timeline';
 import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
+import { HoverPanel } from '../HoverPanel/HoverPanel';
+import type { HoverCard } from '../HoverPanel/HoverPanel';
 import { Star } from '../Star/Star';
 
 /** Acima disto as estrelas fora da janela deixam de ser montadas. */
@@ -27,6 +29,8 @@ export interface CosmosProps {
   readonly labelFor: (star: PlacedStar) => string;
   readonly hrefFor: (slug: string) => string;
   readonly dimmed: ReadonlySet<string>;
+  /** Cartão da estrela sob o ponteiro, ou nulo. */
+  readonly hover: HoverCard | null;
   readonly onActivate: (star: PlacedStar) => void;
   readonly onHover: (slug: string | null) => void;
   readonly onPointerDown: (event: React.PointerEvent) => void;
@@ -48,6 +52,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
     labelFor,
     hrefFor,
     dimmed,
+    hover,
     onActivate,
     onHover,
     onPointerDown,
@@ -72,6 +77,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   }, [stars, pan, viewport.width, marginPx]);
 
   const visibleStars = stars.slice(window_.start, window_.end);
+  const hoveredStar = hover === null ? undefined : stars.find((star) => star.slug === hover.slug);
   // Um conector a mais de cada lado: as arestas que entram e saem da janela.
   const visibleLinks = links.slice(Math.max(0, window_.start - 1), window_.end);
 
@@ -80,7 +86,11 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
       <div ref={layerRef} className={styles.layer}>
         <div
           className={styles.axis}
-          style={{ left: `${extent.minX}px`, width: `${extent.widthPx}px`, top: `${AXIS_PCT * 100}%` }}
+          style={{
+            left: `${extent.minX}px`,
+            width: `${extent.widthPx}px`,
+            top: `${AXIS_PCT * 100}%`,
+          }}
           aria-hidden="true"
         />
 
@@ -121,6 +131,16 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             onHover={onHover}
           />
         ))}
+
+        {/* Depois das estrelas: sem z-index, quem vem por último pinta por cima. */}
+        {hover && hoveredStar && (
+          <HoverPanel
+            card={hover}
+            category={hoveredStar.category}
+            x={hoveredStar.x}
+            yPx={yPx(hoveredStar, band)}
+          />
+        )}
       </div>
     </div>
   );
