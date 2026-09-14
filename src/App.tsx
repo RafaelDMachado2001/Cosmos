@@ -6,8 +6,11 @@ import { Cosmos } from './components/Cosmos/Cosmos';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
 import { SkipLink } from './components/SkipLink/SkipLink';
+import type { HoverCard } from './components/HoverPanel/HoverPanel';
 import { StarIndex } from './components/StarIndex/StarIndex';
 import { TimeRuler } from './components/TimeRuler/TimeRuler';
+import { hoverSide } from './core/reader';
+import type { HoverSide } from './core/reader';
 import { placeStars } from './core/timeline';
 import type { PlacedStar } from './core/timeline';
 import type { Viewport } from './core/types';
@@ -35,7 +38,7 @@ function Shell() {
   const markerRef = useRef<HTMLSpanElement>(null);
   const fallbackRef = useRef<HTMLDivElement>(null);
 
-  const [, setHovered] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<{ slug: string; side: HoverSide } | null>(null);
 
   const stars = useMemo(() => placeStars(PUBLICATIONS), []);
   const summaries = useMemo(
@@ -97,6 +100,43 @@ function Shell() {
     [locale, t, dateLabel],
   );
 
+  /**
+   * O lado do cartão é decidido uma vez, quando o ponteiro chega.
+   *
+   * O pan vive fora do React e muda a cada quadro; reavaliar o lado a cada um
+   * deles custaria um segundo laço para reposicionar um cartão que, na prática,
+   * some assim que a constelação se move sob o ponteiro.
+   */
+  const onHover = useCallback(
+    (slug: string | null) => {
+      const star = slug === null ? undefined : stars.find((item) => item.slug === slug);
+      if (!star) {
+        setHovered(null);
+        return;
+      }
+      setHovered({
+        slug: star.slug,
+        side: hoverSide(star.x - engine.panRef.current, viewport.width),
+      });
+    },
+    [stars, engine.panRef, viewport.width],
+  );
+
+  const hoverCard = useMemo<HoverCard | null>(() => {
+    if (hovered === null) return null;
+    const item = summaries.find((summary) => summary.slug === hovered.slug);
+    if (!item) return null;
+
+    return {
+      slug: item.slug,
+      side: hovered.side,
+      categoryLabel: t.categories[item.category],
+      dateLabel: dateLabel(Date.parse(item.publishedAt)),
+      title: item.title,
+      summary: item.summary,
+    };
+  }, [hovered, summaries, t, dateLabel]);
+
   const onActivate = useCallback(
     (star: PlacedStar) => {
       // Fase 4 abre a vista de leitura; por ora a câmera apenas centraliza.
@@ -133,8 +173,9 @@ function Shell() {
           labelFor={labelFor}
           hrefFor={hrefFor}
           dimmed={dimmed}
+          hover={hoverCard}
           onActivate={onActivate}
-          onHover={setHovered}
+          onHover={onHover}
           onPointerDown={engine.onCosmosPointerDown}
         />
 

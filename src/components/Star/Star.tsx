@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import styles from './Star.module.css';
 import type { PlacedStar } from '../../core/timeline';
 
@@ -18,8 +20,19 @@ export interface StarProps {
  * meio e alcançável por Tab. O `content-visibility` faz o navegador pular
  * layout e pintura fora da tela sem tirar nada do DOM — a virtualização por
  * desmontagem só entra acima de algumas centenas de publicações.
+ *
+ * Memoizada porque o cartão de hover é estado do React: sem isso, passar o
+ * ponteiro por uma estrela re-renderizaria a constelação inteira.
  */
-export function Star({ star, yPx, label, href, dimmed, onActivate, onHover }: StarProps) {
+export const Star = memo(function Star({
+  star,
+  yPx,
+  label,
+  href,
+  dimmed,
+  onActivate,
+  onHover,
+}: StarProps) {
   return (
     <a
       className={styles.hit}
@@ -56,4 +69,4 @@ export function Star({ star, yPx, label, href, dimmed, onActivate, onHover }: St
       <span className={styles.ring} aria-hidden="true" />
     </a>
   );
-}
+});
