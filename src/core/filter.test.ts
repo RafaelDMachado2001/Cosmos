@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { countByCategory, filterStars, matches, normalize } from './filter';
+import { countByCategory, dimmedStars, filterStars, matches, normalize } from './filter';
 import type { SearchableStar } from './filter';
 
 const STARS: readonly SearchableStar[] = [
@@ -122,5 +122,34 @@ describe('countByCategory', () => {
 
   it('zera todas as categorias num conjunto vazio', () => {
     expect(countByCategory([])).toEqual({ all: 0, artigo: 0, projeto: 0, estudo: 0, rotina: 0 });
+  });
+});
+
+describe('dimmedStars', () => {
+  it('sem critério nenhuma estrela apaga', () => {
+    expect(dimmedStars(STARS, { category: 'all', query: '' }).size).toBe(0);
+  });
+
+  it('apaga exatamente o complemento dos resultados', () => {
+    const criteria = { category: 'all' as const, query: 'eloquent' };
+    const acesas = new Set(filterStars(STARS, criteria));
+    const apagadas = dimmedStars(STARS, criteria);
+
+    expect(apagadas.size).toBe(STARS.length - acesas.size);
+    for (const star of STARS) {
+      expect(apagadas.has(star.slug)).toBe(!acesas.has(star.slug));
+    }
+  });
+
+  it('uma busca sem resultado apaga tudo, em vez de esvaziar a constelação', () => {
+    const apagadas = dimmedStars(STARS, { category: 'all', query: 'zzzz' });
+    expect(apagadas.size).toBe(STARS.length);
+  });
+
+  it('o filtro de categoria também apaga', () => {
+    const apagadas = dimmedStars(STARS, { category: 'estudo', query: '' });
+    for (const star of STARS) {
+      expect(apagadas.has(star.slug)).toBe(star.category !== 'estudo');
+    }
   });
 });

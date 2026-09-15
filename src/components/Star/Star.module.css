@@ -16,6 +16,18 @@
   contain-intrinsic-size: var(--star-hit) var(--star-hit);
 
   transition: opacity var(--dur-filter) var(--ease);
+
+  /* Entrada escalonada: as estrelas surgem conforme os dados chegam, em vez de
+     aparecerem todas de uma vez. `backwards` é o que as mantém invisíveis
+     durante o atraso — sem ele elas piscariam antes da própria animação. */
+  animation: starIn 700ms var(--ease) var(--reveal-delay, 0ms) backwards;
+}
+
+@keyframes starIn {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
 }
 
 .hit[data-dimmed='true'] {

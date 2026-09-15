@@ -9,6 +9,8 @@ export interface StarProps {
   readonly label: string;
   readonly href: string;
   readonly dimmed: boolean;
+  /** Atraso do fade de entrada, em ms. Ver `revealDelayMs`. */
+  readonly revealDelay: number;
   readonly onActivate: (star: PlacedStar) => void;
   readonly onHover: (slug: string | null) => void;
 }
@@ -30,6 +32,7 @@ export const Star = memo(function Star({
   label,
   href,
   dimmed,
+  revealDelay,
   onActivate,
   onHover,
 }: StarProps) {
@@ -41,6 +44,7 @@ export const Star = memo(function Star({
         left: `${star.x}px`,
         top: `${yPx}px`,
         ['--star-color' as string]: `var(--color-cat-${star.category})`,
+        ['--reveal-delay' as string]: `${revealDelay}ms`,
       }}
       data-dimmed={dimmed}
       data-featured={star.featured}
