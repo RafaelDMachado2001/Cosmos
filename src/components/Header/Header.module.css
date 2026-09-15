@@ -74,6 +74,30 @@
   letter-spacing: var(--tracking-nav);
 }
 
+.navButton {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-menu);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-nav);
+  cursor: pointer;
+  transition:
+    background var(--dur-ui) var(--ease),
+    color var(--dur-ui) var(--ease);
+}
+
+.navButton:hover {
+  color: var(--color-text-primary);
+}
+
+.navButton[data-active='true'] {
+  background: var(--color-accent-active);
+  color: var(--color-accent-hover);
+}
+
 .spacer {
   flex: 1 1 auto;
 }

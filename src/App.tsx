@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './App.module.css';
 import { Backdrop } from './components/Backdrop/Backdrop';
+import { CategoryPanel } from './components/CategoryPanel/CategoryPanel';
 import { Cosmos } from './components/Cosmos/Cosmos';
+import { CosmosStatus } from './components/CosmosStatus/CosmosStatus';
+import type { CosmosStatusKind } from './components/CosmosStatus/CosmosStatus';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
 import { SkipLink } from './components/SkipLink/SkipLink';
@@ -11,6 +14,8 @@ import { ReaderView } from './components/ReaderView/ReaderView';
 import type { ReaderCard } from './components/ReaderView/ReaderView';
 import { StarIndex } from './components/StarIndex/StarIndex';
 import { TimeRuler } from './components/TimeRuler/TimeRuler';
+import { countByCategory, dimmedStars } from './core/filter';
+import type { SearchableStar } from './core/filter';
 import { OPEN_DELAY_MS } from './core/motion';
 import {
   CLOSED,
@@ -26,10 +31,12 @@ import {
 import type { HoverSide, ReaderState } from './core/reader';
 import { placeStars } from './core/timeline';
 import type { PlacedStar } from './core/timeline';
-import type { Viewport } from './core/types';
+import type { Category, Viewport } from './core/types';
+import { createStaticSource } from './data/PublicationsSource';
 import { PUBLICATIONS } from './data/publications';
 import { useCosmosEngine } from './hooks/useCosmosEngine';
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
+import { useArticle, usePublications } from './hooks/usePublications';
 import { useViewport } from './hooks/useViewport';
 import { LocaleProvider } from './i18n/LocaleProvider';
 import { useLocale } from './i18n/useLocale';
@@ -54,22 +61,23 @@ function Shell() {
 
   const [hovered, setHovered] = useState<{ slug: string; side: HoverSide } | null>(null);
   const [reader, setReader] = useState<ReaderState>(CLOSED);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<Category | 'all'>('all');
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   /** Quem tinha o foco quando o artigo abriu — para devolvê-lo ao fechar. */
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
-  const stars = useMemo(() => placeStars(PUBLICATIONS), []);
-  const summaries = useMemo(
-    () =>
-      PUBLICATIONS.map((publication) => ({
-        slug: publication.slug,
-        publishedAt: publication.publishedAt,
-        category: publication.category,
-        title: publication.content[locale].title,
-        summary: publication.content[locale].summary,
-      })),
-    [locale],
-  );
+  /**
+   * A fonte é criada uma vez: ela ordena o acervo e indexa por slug no
+   * construtor, e recriá-la a cada render refaria esse trabalho e disparava o
+   * efeito de carregamento em laço.
+   */
+  const source = useMemo(() => createStaticSource(PUBLICATIONS), []);
+  const collection = usePublications(source, locale);
+  const summaries = collection.state.items;
+
+  const stars = useMemo(() => placeStars(summaries), [summaries]);
 
   const refs = useMemo(
     () => ({
@@ -119,11 +127,10 @@ function Shell() {
 
   const labelFor = useCallback(
     (star: PlacedStar) => {
-      const publication = PUBLICATIONS.find((item) => item.slug === star.slug);
-      const title = publication?.content[locale].title ?? star.slug;
+      const title = summaries.find((item) => item.slug === star.slug)?.title ?? star.slug;
       return `${title} — ${t.categories[star.category]} — ${dateLabel(star.timestamp)}`;
     },
-    [locale, t, dateLabel],
+    [summaries, t, dateLabel],
   );
 
   /**
@@ -226,28 +233,116 @@ function Shell() {
     target?.focus();
   }, [reader.phase]);
 
-  const readerCard = useMemo<ReaderCard | null>(() => {
-    if (reader.slug === null || !isMounted(reader)) return null;
-    const publication = PUBLICATIONS.find((item) => item.slug === reader.slug);
-    if (!publication) return null;
+  /**
+   * O corpo do artigo vem da fonte, não do acervo já carregado: a lista é
+   * enxuta de propósito, e o texto completo será uma segunda chamada quando o
+   * backend existir. A busca começa junto com o avanço da câmera, então os
+   * 760ms de viagem são folga de sobra para a resposta.
+   */
+  const article = useArticle(source, reader.slug, locale);
 
-    const date = dateLabel(Date.parse(publication.publishedAt));
-    const position = timelinePosition(publication.slug, stars);
-    const content = publication.content[locale];
+  // Sem texto não há o que montar, e a câmera ficaria avançada sobre uma tela
+  // vazia. Não acontece com o adapter estático; acontecerá com o HTTP.
+  useEffect(() => {
+    if (article.status !== 'missing') return;
+    if (reader.phase === 'closed' || reader.phase === 'closing') return;
+    closeReader();
+  }, [article.status, reader.phase, closeReader]);
+
+  const readerCard = useMemo<ReaderCard | null>(() => {
+    if (!isMounted(reader) || article.status !== 'ready') return null;
+    const { detail } = article;
+    if (detail.slug !== reader.slug) return null;
+
+    const date = dateLabel(Date.parse(detail.publishedAt));
+    const position = timelinePosition(detail.slug, stars);
 
     return {
-      category: publication.category,
-      categoryLabel: t.categories[publication.category],
+      category: detail.category,
+      categoryLabel: t.categories[detail.category],
       dateLabel: date,
       timelineLabel: position === null ? date : timelineLabel(position, date),
-      title: content.title,
-      summary: content.summary,
-      body: content.body,
+      title: detail.title,
+      summary: detail.summary,
+      body: detail.body,
     };
-  }, [reader, stars, dateLabel, locale, t]);
+  }, [reader, article, stars, dateLabel, t]);
 
-  // Nenhuma estrela apagada até a fase 5, que traz busca e filtro.
-  const dimmed = useMemo(() => new Set<string>(), []);
+  /**
+   * A projeção sobre a qual a busca opera.
+   *
+   * O rótulo da categoria e a data formatada entram aqui porque o handoff manda
+   * buscar por eles, e só esta camada os conhece traduzidos — o adapter guarda
+   * o slug da categoria e um ISO, que ninguém digita.
+   */
+  const searchable = useMemo<readonly SearchableStar[]>(
+    () =>
+      summaries.map((item) => ({
+        slug: item.slug,
+        category: item.category,
+        title: item.title,
+        summary: item.summary,
+        categoryLabel: t.categories[item.category],
+        dateLabel: dateLabel(Date.parse(item.publishedAt)),
+      })),
+    [summaries, t, dateLabel],
+  );
+
+  const dimmed = useMemo(
+    () => dimmedStars(searchable, { category, query }),
+    [searchable, category, query],
+  );
+  const counts = useMemo(() => countByCategory(searchable), [searchable]);
+
+  /**
+   * A câmera desliza até o primeiro resultado — mas só quando o critério muda.
+   *
+   * Reagir a `dimmed` sem esta guarda arrastaria a câmera também na chegada dos
+   * dados e na troca de idioma, arrancando o leitor de onde ele estava por uma
+   * mudança que não foi dele.
+   */
+  const criteriaKey = `${category}\u0000${query}`;
+  const lastCriteriaRef = useRef(criteriaKey);
+  const { slideTo } = engine;
+
+  useEffect(() => {
+    if (lastCriteriaRef.current === criteriaKey) return;
+    lastCriteriaRef.current = criteriaKey;
+    const first = stars.find((star) => !dimmed.has(star.slug));
+    if (first) slideTo(first);
+  }, [criteriaKey, stars, dimmed, slideTo]);
+
+  // Voltar ao início recolhe o painel: reaparecer sozinho na próxima travessia
+  // seria um filtro que o leitor não pediu de novo.
+  const goHome = useCallback(() => {
+    setCategoriesOpen(false);
+    engine.goHome();
+  }, [engine]);
+
+  /**
+   * "Nenhuma estrela" tem causas diferentes e telas diferentes: os dados não
+   * chegaram, falharam, ou a busca não achou nada. Ver `src/core/collection.ts`.
+   */
+  const statusKind = useMemo<CosmosStatusKind | null>(() => {
+    if (collection.state.status === 'loading') return 'loading';
+    if (collection.state.status === 'error') return 'error';
+    if (stars.length === 0 || dimmed.size === stars.length) return 'empty';
+    return null;
+  }, [collection.state.status, stars.length, dimmed.size]);
+
+  // Esc fecha o painel de categorias. Com o artigo aberto quem responde ao Esc
+  // é ele, e o painel está atrás do overlay de qualquer modo.
+  useEffect(() => {
+    if (!categoriesOpen || reader.phase !== 'closed') return;
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      setCategoriesOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [categoriesOpen, reader.phase]);
 
   return (
     <>
@@ -273,13 +368,35 @@ function Shell() {
           labelFor={labelFor}
           hrefFor={hrefFor}
           dimmed={dimmed}
+          reducedMotion={reducedMotion}
           hover={hoverCard}
           onActivate={onActivate}
           onHover={onHover}
           onPointerDown={engine.onCosmosPointerDown}
         />
 
-        <Header ref={headerRef} phase={engine.phase} onBrandClick={engine.goHome} />
+        {statusKind !== null && engine.phase === 'cosmos' && (
+          <CosmosStatus kind={statusKind} onRetry={collection.retry} />
+        )}
+
+        <Header
+          ref={headerRef}
+          phase={engine.phase}
+          query={query}
+          categoriesOpen={categoriesOpen}
+          onBrandClick={goHome}
+          onQueryChange={setQuery}
+          onToggleCategories={() => {
+            setCategoriesOpen((open) => !open);
+          }}
+        />
+
+        <CategoryPanel
+          open={categoriesOpen && engine.phase === 'cosmos'}
+          counts={counts}
+          active={category}
+          onPick={setCategory}
+        />
 
         <main id="conteudo" className={styles.content} tabIndex={-1}>
           <Hero ref={heroBlockRef} onEnter={engine.goCosmos} />

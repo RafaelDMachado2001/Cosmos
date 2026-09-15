@@ -72,3 +72,21 @@ export function countByCategory(stars: readonly SearchableStar[]): CategoryCount
   for (const star of stars) counts[star.category] += 1;
   return counts;
 }
+
+/**
+ * Os slugs que **não** correspondem — os que apagam.
+ *
+ * O complemento, e não a lista de resultados, porque é isso que a constelação
+ * consome: estrela fora da busca vai a 7% de opacidade e perde o ponteiro,
+ * nunca some. Ela continua no DOM, no Tab e no Ctrl+F.
+ */
+export function dimmedStars(
+  stars: readonly SearchableStar[],
+  criteria: FilterCriteria,
+): ReadonlySet<string> {
+  const dimmed = new Set<string>();
+  for (const star of stars) {
+    if (!matches(star, criteria)) dimmed.add(star.slug);
+  }
+  return dimmed;
+}
