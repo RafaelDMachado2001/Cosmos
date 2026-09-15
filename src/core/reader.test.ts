@@ -3,13 +3,19 @@ import { describe, expect, it } from 'vitest';
 import {
   CLOSED,
   HOVER_FLIP_PX,
+  asideCenterX,
   close,
   hoverSide,
   isMounted,
   mounted,
   open,
   settled,
+  timelineLabel,
   timelinePosition,
+  zoomBlurPx,
+  zoomDim,
+  zoomPush,
+  zoomScale,
   zoomTarget,
 } from './reader';
 import { placeStars } from './timeline';
@@ -141,5 +147,59 @@ describe('timelinePosition', () => {
 
   it('slug desconhecido não tem posição', () => {
     expect(timelinePosition('inexistente', STARS)).toBeNull();
+  });
+});
+
+describe('geometria do avanço da câmera', () => {
+  it('no desktop a estrela vai ao centro da coluna de 25%', () => {
+    expect(asideCenterX(1440)).toBe(180);
+  });
+
+  it('no mobile não há coluna: o alvo é o meio da tela', () => {
+    expect(asideCenterX(600)).toBe(300);
+  });
+
+  it('exatamente em 780px já vale a coluna do desktop', () => {
+    expect(asideCenterX(780)).toBe(97.5);
+  });
+
+  it('com a câmera parada nada é empurrado', () => {
+    expect(zoomPush(720, 1440, 0)).toBe(0);
+  });
+
+  it('com a câmera avançada a estrela chega à coluna', () => {
+    // A estrela está em 720 e precisa terminar em 180: empurra 540.
+    expect(zoomPush(720, 1440, 1)).toBe(540);
+  });
+
+  it('o empurrão acompanha o avanço, para o movimento ser um só', () => {
+    expect(zoomPush(720, 1440, 0.5)).toBe(270);
+  });
+
+  it('uma estrela já à esquerda da coluna é puxada de volta', () => {
+    expect(zoomPush(100, 1440, 1)).toBe(-80);
+  });
+
+  it('a constelação cresce de 1 a 2.35', () => {
+    expect(zoomScale(0)).toBe(1);
+    expect(zoomScale(1)).toBeCloseTo(2.35);
+  });
+
+  it('o desfoque vai de nenhum a 3px', () => {
+    expect(zoomBlurPx(0)).toBe(0);
+    expect(zoomBlurPx(1)).toBe(3);
+  });
+
+  it('a opacidade da constelação cai para os 28% do handoff', () => {
+    expect(zoomDim(0)).toBe(1);
+    expect(zoomDim(1)).toBeCloseTo(0.28);
+  });
+});
+
+describe('timelineLabel', () => {
+  it('junta posição e data como a coluna da estrela mostra', () => {
+    const position = timelinePosition('pub-2', STARS);
+    expect(position).not.toBeNull();
+    expect(timelineLabel(position!, 'MAI 2025')).toBe('3 / 14  ·  MAI 2025');
   });
 });

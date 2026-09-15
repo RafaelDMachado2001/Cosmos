@@ -104,3 +104,61 @@ export function timelinePosition(
   if (!star) return null;
   return { position: star.index + 1, total: stars.length };
 }
+
+// ---------------------------------------------------------------------------
+// Geometria do avanço da câmera
+// ---------------------------------------------------------------------------
+
+/** Quanto a constelação cresce enquanto a vista de leitura avança. */
+export const ZOOM_SCALE = 1.35;
+
+/** Desfoque máximo da constelação ao fundo, em px. */
+export const ZOOM_BLUR_PX = 3;
+
+/** A opacidade cai para 28%: 1 - 0.72. */
+export const ZOOM_DIM = 0.72;
+
+/** Abaixo desta largura a vista empilha e a estrela vira faixa hero. */
+export const READER_MOBILE_MAX_PX = 780;
+
+/** Abaixo disto o fade de saída acabou e a vista pode sair do DOM. */
+export const SETTLE_BELOW = 0.02;
+
+/**
+ * Onde a estrela precisa parar quando a vista abre.
+ *
+ * No desktop a coluna da estrela ocupa os primeiros 25% da tela, então o alvo
+ * é o centro dela. No mobile não há coluna: a faixa hero é a largura inteira.
+ */
+export function asideCenterX(viewportWidth: number): number {
+  return viewportWidth * (viewportWidth < READER_MOBILE_MAX_PX ? 0.5 : 0.125);
+}
+
+/**
+ * Deslocamento que leva a estrela do ponto onde está até a coluna da vista.
+ *
+ * Sem ele a constelação cresceria em torno da estrela e a deixaria no meio da
+ * tela, atrás do texto. É proporcional ao zoom para que o avanço da câmera e o
+ * deslize lateral sejam lidos como um movimento só.
+ */
+export function zoomPush(focusX: number, viewportWidth: number, zoom: number): number {
+  return zoom * (focusX - asideCenterX(viewportWidth));
+}
+
+export function zoomScale(zoom: number): number {
+  return 1 + zoom * ZOOM_SCALE;
+}
+
+export function zoomBlurPx(zoom: number): number {
+  return zoom * ZOOM_BLUR_PX;
+}
+
+/** Fator aplicado à opacidade da constelação enquanto a vista avança. */
+export function zoomDim(zoom: number): number {
+  return 1 - zoom * ZOOM_DIM;
+}
+
+/** O `3 / 14  ·  MAI 2025` que a coluna da estrela mostra. */
+export function timelineLabel(position: TimelinePosition, dateLabel: string): string {
+  return `${position.position} / ${position.total}  ·  ${dateLabel}`;
+}

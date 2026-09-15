@@ -1,0 +1,270 @@
+/* O laço de quadro escreve opacity e transform a cada quadro; os valores aqui
+   são só o ponto de partida, para que a vista nunca pisque montada e opaca. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-reader);
+  display: grid;
+  grid-template-columns: minmax(200px, 25%) 1fr;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: linear-gradient(180deg, var(--color-bg-elev), var(--color-bg));
+  opacity: 0;
+  transform: scale(1.06);
+  will-change: opacity, transform;
+}
+
+/* --- Coluna da estrela ---------------------------------------------------
+ * Todas as camadas na cor da categoria, empilhadas e centradas. Imóvel
+ * enquanto o texto rola: é a âncora visual de onde o leitor está. */
+.aside {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.aura,
+.halo,
+.core,
+.ring {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.aura {
+  width: 150%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--star-color) 15%, transparent) 0%,
+    color-mix(in srgb, var(--star-color) 5%, transparent) 35%,
+    transparent 68%
+  );
+  animation: rdmHalo 9s ease-in-out infinite;
+}
+
+.halo {
+  width: min(58%, 210px);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--star-color) 30%, transparent) 0%,
+    color-mix(in srgb, var(--star-color) 10%, transparent) 46%,
+    transparent 72%
+  );
+  filter: blur(6px);
+  animation: rdmHalo 5.5s ease-in-out infinite;
+}
+
+.core {
+  width: min(30%, 108px);
+  background: radial-gradient(
+    circle at 40% 36%,
+    #ffffff 0%,
+    var(--star-color) 44%,
+    transparent 78%
+  );
+  box-shadow:
+    0 0 70px 14px color-mix(in srgb, var(--star-color) 40%, transparent),
+    0 0 160px 40px color-mix(in srgb, var(--star-color) 15%, transparent);
+  animation: rdmBreathe 4.5s ease-in-out infinite;
+}
+
+.ring {
+  width: min(46%, 168px);
+  border: 1px solid color-mix(in srgb, var(--star-color) 23%, transparent);
+  border-top-color: color-mix(in srgb, var(--star-color) 67%, transparent);
+  animation: rdmSpin 26s linear infinite;
+}
+
+.asideMeta {
+  position: absolute;
+  right: 0;
+  bottom: 44px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+}
+
+.asideDate {
+  color: var(--color-text-muted);
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+}
+
+.asidePosition {
+  color: var(--color-text-faint);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}
+
+/* --- Coluna do artigo ----------------------------------------------------- */
+.article {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(72px, 9vh, 104px) clamp(24px, 5vw, 72px) 96px;
+  border-left: 1px solid var(--color-border-accent-faint);
+  background: linear-gradient(180deg, rgba(13, 14, 26, 0.6), rgba(8, 9, 17, 0.9));
+}
+
+.measure {
+  max-width: var(--measure);
+  margin: 0 auto;
+}
+
+.close {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--close-size);
+  height: var(--close-size);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 50%;
+  background: var(--color-surface-close);
+  backdrop-filter: blur(var(--blur-header));
+  color: var(--color-text-ui);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--dur-ui) var(--ease);
+}
+
+.close:hover {
+  border-color: var(--color-accent-line-strong);
+  background: rgba(24, 20, 48, 0.72);
+  color: #ffffff;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 22px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+}
+
+.dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--star-color);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--star-color) 60%, transparent);
+}
+
+.metaDate {
+  color: var(--color-text-faint);
+  letter-spacing: var(--tracking-nav);
+}
+
+.title {
+  margin: 0 0 18px;
+  color: var(--color-text-title);
+  font-size: clamp(30px, 3.4vw, 46px);
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: pretty;
+}
+
+.lede {
+  margin: 0 0 30px;
+  color: var(--color-text-lede);
+  font-size: 17px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.filet {
+  height: 1px;
+  margin-bottom: 30px;
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.35), transparent);
+}
+
+.paragraph {
+  margin: 0 0 22px;
+  color: var(--color-text-reading);
+  font-size: 16px;
+  line-height: 1.78;
+  text-wrap: pretty;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.position {
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+}
+
+.back {
+  border: 1px solid var(--color-accent-line);
+  border-radius: var(--radius-round);
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--color-accent-soft);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all var(--dur-ui) var(--ease);
+}
+
+.back:hover {
+  border-color: var(--color-accent-line-strong);
+  color: #ffffff;
+}
+
+/* --- Mobile --------------------------------------------------------------
+ * O overlay inteiro vira o contêiner de rolagem e a estrela rola junto com a
+ * página, como faixa hero — fixá-la comeria metade da tela de leitura. */
+@media (max-width: 779px) {
+  .overlay {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    overflow-y: auto;
+  }
+
+  .aside {
+    min-height: 46vh;
+  }
+
+  .article {
+    height: auto;
+    overflow-y: visible;
+    padding: 40px 24px 88px;
+    border-left: none;
+    border-top: 1px solid var(--color-border-accent-faint);
+  }
+
+  /* Aqui quem rola é o overlay; o transform dele ancora o `fixed`, então o
+     botão fica parado sobre a página em vez de subir com o texto. */
+  .close {
+    position: fixed;
+  }
+}
