@@ -434,6 +434,27 @@ export function panForStar(
   return Math.min(bounds.max, Math.max(bounds.min, star.x - viewportWidth * bias));
 }
 
+/**
+ * O ano da estrela mais próxima de um ponto da linha do tempo.
+ *
+ * É o que a régua anuncia como `aria-valuetext`: um `slider` que só diz "37%"
+ * não informa nada sobre um acervo temporal — quem navega por ele quer saber
+ * em que ano está, que é exatamente o que os marcadores mostram a quem vê.
+ */
+export function yearAtCenter(stars: readonly PlacedStar[], centerX: number): number | null {
+  let nearest: PlacedStar | null = null;
+  let distance = Infinity;
+
+  for (const star of stars) {
+    const candidate = Math.abs(star.x - centerX);
+    if (candidate >= distance) continue;
+    distance = candidate;
+    nearest = star;
+  }
+
+  return nearest === null ? null : new Date(nearest.timestamp).getUTCFullYear();
+}
+
 // ---------------------------------------------------------------------------
 // Virtualização
 // ---------------------------------------------------------------------------

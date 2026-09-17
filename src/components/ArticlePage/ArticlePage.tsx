@@ -51,7 +51,15 @@ export function ArticlePage({
         <a className={styles.brand} href={homeHref}>
           {t.nav.brand}
         </a>
-        <a className={styles.other} href={otherLocaleHref} hrefLang={t.nav.otherLocaleTag}>
+        <a
+          className={styles.other}
+          href={otherLocaleHref}
+          hrefLang={t.nav.otherLocaleTag}
+          // `hrefLang` descreve o destino; `lang` descreve este texto, que está
+          // escrito na outra língua. Sem ele o leitor de tela pronuncia
+          // "PORTUGUÊS" com a fonética do idioma da página.
+          lang={t.nav.otherLocaleTag}
+        >
           {t.nav.otherLocale}
         </a>
       </header>
