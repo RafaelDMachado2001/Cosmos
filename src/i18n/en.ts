@@ -19,6 +19,8 @@ export const en: Dictionary = {
     cosmos: 'CONSTELLATION',
     categories: 'CATEGORIES',
     portfolio: 'PORTFOLIO',
+    /** Distingue este landmark dos outros `nav` da página. */
+    primaryLabel: 'Main navigation',
     skipToContent: 'Skip to content',
     localeLabel: 'Language',
     /** O outro idioma, nomeado na língua dele. */

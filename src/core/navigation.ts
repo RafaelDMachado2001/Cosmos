@@ -158,6 +158,31 @@ export function dominantAxisDelta(deltaX: number, deltaY: number): number {
   return Math.abs(deltaX) >= Math.abs(deltaY) ? deltaX : deltaY;
 }
 
+/**
+ * Margem em que uma estrela ainda conta como fora do enquadramento.
+ *
+ * É o alvo de clique da estrela (`--star-hit`): colada na borda ela aparece
+ * pela metade, e o anel de foco sai da tela junto com ela.
+ */
+export const FOCUS_MARGIN_PX = 58;
+
+/**
+ * Se o foco numa estrela precisa levar a câmera junto.
+ *
+ * O Tab percorre o acervo inteiro, e a maior parte dele está fora da tela a
+ * qualquer momento — sem isto o anel de foco existia, mas do lado de fora. A
+ * guarda é o que impede o inverso: arrastar a câmera a cada Tab entre duas
+ * estrelas vizinhas, e desfazer o recuo que o fechamento da vista de leitura
+ * acabou de prometer.
+ */
+export function needsSlide(
+  screenX: number,
+  viewportWidth: number,
+  marginPx: number = FOCUS_MARGIN_PX,
+): boolean {
+  return screenX < marginPx || screenX > viewportWidth - marginPx;
+}
+
 export interface RailRect {
   readonly left: number;
   readonly width: number;

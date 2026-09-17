@@ -18,6 +18,7 @@ import { countByCategory, dimmedStars } from './core/filter';
 import { monthYearLabel } from './core/format';
 import type { SearchableStar } from './core/filter';
 import { OPEN_DELAY_MS } from './core/motion';
+import { needsSlide } from './core/navigation';
 import {
   CLOSED,
   close as closeReaderState,
@@ -161,6 +162,22 @@ function Shell({ route }: { route: Route }) {
       });
     },
     [stars, engine.panRef, viewport.width],
+  );
+
+  /**
+   * O Tab percorre o acervo inteiro, e quase todo ele está fora da tela.
+   *
+   * Sem levar a câmera junto, o anel de foco ficava do lado de fora. A guarda
+   * do `needsSlide` é o que impede o efeito contrário: arrastar a constelação a
+   * cada passo entre duas estrelas vizinhas, e desfazer o recuo que o
+   * fechamento da vista de leitura acabou de prometer devolver.
+   */
+  const onFocusStar = useCallback(
+    (star: PlacedStar) => {
+      if (!needsSlide(star.x - engine.panRef.current, viewport.width)) return;
+      engine.slideTo(star);
+    },
+    [engine, viewport.width],
   );
 
   const hoverCard = useMemo<HoverCard | null>(() => {
@@ -553,7 +570,9 @@ function Shell({ route }: { route: Route }) {
           hover={hoverCard}
           onActivate={onActivate}
           onHover={onHover}
+          onFocusStar={onFocusStar}
           onPointerDown={engine.onCosmosPointerDown}
+          interactive={engine.phase === 'cosmos'}
         />
 
         {statusKind !== null && engine.phase === 'cosmos' && (

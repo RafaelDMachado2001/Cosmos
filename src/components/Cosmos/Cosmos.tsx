@@ -35,7 +35,16 @@ export interface CosmosProps {
   readonly hover: HoverCard | null;
   readonly onActivate: (star: PlacedStar) => void;
   readonly onHover: (slug: string | null) => void;
+  readonly onFocusStar: (star: PlacedStar) => void;
   readonly onPointerDown: (event: React.PointerEvent) => void;
+  /**
+   * Falso na tela de entrada, onde a constelação está invisível.
+   *
+   * Invisível não basta: sem isto o Tab, a partir do hero, caminhava por
+   * catorze âncoras que ninguém podia ver. Mesmo tratamento que a navegação
+   * do header já recebia.
+   */
+  readonly interactive: boolean;
 }
 
 /**
@@ -58,7 +67,9 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
     hover,
     onActivate,
     onHover,
+    onFocusStar,
     onPointerDown,
+    interactive,
   },
   ref,
 ) {
@@ -85,7 +96,13 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   const visibleLinks = links.slice(Math.max(0, window_.start - 1), window_.end);
 
   return (
-    <div ref={ref} className={styles.cosmos} onPointerDown={onPointerDown}>
+    <div
+      ref={ref}
+      className={styles.cosmos}
+      onPointerDown={onPointerDown}
+      aria-hidden={!interactive}
+      {...(interactive ? {} : { inert: '' })}
+    >
       <div ref={layerRef} className={styles.layer}>
         <div
           className={styles.axis}
@@ -133,6 +150,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             revealDelay={revealDelayMs(star.index, reducedMotion)}
             onActivate={onActivate}
             onHover={onHover}
+            onFocusStar={onFocusStar}
           />
         ))}
 

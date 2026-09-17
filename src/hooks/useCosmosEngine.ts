@@ -25,7 +25,7 @@ import {
   zoomTarget,
 } from '../core/reader';
 import type { ReaderState } from '../core/reader';
-import { panBounds, panBucket, panForStar } from '../core/timeline';
+import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/timeline';
 import type { PlacedStar } from '../core/timeline';
 import type { CoreScene } from '../three/CoreScene';
 import { damp } from '../utils/damp';
@@ -142,6 +142,10 @@ export function useCosmosEngine(
     dragX: 0,
     dragMoved: 0,
   });
+
+  // O laço lê o acervo para anunciar o ano na régua, sem se recriar por isso.
+  const starsRef = useRef(stars);
+  starsRef.current = stars;
 
   const [phase, setPhase] = useState<Phase>('hero');
   const [bucket, setBucket] = useState(0);
@@ -400,6 +404,19 @@ export function useCosmosEngine(
 
   const panRef = useRef(0);
 
+  /**
+   * O que a régua já anunciou.
+   *
+   * O inteiro evita um `setAttribute` por quadro. O acervo entra junto porque
+   * na primeira volta ele ainda não chegou — sem estrelas não há ano, e sem
+   * este segundo gatilho a régua ficaria para sempre sem `aria-valuetext`,
+   * anunciando uma porcentagem que não diz nada.
+   */
+  const announcedRef = useRef<{
+    percent: number;
+    stars: readonly PlacedStar[] | null;
+  }>({ percent: -1, stars: null });
+
   useFrameLoop(
     useCallback(
       (delta: number) => {
@@ -463,9 +480,25 @@ export function useCosmosEngine(
           scrub.style.opacity = String(reveal * 0.95 * (1 - zoom));
           scrub.style.pointerEvents = zoom > 0.3 ? 'none' : 'auto';
         }
+        const fraction = panToScrubFraction(s.panS, boundsRef.current);
         const marker = refs.marker.current;
         if (marker) {
-          marker.style.left = `${panToScrubFraction(s.panS, boundsRef.current) * 100}%`;
+          marker.style.left = `${fraction * 100}%`;
+        }
+
+        // A régua é um `slider`: precisa dizer onde está. O inteiro é o gatilho
+        // — um atributo por quadro seria ruído para a tecnologia assistiva e
+        // trabalho para o navegador.
+        const percent = Math.round(fraction * 100);
+        const announced = announcedRef.current;
+        if (percent !== announced.percent || starsRef.current !== announced.stars) {
+          announcedRef.current = { percent, stars: starsRef.current };
+          const rail = refs.rail.current;
+          if (rail) {
+            rail.setAttribute('aria-valuenow', String(percent));
+            const year = yearAtCenter(starsRef.current, s.panS + widthRef.current / 2);
+            if (year !== null) rail.setAttribute('aria-valuetext', String(year));
+          }
         }
 
         // O núcleo não existe durante a exploração do cosmos: é a porta de
@@ -511,6 +544,7 @@ export function useCosmosEngine(
         refs.hero,
         refs.layer,
         refs.marker,
+        refs.rail,
         refs.reader,
         refs.scrub,
       ],
