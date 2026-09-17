@@ -50,6 +50,10 @@ export const pt = {
     estudo: 'Estudo',
     rotina: 'Rotina',
   },
+  loading: {
+    title: 'MAPEANDO O COSMOS',
+    subtitle: 'Buscando as publicações.',
+  },
   empty: {
     title: 'NENHUMA ESTRELA ENCONTRADA',
     subtitle: 'Ajuste a busca ou remova o filtro de categoria.',

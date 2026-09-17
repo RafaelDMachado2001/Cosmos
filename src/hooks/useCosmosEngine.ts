@@ -73,6 +73,8 @@ export interface CosmosEngine {
   readonly panRef: MutableRefObject<number>;
   goHome: () => void;
   goCosmos: () => void;
+  /** Leva a câmera até a estrela, sem abrir a vista de leitura. */
+  slideTo: (star: PlacedStar) => void;
   /** Centraliza a estrela e avança a câmera. Devolve o pan de onde ela saiu. */
   openStar: (star: PlacedStar) => number;
   /** Recua a câmera até o pan que a abertura guardou. */
@@ -175,6 +177,23 @@ export function useCosmosEngine(
   const goCosmos = useCallback(() => {
     state.current.enter = 1;
   }, []);
+
+  /**
+   * Desliza a câmera até uma estrela, sem abrir nada.
+   *
+   * É o que a busca e o filtro usam para levar o leitor ao primeiro resultado:
+   * apagar as demais sem mover a câmera deixaria a tela vazia quando o que
+   * corresponde está fora do enquadramento.
+   */
+  const slideTo = useCallback(
+    (star: PlacedStar) => {
+      const s = state.current;
+      s.enter = 1;
+      s.velocity = 0;
+      s.pan = panForStar(stars, star, window.innerWidth);
+    },
+    [stars],
+  );
 
   /**
    * O primeiro tempo da abertura: centralizar a estrela.
@@ -480,6 +499,7 @@ export function useCosmosEngine(
     panRef,
     goHome,
     goCosmos,
+    slideTo,
     openStar,
     closeReader,
     didDrag,

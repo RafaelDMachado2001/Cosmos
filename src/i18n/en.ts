@@ -47,6 +47,10 @@ export const en: Dictionary = {
     estudo: 'Study',
     rotina: 'Field notes',
   },
+  loading: {
+    title: 'MAPPING THE COSMOS',
+    subtitle: 'Fetching the publications.',
+  },
   empty: {
     title: 'NO STARS FOUND',
     subtitle: 'Adjust the search or clear the category filter.',

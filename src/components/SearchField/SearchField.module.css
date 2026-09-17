@@ -1,0 +1,65 @@
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 120px;
+  min-width: 96px;
+  max-width: 240px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-nav);
+  backdrop-filter: blur(var(--blur-header));
+  cursor: text;
+
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-header) ease,
+    border-color var(--dur-ui) var(--ease);
+}
+
+.field[data-visible='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.field:focus-within {
+  border-color: var(--color-accent-line);
+}
+
+/* O anel de foco vai para a pílula inteira: dentro dela ele apertaria o texto
+   contra a borda. A semântica de :focus-visible é preservada — a pílula não
+   acende ao clique do ponteiro, só à navegação por teclado. */
+.field:has(.input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.icon {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--color-cat-artigo);
+  border-radius: 50%;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--tracking-nav);
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+/* O X nativo do type=search traz o desenho do sistema para dentro da pílula. */
+.input::-webkit-search-cancel-button {
+  appearance: none;
+}
