@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, RefObject } from 'react';
 
-import { INERTIA, PER_FRAME_K, lambdaFor, stepInertia } from '../core/motion';
+import { INERTIA, lambdas, stepInertia } from '../core/motion';
 import {
   COSMOS_PHASE_ENTER,
   INPUT,
@@ -16,6 +16,15 @@ import {
   scrubToPan,
 } from '../core/navigation';
 import type { Phase } from '../core/navigation';
+import {
+  SETTLE_BELOW,
+  zoomBlurPx,
+  zoomDim,
+  zoomPush,
+  zoomScale,
+  zoomTarget,
+} from '../core/reader';
+import type { ReaderState } from '../core/reader';
 import { panBounds, panBucket, panForStar } from '../core/timeline';
 import type { PlacedStar } from '../core/timeline';
 import type { CoreScene } from '../three/CoreScene';
@@ -37,6 +46,20 @@ export interface CosmosRefs {
   readonly rail: RefObject<HTMLElement>;
   /** Fallback em CSS do núcleo, quando não há WebGL. */
   readonly fallback: RefObject<HTMLElement>;
+  /** Overlay da vista de leitura. Só existe enquanto ela está montada. */
+  readonly reader: RefObject<HTMLElement>;
+}
+
+/**
+ * O que o laço precisa saber da vista de leitura.
+ *
+ * O estado em si é do React — é discreto, muda por clique. O laço só lê dele o
+ * alvo do zoom e do fade, e avisa de volta uma única vez, quando o fade de
+ * saída termina e a vista pode enfim sair do DOM.
+ */
+export interface ReaderBridge {
+  readonly state: ReaderState;
+  onSettled: () => void;
 }
 
 export interface CosmosEngine {
@@ -50,7 +73,10 @@ export interface CosmosEngine {
   readonly panRef: MutableRefObject<number>;
   goHome: () => void;
   goCosmos: () => void;
-  focusStar: (star: PlacedStar) => void;
+  /** Centraliza a estrela e avança a câmera. Devolve o pan de onde ela saiu. */
+  openStar: (star: PlacedStar) => number;
+  /** Recua a câmera até o pan que a abertura guardou. */
+  closeReader: (originPan: number | null) => void;
   /** Verdadeiro se o ponteiro arrastou o bastante para o clique não valer. */
   didDrag: () => boolean;
   onCosmosPointerDown: (event: React.PointerEvent) => void;
@@ -67,6 +93,10 @@ interface MutableState {
   mouseY: number;
   mouseXS: number;
   mouseYS: number;
+  zoomS: number;
+  /** x em tela da estrela aberta — origem do avanço da câmera. */
+  focusX: number;
+  readerFade: number;
   velocity: number;
   dragging: false | 'pan' | 'scrub';
   dragX: number;
@@ -85,8 +115,12 @@ export function useCosmosEngine(
   stars: readonly PlacedStar[],
   refs: CosmosRefs,
   reducedMotion: boolean,
+  reader: ReaderBridge,
 ): CosmosEngine {
   const sceneRef = useRef<CoreScene | null>(null);
+  // Lido dentro do laço e dos ouvintes, que não podem depender de re-render.
+  const readerRef = useRef(reader);
+  readerRef.current = reader;
   const state = useRef<MutableState>({
     enter: 0,
     pan: 0,
@@ -96,6 +130,9 @@ export function useCosmosEngine(
     mouseY: 0,
     mouseXS: 0,
     mouseYS: 0,
+    zoomS: 0,
+    focusX: 0,
+    readerFade: 0,
     velocity: 0,
     dragging: false,
     dragX: 0,
@@ -108,6 +145,10 @@ export function useCosmosEngine(
     typeof window === 'undefined' ? 1280 : window.innerWidth,
   );
 
+  // O laço precisa da largura sem depender de re-render nem consultar o DOM.
+  const widthRef = useRef(viewportWidth);
+  widthRef.current = viewportWidth;
+
   const bounds = useMemo(
     () => panBounds(stars, viewportWidth),
     [stars, viewportWidth],
@@ -115,14 +156,7 @@ export function useCosmosEngine(
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
 
-  const lambda = useMemo(
-    () => ({
-      enter: lambdaFor(reducedMotion ? PER_FRAME_K.reduced.enter : PER_FRAME_K.normal.enter),
-      pan: lambdaFor(reducedMotion ? PER_FRAME_K.reduced.pan : PER_FRAME_K.normal.pan),
-      mouse: lambdaFor(PER_FRAME_K.normal.mouse),
-    }),
-    [reducedMotion],
-  );
+  const lambda = useMemo(() => lambdas(reducedMotion), [reducedMotion]);
 
   // -- Entradas -------------------------------------------------------------
 
@@ -142,26 +176,59 @@ export function useCosmosEngine(
     state.current.enter = 1;
   }, []);
 
-  const focusStar = useCallback((star: PlacedStar) => {
-    state.current.enter = 1;
-    state.current.velocity = 0;
-    state.current.pan = panForStar(stars, star, window.innerWidth);
-  }, [stars]);
+  /**
+   * O primeiro tempo da abertura: centralizar a estrela.
+   *
+   * O `focusX` é medido depois de o pan ser limitado pelas bordas da linha do
+   * tempo — nas pontas a estrela não chega ao meio da tela, e assumir que
+   * chegou faria o avanço da câmera crescer em torno do ponto errado.
+   */
+  const openStar = useCallback(
+    (star: PlacedStar) => {
+      const s = state.current;
+      const originPan = s.pan;
+      s.enter = 1;
+      s.velocity = 0;
+      s.pan = panForStar(stars, star, window.innerWidth, 0.5);
+      s.focusX = star.x - s.pan;
+      return originPan;
+    },
+    [stars],
+  );
+
+  const closeReader = useCallback((originPan: number | null) => {
+    const s = state.current;
+    s.velocity = 0;
+    if (originPan === null) return;
+    s.pan = Math.min(boundsRef.current.max, Math.max(boundsRef.current.min, originPan));
+  }, []);
 
   const didDrag = useCallback(() => state.current.dragMoved > 0, []);
 
   useEffect(() => {
+    /**
+     * Com a vista de leitura em cena a constelação não recebe mais nada.
+     *
+     * Vale já durante a abertura, quando a câmera ainda viaja: rolar ali
+     * deslocaria o pan que o fechamento promete devolver. E é o que devolve a
+     * roda ao artigo — sem esta saída antecipada o `preventDefault` abaixo
+     * impediria o texto de rolar.
+     */
+    const locked = (): boolean => readerRef.current.state.phase !== 'closed';
+
     const onResize = (): void => {
       setViewportWidth(window.innerWidth);
       sceneRef.current?.resize(window.innerWidth, window.innerHeight);
     };
 
     const onWheel = (event: WheelEvent): void => {
+      if (locked()) return;
       event.preventDefault();
       applyPush(event.deltaY * INPUT.wheelGain);
     };
 
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (locked()) return;
       const action = keyToDelta(event.key);
       if (!action) return;
       event.preventDefault();
@@ -227,6 +294,7 @@ export function useCosmosEngine(
       touchY = touch.clientY;
     };
     const onTouchMove = (event: TouchEvent): void => {
+      if (locked()) return;
       const touch = event.touches[0];
       if (!touch) return;
       const dx = touchX - touch.clientX;
@@ -259,6 +327,7 @@ export function useCosmosEngine(
 
   const onCosmosPointerDown = useCallback(
     (event: React.PointerEvent) => {
+      if (readerRef.current.state.phase !== 'closed') return;
       if (state.current.enterS < COSMOS_PHASE_ENTER) return;
       state.current.dragging = 'pan';
       state.current.dragX = event.clientX;
@@ -271,6 +340,7 @@ export function useCosmosEngine(
 
   const onRailPointerDown = useCallback(
     (event: React.PointerEvent) => {
+      if (readerRef.current.state.phase !== 'closed') return;
       state.current.dragging = 'scrub';
       state.current.dragMoved = 0;
       state.current.velocity = 0;
@@ -299,7 +369,10 @@ export function useCosmosEngine(
           s.velocity = stepInertia(s.velocity);
         }
 
+        const reader = readerRef.current;
+
         s.enterS = damp(s.enterS, s.enter, lambda.enter, delta);
+        s.zoomS = damp(s.zoomS, zoomTarget(reader.state), lambda.zoom, delta);
         s.panS = damp(s.panS, s.pan, lambda.pan, delta);
         s.mouseXS = damp(s.mouseXS, s.mouseX, lambda.mouse, delta);
         s.mouseYS = damp(s.mouseYS, s.mouseY, lambda.mouse, delta);
@@ -307,6 +380,7 @@ export function useCosmosEngine(
         panRef.current = s.panS;
 
         const enter = s.enterS;
+        const zoom = s.zoomS;
         const fade = heroFade(enter);
         const reveal = cosmosReveal(enter);
 
@@ -320,19 +394,29 @@ export function useCosmosEngine(
 
         const cosmos = refs.cosmos.current;
         if (cosmos) {
-          cosmos.style.opacity = String(reveal);
+          cosmos.style.opacity = String(reveal * zoomDim(zoom));
           cosmos.style.transform = `scale(${0.94 + reveal * 0.06})`;
           cosmos.style.pointerEvents = reveal > 0.9 ? 'auto' : 'none';
         }
 
         const layer = refs.layer.current;
         if (layer) {
-          const parallax = s.mouseXS * 10;
-          layer.style.transform = `translate3d(${-s.panS + parallax}px, ${s.mouseYS * -6}px, 0)`;
+          // A parallax cede lugar ao avanço da câmera: dois deslocamentos
+          // horizontais somados leriam como tremor.
+          const parallax = s.mouseXS * 10 * (1 - zoom);
+          const push_ = zoomPush(s.focusX, widthRef.current, zoom);
+          const x = -s.panS + parallax - push_;
+          layer.style.transform =
+            `translate3d(${x}px, ${s.mouseYS * -6}px, 0) scale(${zoomScale(zoom)})`;
+          layer.style.transformOrigin = `${s.focusX}px 55%`;
+          layer.style.filter = `blur(${zoomBlurPx(zoom)}px)`;
         }
 
         const scrub = refs.scrub.current;
-        if (scrub) scrub.style.opacity = String(reveal * 0.95);
+        if (scrub) {
+          scrub.style.opacity = String(reveal * 0.95 * (1 - zoom));
+          scrub.style.pointerEvents = zoom > 0.3 ? 'none' : 'auto';
+        }
         const marker = refs.marker.current;
         if (marker) {
           marker.style.left = `${panToScrubFraction(s.panS, boundsRef.current) * 100}%`;
@@ -343,6 +427,23 @@ export function useCosmosEngine(
         // shader; o fallback em CSS precisa apagar aqui.
         const fallback = refs.fallback.current;
         if (fallback) fallback.style.opacity = String(coreOpacity(enter));
+
+        // A vista de leitura sobe interpolada como todo o resto: nada aparece
+        // instantaneamente. Enquanto ela não está no DOM o fade fica zerado,
+        // para que a próxima abertura comece do escuro.
+        const overlay = refs.reader.current;
+        if (overlay) {
+          const target = reader.state.phase === 'open' ? 1 : 0;
+          s.readerFade = damp(s.readerFade, target, lambda.readerFade, delta);
+          overlay.style.opacity = String(s.readerFade);
+          overlay.style.transform = `scale(${1.06 - s.readerFade * 0.06})`;
+          if (target === 0 && s.readerFade < SETTLE_BELOW) {
+            s.readerFade = 0;
+            reader.onSettled();
+          }
+        } else {
+          s.readerFade = 0;
+        }
 
         const scene = sceneRef.current;
         if (scene) {
@@ -357,7 +458,16 @@ export function useCosmosEngine(
         const nextBucket = panBucket(s.panS, PAN_BUCKET_PX);
         setBucket((current) => (current === nextBucket ? current : nextBucket));
       },
-      [lambda, refs.cosmos, refs.fallback, refs.hero, refs.layer, refs.marker, refs.scrub],
+      [
+        lambda,
+        refs.cosmos,
+        refs.fallback,
+        refs.hero,
+        refs.layer,
+        refs.marker,
+        refs.reader,
+        refs.scrub,
+      ],
     ),
   );
 
@@ -370,7 +480,8 @@ export function useCosmosEngine(
     panRef,
     goHome,
     goCosmos,
-    focusStar,
+    openStar,
+    closeReader,
     didDrag,
     onCosmosPointerDown,
     onRailPointerDown,
