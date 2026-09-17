@@ -1,8 +1,9 @@
+import { LOCALE_TAG } from '../core/types';
 import type { Dictionary } from './pt';
 
 export const en: Dictionary = {
   meta: {
-    localeTag: 'en',
+    localeTag: LOCALE_TAG.en,
     title: 'RDM Labs · Cosmos',
     description:
       'Articles, studies, projects and field notes arranged as a timeline constellation.',
@@ -20,6 +21,9 @@ export const en: Dictionary = {
     portfolio: 'PORTFOLIO',
     skipToContent: 'Skip to content',
     localeLabel: 'Language',
+    /** O outro idioma, nomeado na língua dele. */
+    otherLocale: 'PORTUGUÊS',
+    otherLocaleTag: 'pt-BR',
   },
   search: {
     placeholder: 'search the cosmos…',
@@ -54,6 +58,11 @@ export const en: Dictionary = {
   empty: {
     title: 'NO STARS FOUND',
     subtitle: 'Adjust the search or clear the category filter.',
+  },
+  notFound: {
+    title: 'THIS STAR DOES NOT EXIST',
+    subtitle: 'That address matches no publication in the archive.',
+    back: 'VIEW THE CONSTELLATION',
   },
   error: {
     title: 'COULD NOT LOAD THE COSMOS',

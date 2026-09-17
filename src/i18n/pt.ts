@@ -1,10 +1,12 @@
+import { LOCALE_TAG } from '../core/types';
+
 /**
  * Fonte de verdade do vocabulário. `en.ts` é tipado contra este objeto, então
  * uma chave faltando quebra o typecheck em vez de renderizar vazio.
  */
 export const pt = {
   meta: {
-    localeTag: 'pt-BR',
+    localeTag: LOCALE_TAG.pt,
     title: 'RDM Labs · Cosmos',
     description:
       'Artigos, estudos, projetos e registros de rotina organizados como uma constelação temporal.',
@@ -23,6 +25,9 @@ export const pt = {
     portfolio: 'PORTFÓLIO',
     skipToContent: 'Pular para o conteúdo',
     localeLabel: 'Idioma',
+    /** O outro idioma, nomeado na língua dele. */
+    otherLocale: 'ENGLISH',
+    otherLocaleTag: 'en',
   },
   search: {
     placeholder: 'buscar no cosmos…',
@@ -57,6 +62,11 @@ export const pt = {
   empty: {
     title: 'NENHUMA ESTRELA ENCONTRADA',
     subtitle: 'Ajuste a busca ou remova o filtro de categoria.',
+  },
+  notFound: {
+    title: 'ESTA ESTRELA NÃO EXISTE',
+    subtitle: 'O endereço não corresponde a nenhuma publicação do acervo.',
+    back: 'VER A CONSTELAÇÃO',
   },
   error: {
     title: 'NÃO FOI POSSÍVEL CARREGAR O COSMOS',

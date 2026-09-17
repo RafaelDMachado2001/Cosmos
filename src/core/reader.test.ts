@@ -7,6 +7,7 @@ import {
   close,
   hoverSide,
   isMounted,
+  landed,
   mounted,
   open,
   settled,
@@ -201,5 +202,28 @@ describe('timelineLabel', () => {
     const position = timelinePosition('pub-2', STARS);
     expect(position).not.toBeNull();
     expect(timelineLabel(position!, 'MAI 2025')).toBe('3 / 14  ·  MAI 2025');
+  });
+});
+
+describe('landed', () => {
+  it('nasce aberta, sem os três tempos da abertura', () => {
+    expect(landed(CLOSED, 'code-review-sem-atrito')).toEqual({
+      phase: 'open',
+      slug: 'code-review-sem-atrito',
+      originPan: null,
+    });
+  });
+
+  it('já está no DOM', () => {
+    expect(isMounted(landed(CLOSED, 'x'))).toBe(true);
+  });
+
+  it('fecha como qualquer outra', () => {
+    expect(close(landed(CLOSED, 'x')).phase).toBe('closing');
+  });
+
+  it('não atropela uma vista já aberta', () => {
+    const open = landed(CLOSED, 'primeira');
+    expect(landed(open, 'segunda')).toBe(open);
   });
 });
