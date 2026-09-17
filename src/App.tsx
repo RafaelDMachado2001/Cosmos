@@ -15,6 +15,7 @@ import type { ReaderCard } from './components/ReaderView/ReaderView';
 import { StarIndex } from './components/StarIndex/StarIndex';
 import { TimeRuler } from './components/TimeRuler/TimeRuler';
 import { countByCategory, dimmedStars } from './core/filter';
+import { monthYearLabel } from './core/format';
 import type { SearchableStar } from './core/filter';
 import { OPEN_DELAY_MS } from './core/motion';
 import {
@@ -22,6 +23,7 @@ import {
   close as closeReaderState,
   hoverSide,
   isMounted,
+  landed,
   mounted,
   open as openReaderState,
   settled,
@@ -29,22 +31,25 @@ import {
   timelinePosition,
 } from './core/reader';
 import type { HoverSide, ReaderState } from './core/reader';
+import { articlePath, closeTarget, homePath, parseRoute } from './core/routing';
+import type { Route } from './core/routing';
+import { articleJsonLd, articleMeta, homeMeta } from './core/seo';
+import type { MetaArticle } from './core/seo';
 import { placeStars } from './core/timeline';
 import type { PlacedStar } from './core/timeline';
-import type { Category, Viewport } from './core/types';
+import type { Category, Locale, Viewport } from './core/types';
 import { createStaticSource } from './data/PublicationsSource';
 import { PUBLICATIONS } from './data/publications';
 import { useCosmosEngine } from './hooks/useCosmosEngine';
+import { useHeadMeta } from './hooks/useHeadMeta';
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
 import { useArticle, usePublications } from './hooks/usePublications';
 import { useViewport } from './hooks/useViewport';
 import { LocaleProvider } from './i18n/LocaleProvider';
 import { useLocale } from './i18n/useLocale';
+import { SITE } from './site';
 
-/** Fase 6 assume as rotas; por ora o href já é o definitivo. */
-const ARTICLE_SEGMENT = { pt: 'publicacoes', en: 'publications' } as const;
-
-function Shell() {
+function Shell({ route }: { route: Route }) {
   const reducedMotion = usePrefersReducedMotion();
   const { locale, t } = useLocale();
 
@@ -64,9 +69,22 @@ function Shell() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | 'all'>('all');
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [notFound, setNotFound] = useState(route.kind === 'notfound');
 
   /** Quem tinha o foco quando o artigo abriu — para devolvê-lo ao fechar. */
   const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  /**
+   * Se a entrada de histórico do artigo aberto é nossa.
+   *
+   * Só é quando foi um clique numa estrela que a empilhou. Numa chegada direta
+   * pela URL a entrada é de quem veio antes — de outro site, ou de nenhum — e
+   * fechar não pode voltar para lá. Ver `closeTarget`.
+   */
+  const ownsEntryRef = useRef(false);
+
+  /** O slug que a URL trouxe na carga, à espera de o acervo chegar. */
+  const pendingSlugRef = useRef(route.kind === 'article' ? route.slug : null);
 
   /**
    * A fonte é criada uma vez: ela ordena o acervo e indexa por slug no
@@ -108,20 +126,10 @@ function Shell() {
     [measuredViewport],
   );
 
-  const hrefFor = useCallback(
-    (slug: string) => `/${locale}/${ARTICLE_SEGMENT[locale]}/${slug}`,
-    [locale],
-  );
+  const hrefFor = useCallback((slug: string) => articlePath(locale, slug), [locale]);
 
   const dateLabel = useCallback(
-    (timestamp: number) =>
-      new Date(timestamp)
-        .toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-GB', {
-          month: 'short',
-          year: 'numeric',
-        })
-        .replace('.', '')
-        .toUpperCase(),
+    (timestamp: number) => monthYearLabel(timestamp, locale),
     [locale],
   );
 
@@ -183,15 +191,46 @@ function Shell() {
       setHovered(null);
       const originPan = engine.openStar(star);
       setReader((current) => openReaderState(current, star.slug, originPan));
+      // A URL passa a ser a do artigo, e o voltar do navegador fecha a vista —
+      // é a mesma entrada de histórico que o "×" desfaz.
+      window.history.pushState(null, '', articlePath(locale, star.slug));
+      ownsEntryRef.current = true;
+      setNotFound(false);
     },
-    [engine, reader.phase],
+    [engine, reader.phase, locale],
   );
 
-  const closeReader = useCallback(() => {
+  /**
+   * Fecha a vista sem tocar no histórico.
+   *
+   * É o que o `popstate` chama: ali a URL já mudou, e empurrar outra entrada em
+   * resposta faria o botão de voltar precisar de dois toques para sair.
+   */
+  const applyClose = useCallback(() => {
     if (reader.phase === 'closed' || reader.phase === 'closing') return;
     engine.closeReader(reader.originPan);
     setReader(closeReaderState);
   }, [engine, reader]);
+
+  /**
+   * Fechar por gesto: o "×", o botão do fim do artigo, Esc.
+   *
+   * A vista fecha aqui e agora, antes de mexer no histórico. Delegar o
+   * fechamento ao `popstate` que o `back()` dispara amarraria a interface a um
+   * evento que chega num próximo quadro — e que não chega de jeito nenhum se a
+   * entrada anterior for a mesma URL.
+   */
+  const closeReader = useCallback(() => {
+    if (reader.phase === 'closed' || reader.phase === 'closing') return;
+    const target = closeTarget(ownsEntryRef.current, locale);
+    applyClose();
+    if (target.kind === 'back') {
+      window.history.back();
+      return;
+    }
+    window.history.replaceState(null, '', target.path);
+    ownsEntryRef.current = false;
+  }, [applyClose, locale, reader.phase]);
 
   /**
    * O terceiro tempo da abertura: montar o texto.
@@ -234,6 +273,95 @@ function Shell() {
   }, [reader.phase]);
 
   /**
+   * A chegada direta: `/pt/publicacoes/{slug}` aberto do zero.
+   *
+   * Só dá para fazer isto depois de o acervo chegar — antes dele não há
+   * estrela para enquadrar nem como saber se o slug existe. Daí a espera pelo
+   * `ready`: é ele que separa "ainda não carregou" de "não existe", e é a
+   * diferença entre a tela de espera e o 404.
+   */
+  const { jumpTo } = engine;
+
+  useEffect(() => {
+    const slug = pendingSlugRef.current;
+    if (slug === null || collection.state.status !== 'ready') return;
+    pendingSlugRef.current = null;
+
+    const star = stars.find((item) => item.slug === slug);
+    jumpTo(star ?? null);
+    if (!star) {
+      setNotFound(true);
+      return;
+    }
+    setReader((current) => landed(current, slug));
+  }, [collection.state.status, stars, jumpTo]);
+
+  // Um endereço que não é rota nenhuma também começa do outro lado do portal:
+  // o 404 é uma tela da constelação, não do hero.
+  useEffect(() => {
+    if (route.kind !== 'notfound') return;
+    jumpTo(null);
+  }, [route.kind, jumpTo]);
+
+  /**
+   * Voltar e avançar do navegador.
+   *
+   * A URL já é a verdade quando este evento chega; o trabalho aqui é só
+   * reconciliar a vista com ela. Avançar de volta para um artigo o reabre sem a
+   * viagem de câmera — repeti-la seria encenar uma origem que, nesse caminho,
+   * não existe.
+   */
+  useEffect(() => {
+    const onPopState = (): void => {
+      const next = parseRoute(window.location.pathname);
+
+      if (next.kind !== 'article') {
+        setNotFound(next.kind === 'notfound');
+        applyClose();
+        return;
+      }
+
+      const star = stars.find((item) => item.slug === next.slug);
+      if (!star) {
+        applyClose();
+        setNotFound(true);
+        return;
+      }
+
+      setNotFound(false);
+      // Há entrada anterior: foi de lá que este passo do histórico veio.
+      ownsEntryRef.current = true;
+      jumpTo(star);
+      setReader((current) => landed(current, next.slug));
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, [stars, jumpTo, applyClose]);
+
+  /**
+   * Trocar de idioma traduz a URL no lugar.
+   *
+   * É a mesma publicação nos dois idiomas — é o que o par de `hreflang` diz — e
+   * portanto não é uma navegação: empilhar entrada aqui encheria o histórico de
+   * voltas que só alternam a língua da mesma página.
+   */
+  const lastLocaleRef = useRef(locale);
+
+  useEffect(() => {
+    if (lastLocaleRef.current === locale) return;
+    lastLocaleRef.current = locale;
+    const openSlug = isMounted(reader) || reader.phase === 'opening' ? reader.slug : null;
+    window.history.replaceState(
+      null,
+      '',
+      openSlug === null ? homePath(locale) : articlePath(locale, openSlug),
+    );
+  }, [locale, reader]);
+
+  /**
    * O corpo do artigo vem da fonte, não do acervo já carregado: a lista é
    * enxuta de propósito, e o texto completo será uma segunda chamada quando o
    * backend existir. A busca começa junto com o avanço da câmera, então os
@@ -267,6 +395,42 @@ function Shell() {
       body: detail.body,
     };
   }, [reader, article, stars, dateLabel, t]);
+
+  /**
+   * O que o `<head>` descreve agora.
+   *
+   * `null` sempre que não há um artigo em cena — inclusive durante o fechamento,
+   * em que a vista ainda está no DOM mas a URL já voltou a ser a da constelação.
+   * O cabeçalho acompanha a URL, não o que resta na tela.
+   */
+  const metaArticle = useMemo<MetaArticle | null>(() => {
+    if (reader.phase === 'closed' || reader.phase === 'closing') return null;
+    if (article.status !== 'ready' || article.detail.slug !== reader.slug) return null;
+    const { detail } = article;
+
+    return {
+      slug: detail.slug,
+      title: detail.title,
+      summary: detail.summary,
+      publishedAt: detail.publishedAt,
+      categoryLabel: t.categories[detail.category],
+    };
+  }, [reader.phase, reader.slug, article, t]);
+
+  const pageMeta = useMemo(
+    () =>
+      metaArticle === null
+        ? homeMeta(SITE, locale, t.meta)
+        : articleMeta(SITE, locale, metaArticle),
+    [metaArticle, locale, t.meta],
+  );
+
+  const jsonLd = useMemo(
+    () => (metaArticle === null ? null : articleJsonLd(SITE, locale, metaArticle)),
+    [metaArticle, locale],
+  );
+
+  useHeadMeta(pageMeta, jsonLd, t.meta.localeTag);
 
   /**
    * A projeção sobre a qual a busca opera.
@@ -316,19 +480,36 @@ function Shell() {
   // seria um filtro que o leitor não pediu de novo.
   const goHome = useCallback(() => {
     setCategoriesOpen(false);
+    setNotFound(false);
+    window.history.replaceState(null, '', homePath(locale));
     engine.goHome();
-  }, [engine]);
+  }, [engine, locale]);
 
   /**
    * "Nenhuma estrela" tem causas diferentes e telas diferentes: os dados não
-   * chegaram, falharam, ou a busca não achou nada. Ver `src/core/collection.ts`.
+   * chegaram, falharam, a busca não achou nada, ou o endereço não existe. Ver
+   * `src/core/collection.ts`.
+   *
+   * O 404 vem primeiro porque não é sobre o acervo: com um endereço inválido, a
+   * constelação atrás pode estar perfeitamente cheia, e dizer "nenhuma estrela
+   * encontrada" mandaria a pessoa ajustar uma busca que ela não fez.
    */
   const statusKind = useMemo<CosmosStatusKind | null>(() => {
+    if (notFound) return 'notfound';
     if (collection.state.status === 'loading') return 'loading';
     if (collection.state.status === 'error') return 'error';
     if (stars.length === 0 || dimmed.size === stars.length) return 'empty';
     return null;
-  }, [collection.state.status, stars.length, dimmed.size]);
+  }, [notFound, collection.state.status, stars.length, dimmed.size]);
+
+  const onStatusAction = useCallback(() => {
+    if (!notFound) {
+      collection.retry();
+      return;
+    }
+    setNotFound(false);
+    window.history.replaceState(null, '', homePath(locale));
+  }, [notFound, collection, locale]);
 
   // Esc fecha o painel de categorias. Com o artigo aberto quem responde ao Esc
   // é ele, e o painel está atrás do overlay de qualquer modo.
@@ -376,7 +557,7 @@ function Shell() {
         />
 
         {statusKind !== null && engine.phase === 'cosmos' && (
-          <CosmosStatus kind={statusKind} onRetry={collection.retry} />
+          <CosmosStatus kind={statusKind} onAction={onStatusAction} />
         )}
 
         <Header
@@ -418,10 +599,27 @@ function Shell() {
   );
 }
 
+/** O idioma que a rota fixa, ou `null` quando a URL não o diz. */
+function routeLocale(route: Route): Locale | null {
+  return route.kind === 'notfound' ? null : route.locale;
+}
+
 export default function App() {
+  /**
+   * A URL da carga, lida uma única vez.
+   *
+   * Depois disto quem manda no endereço é o histórico, e reler `location` a
+   * cada render traria de volta a rota de origem depois de o leitor já ter
+   * navegado para outra.
+   */
+  const route = useMemo(() => parseRoute(window.location.pathname), []);
+  const initial = routeLocale(route);
+
   return (
-    <LocaleProvider>
-      <Shell />
+    // Numa carga direta de /en/publications/... a URL manda no idioma, não a
+    // preferência salva: o link foi compartilhado naquela língua.
+    <LocaleProvider {...(initial === null ? {} : { initial })}>
+      <Shell route={route} />
     </LocaleProvider>
   );
 }

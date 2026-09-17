@@ -19,7 +19,7 @@ Todo o desenvolvimento acontece em Docker.
 
 ```sh
 cp .env.example .env      # ajuste DOCKER_UID/DOCKER_GID com `id -u` e `id -g`
-docker compose up node    # dev server em http://localhost:5173
+docker compose up node    # dev server em http://localhost:5174
 ```
 
 | Comando | O que faz |
@@ -28,6 +28,7 @@ docker compose up node    # dev server em http://localhost:5173
 | `docker compose up` | Vite + build de produção servido pelo Nginx em `:8080` |
 | `docker compose --profile backend up` | Acrescenta Laravel e Postgres (ainda vazios) |
 | `docker compose run --rm node npm run check` | typecheck + lint + testes |
+| `docker compose run --rm node npm run build` | build de cliente + prerender das rotas |
 | `docker compose run --rm node npm run test:watch` | testes em watch |
 
 > O Node do host não é usado. Rodar `npm run` direto na máquina pode falhar por diferença de
@@ -36,8 +37,10 @@ docker compose up node    # dev server em http://localhost:5173
 ## Arquitetura
 
 - **`src/core/`** — TypeScript puro, sem DOM, sem React, sem Three. Posicionamento temporal,
-  coeficientes de movimento, máquina de estados da navegação e filtros. É onde mora quase toda a
-  suíte de testes.
+  coeficientes de movimento, máquina de estados da navegação, filtros, rotas e o cabeçalho de
+  SEO de cada página. É onde mora quase toda a suíte de testes.
+- **`src/prerender/`** — o passo de build que grava uma página HTML por rota. Roda no Node,
+  depois do build de cliente, pelo `postbuild` do npm.
 - **`src/three/`** — a cena WebGL numa classe própria, com o rAF fora do React.
 - **`src/components/`** — um diretório por componente, com o CSS Module ao lado.
 - **`src/styles/tokens.css`** — fonte única de verdade das cores. A cena 3D lê estes mesmos
@@ -48,3 +51,17 @@ docker compose up node    # dev server em http://localhost:5173
 **Regra que governa o código:** nada que mude por frame passa pelo React. `enter`, `pan` e `zoom`
 são refs mutáveis lidos por um único `requestAnimationFrame`, que escreve direto em
 `style.transform` e nos uniforms. O React só reage a estado discreto.
+
+## Rotas e SEO
+
+Cada publicação tem um endereço real e traduzido — `/pt/publicacoes/{slug}` e
+`/en/publications/{slug}` — reconhecido por `src/core/routing.ts`, que é o dono único desse
+mapa. O clique numa estrela empilha uma entrada de histórico; o "×", o Esc e o voltar do
+navegador fazem a mesma coisa.
+
+No build, `npm run postbuild` grava um HTML por rota, com `<title>`, `meta description`,
+canonical, `hreflang` PT/EN, Open Graph e JSON-LD `Article`, mais `sitemap.xml`, `robots.txt` e
+um `404.html`. A casca gravada não é a constelação: é `ArticlePage`/`HomePage`, sem WebGL, que
+serve tanto ao rastreador quanto a quem navega sem JavaScript. O React a descarta ao montar.
+
+A origem absoluta vem de `VITE_SITE_URL` e é assada no bundle — trocar de domínio exige rebuild.

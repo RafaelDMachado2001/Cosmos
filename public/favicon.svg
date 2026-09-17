@@ -1,0 +1,10 @@
+<!--
+  A estrela: o mesmo vocabulário da constelação, reduzido a 32px.
+  Só cores de src/styles/tokens.css — fundo, acento e o realce do acento.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="RDM Labs">
+  <rect width="32" height="32" rx="7" fill="#05060B" />
+  <circle cx="16" cy="16" r="10" fill="none" stroke="#8C6BFF" stroke-opacity="0.35" />
+  <circle cx="16" cy="16" r="5.5" fill="#8C6BFF" fill-opacity="0.45" />
+  <circle cx="16" cy="16" r="2.6" fill="#D8D2FF" />
+</svg>
