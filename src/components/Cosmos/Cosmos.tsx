@@ -2,6 +2,7 @@ import { forwardRef, useMemo } from 'react';
 import type { RefObject } from 'react';
 
 import styles from './Cosmos.module.css';
+import { revealDelayMs } from '../../core/collection';
 import {
   AXIS_PCT,
   connectors,
@@ -29,6 +30,7 @@ export interface CosmosProps {
   readonly labelFor: (star: PlacedStar) => string;
   readonly hrefFor: (slug: string) => string;
   readonly dimmed: ReadonlySet<string>;
+  readonly reducedMotion: boolean;
   /** Cartão da estrela sob o ponteiro, ou nulo. */
   readonly hover: HoverCard | null;
   readonly onActivate: (star: PlacedStar) => void;
@@ -52,6 +54,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
     labelFor,
     hrefFor,
     dimmed,
+    reducedMotion,
     hover,
     onActivate,
     onHover,
@@ -127,6 +130,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             label={labelFor(star)}
             href={hrefFor(star.slug)}
             dimmed={dimmed.has(star.slug)}
+            revealDelay={revealDelayMs(star.index, reducedMotion)}
             onActivate={onActivate}
             onHover={onHover}
           />

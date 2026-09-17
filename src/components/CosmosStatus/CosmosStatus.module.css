@@ -1,0 +1,79 @@
+/* Centralizado e sem interação, exceto pela ação de repetir. */
+.status {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-cosmos);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.status > button {
+  pointer-events: auto;
+}
+
+/* O mesmo filete do eixo da constelação, no mesmo 58% da altura: quando as
+   estrelas chegam elas pousam sobre uma linha que já estava lá. */
+.axis {
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 58%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(124, 92, 255, 0.02),
+    rgba(124, 92, 255, 0.14) 30%,
+    rgba(124, 92, 255, 0.28)
+  );
+}
+
+.pulse {
+  width: 9px;
+  height: 9px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 36%, #fff 0%, var(--color-accent) 46%, transparent 78%);
+  box-shadow: 0 0 18px 4px var(--color-accent-line);
+  animation: rdmPulse 1.6s ease-in-out infinite;
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--tracking-hint);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-faint);
+  font-size: 13px;
+}
+
+.retry {
+  margin-top: 10px;
+  padding: 9px 16px;
+  border: 1px solid var(--color-accent-line);
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--color-accent-soft);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-ui) var(--ease),
+    color var(--dur-ui) var(--ease);
+}
+
+.retry:hover {
+  border-color: var(--color-accent-line-strong);
+  color: #ffffff;
+}
