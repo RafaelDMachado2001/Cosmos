@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { LocaleContext } from './LocaleContext';
 import type { LocaleValue } from './LocaleContext';
@@ -38,11 +38,6 @@ export function LocaleProvider({
   }, []);
 
   const t = DICTIONARIES[locale];
-
-  useEffect(() => {
-    document.documentElement.lang = t.meta.localeTag;
-    document.title = t.meta.title;
-  }, [t]);
 
   const value = useMemo<LocaleValue>(() => ({ locale, t, setLocale }), [locale, t, setLocale]);
 

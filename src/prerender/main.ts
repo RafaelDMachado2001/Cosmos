@@ -1,0 +1,125 @@
+/**
+ * O passo que grava o HTML no disco, depois do build de cliente.
+ *
+ * Roda no Node, compilado por `vite.prerender.config.ts` para
+ * `dist-ssr/prerender.js`, e é disparado pelo `postbuild` do npm — o
+ * `docker/web/Dockerfile` conta com isso e não acrescenta um segundo RUN.
+ *
+ * Parte do `dist/index.html` que o Vite acabou de escrever, em vez de remontar
+ * as tags de script e de estilo a partir do manifest: ali os nomes com hash já
+ * estão corretos, e recalculá-los seria uma segunda fonte de verdade para a
+ * mesma coisa.
+ */
+
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+
+import { homePath } from '../core/routing';
+import { DEFAULT_LOCALE } from '../core/types';
+import { prerenderPages } from './pages';
+import type { PrerenderedPage } from './pages';
+
+const DIST = 'dist';
+const SSR_DIR = 'dist-ssr';
+
+/** O ponto onde a casca entra. `src/main.tsx` a remove quando o React monta. */
+const SLOT = '<div id="prerender"></div>';
+
+const LANG = /<html lang="[^"]*">/;
+
+/**
+ * O que o template traz e o cabeçalho da rota substitui.
+ *
+ * Precisa sair antes, não depois: com dois `<title>` no documento vale o
+ * primeiro, e o primeiro seria o genérico do `index.html` — cada artigo subiria
+ * para o buscador com o título da tela de entrada. O mesmo vale para a
+ * descrição.
+ */
+const TEMPLATE_TITLE = /[ \t]*<title>[\s\S]*?<\/title>\n?/;
+const TEMPLATE_DESCRIPTION = /[ \t]*<meta\s+name="description"[\s\S]*?>\n?/;
+
+/**
+ * O CSS dos componentes estáticos, embutido em cada página.
+ *
+ * `ArticlePage` e `HomePage` não são importados pelo bundle de cliente — nada
+ * ali os renderiza — então o CSS deles não existe no `dist`. Embutir é melhor
+ * que publicar um segundo arquivo: são poucos KB, só fazem falta antes de o
+ * React montar, e assim a página sem JavaScript não espera por outra requisição.
+ */
+async function readStaticCss(): Promise<string> {
+  const entries = await readdir(SSR_DIR, { recursive: true, withFileTypes: true });
+  const sheets = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.css'));
+
+  if (sheets.length === 0) {
+    throw new Error(
+      `Nenhum CSS em ${SSR_DIR}/: as páginas estáticas sairiam sem estilo. ` +
+        'Conferir build.ssrEmitAssets em vite.prerender.config.ts.',
+    );
+  }
+
+  const parts = await Promise.all(
+    sheets.map((sheet) => readFile(join(sheet.parentPath, sheet.name), 'utf8')),
+  );
+  return parts.join('\n');
+}
+
+function compose(template: string, page: PrerenderedPage, css: string): string {
+  return template
+    .replace(LANG, `<html lang="${page.lang}">`)
+    .replace(TEMPLATE_TITLE, '')
+    .replace(TEMPLATE_DESCRIPTION, '')
+    .replace('</head>', `${page.head}\n<style data-head>${css}</style>\n</head>`)
+    .replace(SLOT, `<div id="prerender">${page.body}</div>`);
+}
+
+async function write(path: string, contents: string): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, contents, 'utf8');
+}
+
+async function main(): Promise<void> {
+  const template = await readFile(join(DIST, 'index.html'), 'utf8');
+
+  // Um prerender que não encontra onde injetar grava páginas idênticas ao
+  // index e não avisa ninguém: o site sobe, e só os buscadores percebem.
+  if (!template.includes(SLOT)) {
+    throw new Error(`${SLOT} não está em ${DIST}/index.html — nada a preencher.`);
+  }
+  if (!template.includes('</head>')) {
+    throw new Error(`${DIST}/index.html sem </head> — não há onde pôr o cabeçalho.`);
+  }
+
+  const css = await readStaticCss();
+  const { pages, notFound, sitemap, robots } = await prerenderPages();
+
+  for (const page of pages) {
+    await write(join(DIST, page.path, 'index.html'), compose(template, page, css));
+  }
+
+  /**
+   * A raiz recebe a casca do idioma padrão.
+   *
+   * Sem isto `/` serviria o template cru: título genérico e corpo vazio para
+   * quem não executa JavaScript. O canonical dela aponta para `/pt`, que é onde
+   * o conteúdo mora — é o que impede `/` e `/pt` de contarem como duas URLs do
+   * mesmo texto.
+   */
+  const root = pages.find((page) => page.path === homePath(DEFAULT_LOCALE));
+  if (root === undefined) {
+    throw new Error(`prerender sem a raiz de ${DEFAULT_LOCALE}: ${DIST}/index.html ficaria cru.`);
+  }
+  await write(join(DIST, 'index.html'), compose(template, root, css));
+
+  // O 404 é um arquivo solto, não uma rota: o Nginx o serve por `error_page`,
+  // mantendo o endereço que a pessoa pediu e o status que o rastreador precisa.
+  await write(join(DIST, notFound.path), compose(template, notFound, css));
+
+  await write(join(DIST, 'sitemap.xml'), sitemap);
+  await write(join(DIST, 'robots.txt'), robots);
+
+  console.log(
+    `prerender: ${pages.length} páginas, 404.html, sitemap.xml e robots.txt em ${DIST}/`,
+  );
+}
+
+await main();

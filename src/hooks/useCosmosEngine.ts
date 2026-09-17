@@ -75,6 +75,8 @@ export interface CosmosEngine {
   goCosmos: () => void;
   /** Leva a câmera até a estrela, sem abrir a vista de leitura. */
   slideTo: (star: PlacedStar) => void;
+  /** Põe a constelação do outro lado do portal de imediato, sem animar a travessia. */
+  jumpTo: (star: PlacedStar | null) => void;
   /** Centraliza a estrela e avança a câmera. Devolve o pan de onde ela saiu. */
   openStar: (star: PlacedStar) => number;
   /** Recua a câmera até o pan que a abertura guardou. */
@@ -191,6 +193,31 @@ export function useCosmosEngine(
       s.enter = 1;
       s.velocity = 0;
       s.pan = panForStar(stars, star, window.innerWidth);
+    },
+    [stars],
+  );
+
+  /**
+   * A chegada direta pela URL.
+   *
+   * Aqui os valores suavizados são escritos junto com os alvos, que é
+   * exatamente o que o resto do motor nunca faz. É deliberado: deixar só o alvo
+   * poria o `damp` a encenar uma travessia de portal que ninguém pediu — quem
+   * abriu o link de um artigo veria a viagem inteira antes de chegar ao texto.
+   * A animação conta a história de ter atravessado; quem chega pela URL não
+   * atravessou nada.
+   */
+  const jumpTo = useCallback(
+    (star: PlacedStar | null) => {
+      const s = state.current;
+      s.enter = 1;
+      s.enterS = 1;
+      s.velocity = 0;
+      if (star === null) return;
+      s.pan = panForStar(stars, star, window.innerWidth, 0.5);
+      s.panS = s.pan;
+      s.focusX = star.x - s.pan;
+      s.zoomS = 1;
     },
     [stars],
   );
@@ -500,6 +527,7 @@ export function useCosmosEngine(
     goHome,
     goCosmos,
     slideTo,
+    jumpTo,
     openStar,
     closeReader,
     didDrag,

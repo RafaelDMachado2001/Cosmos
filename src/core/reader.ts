@@ -38,6 +38,20 @@ export function open(state: ReaderState, slug: string, originPan: number): Reade
   return { phase: 'opening', slug, originPan };
 }
 
+/**
+ * A vista que nasce aberta, numa chegada direta pela URL.
+ *
+ * Quem abre `/pt/publicacoes/{slug}` não pediu a travessia do portal nem o
+ * avanço da câmera: pediu o artigo. Os três tempos da abertura contam uma
+ * história de origem — *esta* estrela, vinda *dali* — e não há origem nenhuma
+ * numa chegada direta. Por isso o `originPan` é `null`: fechar não recua para
+ * lugar algum, apenas desfaz o zoom e deixa a constelação sobre a estrela lida.
+ */
+export function landed(state: ReaderState, slug: string): ReaderState {
+  if (state.phase === 'opening' || state.phase === 'open') return state;
+  return { phase: 'open', slug, originPan: null };
+}
+
 /** Passados os 760ms de avanço da câmera, a vista entra. */
 export function mounted(state: ReaderState): ReaderState {
   if (state.phase !== 'opening') return state;
