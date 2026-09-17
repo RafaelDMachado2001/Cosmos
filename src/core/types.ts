@@ -2,6 +2,30 @@ export const LOCALES = ['pt', 'en'] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
+/**
+ * O idioma servido a quem não escolheu.
+ *
+ * É também o alvo do `x-default` no `hreflang` e a casca gravada na raiz e no
+ * `404.html` — os três são a mesma pergunta: em que língua falar com quem ainda
+ * não disse a sua.
+ */
+export const DEFAULT_LOCALE: Locale = 'pt';
+
+/** A etiqueta BCP-47 de cada idioma: o `lang` do documento e o `inLanguage` do JSON-LD. */
+export const LOCALE_TAG: Record<Locale, string> = { pt: 'pt-BR', en: 'en' };
+
+/**
+ * A mesma coisa na forma que o Open Graph exige.
+ *
+ * Ali o valor é sempre `idioma_TERRITÓRIO` — `en` sozinho é recusado — e o
+ * território escolhido acompanha o que a formatação de data já usa.
+ */
+export const OG_LOCALE: Record<Locale, string> = { pt: 'pt_BR', en: 'en_GB' };
+
+export function isLocale(value: unknown): value is Locale {
+  return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
+}
+
 export const CATEGORIES = ['artigo', 'projeto', 'estudo', 'rotina'] as const;
 
 export type Category = (typeof CATEGORIES)[number];
