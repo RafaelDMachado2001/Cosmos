@@ -7,4 +7,5 @@ dist-ssr
 *.log
 .env
 /docs
-/backend
+# backend/ é versionado desde a fase 8. O que o Laravel gera — vendor, .env,
+# storage e os assets que o Filament publica — está em backend/.gitignore.
