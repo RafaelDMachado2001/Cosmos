@@ -1,67 +1,100 @@
 # RDM Labs · Cosmos
+Cosmos is a personal blog and editorial space about technology, routines, and the small ideas that are easy to lose in the noise of the internet.
 
-Experiência web onde publicações — artigos técnicos, estudos, projetos e registros de rotina —
-aparecem como uma **constelação temporal** navegável, com um núcleo 3D como portal de entrada.
+Most blogs and online communities tend to converge on the same visual language: a feed, a sidebar, a familiar card layout, and a lot of text competing for attention. Cosmos is an attempt to build something more personal. Its interface treats navigation as part of the reading experience, using a space-inspired 3D environment to connect ideas without turning the content into a gimmick.
 
-A especificação de design completa está em `design_handoff_rdm_cosmos/README.md` (cores,
-tipografia, medidas, curvas de animação e comportamento de cada tela). O protótipo de referência
-está em `design_handoff_rdm_cosmos/prototype/RDM Cosmos.dc.html`.
+The project is being built as an experiment in expressive interfaces: a place where the visual identity, the code architecture, the accessibility of the content, and the performance of the experience all have to coexist.
+
+## Goals
+- Create a distinctive reading experience instead of another generic blog layout.
+- Make exploration feel spatial while keeping individual publications easy to reach.
+- Keep the real content available to crawlers, screen readers, and users without JavaScript.
+- Treat performance as an architectural constraint, especially inside the WebGL scene.
+- Keep the domain logic independent from React and browser APIs wherever possible.
+- Support Portuguese and English from the beginning, with translated routes and metadata.
 
 ## Stack
+- React 18
+- TypeScript
+- Vite
+- Three.js, used directly without React Three Fiber
+- CSS Modules
+- CSS custom properties for shared design tokens
+- Laravel 11 and PostgreSQL 16 planned for the backend
 
-React 18 · TypeScript · Vite · Three.js (puro, sem react-three-fiber) · CSS Modules sobre tokens.
-Sem biblioteca de animação: interpolação exponencial (`damp`) e keyframes CSS.
-Backend Laravel 11 + PostgreSQL 16 previsto, ainda não implementado.
+The backend is not implemented yet. The current application is focused on the frontend experience, content model, routing, rendering strategy, and SEO foundation.
 
-## Rodando
+## Technical direction
+Cosmos deliberately avoids an animation library. Motion is implemented with exponential damping (`damp`) and CSS keyframes. This keeps the animation model small and explicit, while making it easier to control what runs every frame.
 
-Todo o desenvolvimento acontece em Docker.
+The main performance rule is:
+> Nothing that changes every frame passes through React.
 
-```sh
-cp .env.example .env      # ajuste DOCKER_UID/DOCKER_GID com `id -u` e `id -g`
-docker compose up node    # dev server em http://localhost:5174
+Continuous interaction state—such as entering the scene, panning, and zooming—is stored in mutable refs. A single `requestAnimationFrame` loop reads those values and writes directly to DOM transforms and Three.js uniforms. React is reserved for discrete state changes, such as navigation, selection, and page transitions.
+
+This separation avoids turning the render tree into a frame-by-frame update mechanism and keeps the responsibilities of the UI and the scene clear.
+
+## Architecture
+The codebase is organized around boundaries rather than visual screens:
+
+### `src/core/`
+Pure TypeScript domain logic. This layer has no DOM, React, or Three.js dependencies.
+
+It contains temporal positioning, movement coefficients, the navigation state machine, filters, route definitions, and the SEO headers for each page. Most of the test suite lives here because these rules can be tested without a browser or a renderer.
+
+### `src/prerender/`
+The build-time rendering step. It runs in Node after the client build, through the npm `postbuild` script, and writes one HTML document for each route.
+
+The generated shell is intentionally not the WebGL constellation. It renders `HomePage` or `ArticlePage`, giving crawlers and users without JavaScript a meaningful document. Once React mounts, it takes over from that shell and initializes the interactive experience.
+
+### `src/three/`
+The WebGL scene, implemented in its own class with its own animation loop. The `requestAnimationFrame` lifecycle stays outside React, and the scene receives only the values it needs to update objects and shader uniforms.
+
+### `src/components/`
+One directory per component, with the component and its CSS Module kept together. Components handle interface composition and user interaction, while continuous scene updates remain outside React's render cycle.
+
+### `src/styles/tokens.css`
+The single source of truth for the visual tokens, especially colors. The Three.js scene reads the same computed CSS values through `getComputedStyle`, so the interface and the shader cannot quietly drift into different palettes.
+
+### `src/i18n/`
+`pt.ts` is the source of truth for translation keys. `en.ts` is typed against it, so a missing translation is caught by type checking instead of becoming an empty string at runtime.
+
+## Routing and SEO
+Every publication has a real, translated URL:
+
+```text
+/pt/publicacoes/{slug}
+/en/publications/{slug}
 ```
 
-| Comando | O que faz |
-|---|---|
-| `docker compose up node` | Vite com HMR (uso diário) |
-| `docker compose up` | Vite + build de produção servido pelo Nginx em `:8080` |
-| `docker compose --profile backend up` | Acrescenta Laravel e Postgres (ainda vazios) |
-| `docker compose run --rm node npm run check` | typecheck + lint + testes |
-| `docker compose run --rm node npm run build` | build de cliente + prerender das rotas |
-| `docker compose run --rm node npm run test:watch` | testes em watch |
+`src/core/routing.ts` owns this map. Keeping route recognition in one place prevents the client router, prerenderer, links, and SEO metadata from developing separate interpretations of the same URL structure.
 
-> O Node do host não é usado. Rodar `npm run` direto na máquina pode falhar por diferença de
-> versão e por binários de plataforma (`esbuild`, `rollup`) — sempre via `docker compose run`.
+Opening a publication from the constellation pushes a browser history entry. Closing it with the `×` button, pressing Escape, or using the browser Back button follows the same navigation model, so direct navigation and interactive navigation remain consistent.
 
-## Arquitetura
+During the build, `npm run postbuild` generates:
+- one HTML file per route;
+- a page title and meta description;
+- canonical URLs;
+- Portuguese and English `hreflang` links;
+- Open Graph metadata;
+- `Article` JSON-LD;
+- `sitemap.xml`;
+- `robots.txt`;
+- `404.html`.
 
-- **`src/core/`** — TypeScript puro, sem DOM, sem React, sem Three. Posicionamento temporal,
-  coeficientes de movimento, máquina de estados da navegação, filtros, rotas e o cabeçalho de
-  SEO de cada página. É onde mora quase toda a suíte de testes.
-- **`src/prerender/`** — o passo de build que grava uma página HTML por rota. Roda no Node,
-  depois do build de cliente, pelo `postbuild` do npm.
-- **`src/three/`** — a cena WebGL numa classe própria, com o rAF fora do React.
-- **`src/components/`** — um diretório por componente, com o CSS Module ao lado.
-- **`src/styles/tokens.css`** — fonte única de verdade das cores. A cena 3D lê estes mesmos
-  tokens via `getComputedStyle`, para que CSS e shader nunca divirjam.
-- **`src/i18n/`** — `pt.ts` é a fonte de verdade e `en.ts` é tipado contra ele: uma chave
-  faltando quebra o typecheck em vez de renderizar vazio.
+The absolute site origin comes from `VITE_SITE_URL` and is embedded into the bundle at build time. Changing the domain therefore requires a new build.
 
-**Regra que governa o código:** nada que mude por frame passa pelo React. `enter`, `pan` e `zoom`
-são refs mutáveis lidos por um único `requestAnimationFrame`, que escreve direto em
-`style.transform` e nos uniforms. O React só reage a estado discreto.
+## Content model and navigation
+The homepage is designed as a constellation rather than a conventional feed. Publications are positioned in time and space, and filters help narrow the visible set without forcing the user into a separate dashboard-like interface.
 
-## Rotas e SEO
+The visual metaphor is there to support discovery, not to hide the content. A publication still has a stable URL, server-generated metadata, and a non-WebGL page representation. The experience can be playful at the surface while remaining conventional and dependable underneath.
 
-Cada publicação tem um endereço real e traduzido — `/pt/publicacoes/{slug}` e
-`/en/publications/{slug}` — reconhecido por `src/core/routing.ts`, que é o dono único desse
-mapa. O clique numa estrela empilha uma entrada de histórico; o "×", o Esc e o voltar do
-navegador fazem a mesma coisa.
+## Project status
+Cosmos is currently a frontend-focused project. The interactive client, the Three.js scene, translated routing, prerendering, and SEO foundation are being developed first.
 
-No build, `npm run postbuild` grava um HTML por rota, com `<title>`, `meta description`,
-canonical, `hreflang` PT/EN, Open Graph e JSON-LD `Article`, mais `sitemap.xml`, `robots.txt` e
-um `404.html`. A casca gravada não é a constelação: é `ArticlePage`/`HomePage`, sem WebGL, que
-serve tanto ao rastreador quanto a quem navega sem JavaScript. O React a descarta ao montar.
+The planned backend will use Laravel 11 with PostgreSQL 16. It is intended to provide the future content and publishing layer, but it is not part of the current implementation yet.
 
-A origem absoluta vem de `VITE_SITE_URL` e é assada no bundle — trocar de domínio exige rebuild.
+## Why this project exists
+Cosmos is not trying to make a blog harder to use. It is trying to make the act of arriving somewhere feel intentional again.
+
+The project is an exploration of how far a personal publishing space can depart from the standard blog template while preserving the things that matter: readable content, durable links, good metadata, predictable browser behavior, testable domain rules, and a fast enough experience to respect the reader.
