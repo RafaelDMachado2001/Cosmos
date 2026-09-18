@@ -90,3 +90,95 @@ export function createStaticSource(publications: readonly Publication[]): Public
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Adapter HTTP
+// ---------------------------------------------------------------------------
+
+/**
+ * A publicação como o Laravel a devolve.
+ *
+ * `published_at` em snake_case e o corpo já em parágrafos: dividir o texto é
+ * trabalho do servidor, que é quem sabe em que formato o guardou. A
+ * constelação sempre falou em parágrafos, e não vai passar a falar em markdown
+ * por causa de onde o dado passou a morar.
+ */
+interface ApiPublication {
+  readonly slug: string;
+  readonly category: Category;
+  readonly published_at: string;
+  readonly featured: boolean;
+  readonly title: string;
+  readonly summary: string;
+}
+
+interface ApiPublicationDetail extends ApiPublication {
+  readonly body: readonly string[];
+}
+
+function fromApi(row: ApiPublication): PublicationSummary {
+  return {
+    slug: row.slug,
+    publishedAt: row.published_at,
+    category: row.category,
+    featured: row.featured,
+    title: row.title,
+    summary: row.summary,
+  };
+}
+
+/**
+ * O adapter que fala com a API do Laravel.
+ *
+ * Mesma interface do estático — é o que a fase 1 prometeu ao espelhar aqui os
+ * parâmetros da API planejada. A constelação não sabe qual dos dois está
+ * montado, e a suíte de contrato roda contra os dois.
+ */
+export function createHttpSource(
+  baseUrl: string,
+  fetchImpl: typeof fetch = fetch,
+): PublicationsSource {
+  const root = `${baseUrl.replace(/\/+$/, '')}/api/publications`;
+
+  /**
+   * Um erro de rede precisa chegar como erro.
+   *
+   * Devolver lista vazia aqui daria a tela de "nenhuma estrela encontrada" a
+   * quem na verdade perdeu a conexão — e a única saída oferecida seria ajustar
+   * uma busca que a pessoa não fez. Ver `src/core/collection.ts`.
+   */
+  async function json<T>(url: string): Promise<T> {
+    const response = await fetchImpl(url);
+    if (!response.ok) throw new Error(`${url} respondeu ${String(response.status)}`);
+    return (await response.json()) as T;
+  }
+
+  return {
+    async list(query) {
+      const params = new URLSearchParams({ locale: query.locale });
+      if (query.category !== undefined && query.category !== 'all') {
+        params.set('category', query.category);
+      }
+      // Espaço em branco não é busca: mandá-lo faria o `websearch_to_tsquery`
+      // devolver vazio, e a constelação inteira apagaria por um campo em branco.
+      if (query.q !== undefined && query.q.trim() !== '') params.set('q', query.q);
+      if (query.before !== undefined) params.set('before', query.before);
+      if (query.limit !== undefined) params.set('limit', String(query.limit));
+
+      const payload = await json<{ data: readonly ApiPublication[] }>(`${root}?${params.toString()}`);
+      return payload.data.map(fromApi);
+    },
+
+    async get(slug, locale) {
+      const url = `${root}/${encodeURIComponent(slug)}?locale=${locale}`;
+      const response = await fetchImpl(url);
+      // 404 é ausência — o slug não existe — e quem chama decide o que fazer.
+      // Qualquer outro status é falha, e não pode virar "publicação sem texto".
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`${url} respondeu ${String(response.status)}`);
+
+      const payload = (await response.json()) as { data: ApiPublicationDetail };
+      return { ...fromApi(payload.data), body: payload.data.body };
+    },
+  };
+}

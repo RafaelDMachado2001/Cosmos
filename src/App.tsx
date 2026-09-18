@@ -39,8 +39,7 @@ import type { MetaArticle } from './core/seo';
 import { placeStars } from './core/timeline';
 import type { PlacedStar } from './core/timeline';
 import type { Category, Locale, Viewport } from './core/types';
-import { createStaticSource } from './data/PublicationsSource';
-import { PUBLICATIONS } from './data/publications';
+import { createSource } from './data/source';
 import { useCosmosEngine } from './hooks/useCosmosEngine';
 import { useHeadMeta } from './hooks/useHeadMeta';
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
@@ -92,7 +91,7 @@ function Shell({ route }: { route: Route }) {
    * construtor, e recriá-la a cada render refaria esse trabalho e disparava o
    * efeito de carregamento em laço.
    */
-  const source = useMemo(() => createStaticSource(PUBLICATIONS), []);
+  const source = useMemo(() => createSource(), []);
   const collection = usePublications(source, locale);
   const summaries = collection.state.items;
 
