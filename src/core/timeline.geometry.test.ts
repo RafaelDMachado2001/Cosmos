@@ -13,6 +13,7 @@ import {
   visibleRange,
   xAtTime,
   yPx,
+  yearAtCenter,
   yearMarkers,
 } from './timeline';
 import { makeDataset, makeRandom } from './testing';
@@ -248,5 +249,29 @@ describe('panBounds e panForStar', () => {
     const extent = strandExtent(stars);
     expect(extent.maxX).toBeCloseTo((stars[stars.length - 1]?.x ?? 0) + TIMELINE.trailingPadPx, 9);
     expect(extent.widthPx).toBe(extent.maxX - extent.minX);
+  });
+});
+
+describe('yearAtCenter', () => {
+  const STARS = placeStars([
+    { slug: 'a', publishedAt: '2024-02-10T12:00:00.000Z', category: 'artigo' },
+    { slug: 'b', publishedAt: '2025-05-20T12:00:00.000Z', category: 'estudo' },
+    { slug: 'c', publishedAt: '2026-01-05T12:00:00.000Z', category: 'projeto' },
+  ]);
+
+  it('devolve o ano da estrela mais próxima do centro', () => {
+    for (const star of STARS) {
+      const year = new Date(star.timestamp).getUTCFullYear();
+      expect(yearAtCenter(STARS, star.x)).toBe(year);
+    }
+  });
+
+  it('não sai do acervo nas pontas', () => {
+    expect(yearAtCenter(STARS, -100000)).toBe(2024);
+    expect(yearAtCenter(STARS, 100000)).toBe(2026);
+  });
+
+  it('num acervo vazio não há ano nenhum', () => {
+    expect(yearAtCenter([], 0)).toBeNull();
   });
 });

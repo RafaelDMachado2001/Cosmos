@@ -11,6 +11,7 @@ import {
   dominantAxisDelta,
   heroFade,
   keyToDelta,
+  needsSlide,
   panToScrubFraction,
   scrubToPan,
   innerOpacity,
@@ -224,5 +225,29 @@ describe('panToScrubFraction', () => {
 
   it('devolve zero quando não há o que percorrer', () => {
     expect(panToScrubFraction(0, { min: 0, max: 0 })).toBe(0);
+  });
+});
+
+describe('needsSlide', () => {
+  it('não move a câmera por uma estrela já enquadrada', () => {
+    expect(needsSlide(640, 1280)).toBe(false);
+    expect(needsSlide(100, 1280)).toBe(false);
+  });
+
+  it('move quando a estrela caiu fora da tela', () => {
+    expect(needsSlide(-40, 1280)).toBe(true);
+    expect(needsSlide(1400, 1280)).toBe(true);
+  });
+
+  it('move quando a estrela está colada na borda, meio encoberta', () => {
+    expect(needsSlide(10, 1280)).toBe(true);
+    expect(needsSlide(1275, 1280)).toBe(true);
+  });
+
+  it('a margem é simétrica', () => {
+    const width = 1280;
+    for (let margin = 0; margin < 120; margin += 7) {
+      expect(needsSlide(margin, width)).toBe(needsSlide(width - margin, width));
+    }
   });
 });

@@ -23,6 +23,8 @@ export const pt = {
     cosmos: 'CONSTELAÇÃO',
     categories: 'CATEGORIAS',
     portfolio: 'PORTFÓLIO',
+    /** Distingue este landmark dos outros `nav` da página. */
+    primaryLabel: 'Navegação principal',
     skipToContent: 'Pular para o conteúdo',
     localeLabel: 'Idioma',
     /** O outro idioma, nomeado na língua dele. */
