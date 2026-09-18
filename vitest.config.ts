@@ -11,6 +11,8 @@ const ORIGIN = (process.env.VITE_SITE_URL ?? 'http://localhost:5174').replace(/\
 export default defineConfig({
   define: {
     __SITE_ORIGIN__: JSON.stringify(ORIGIN),
+    // Os testes nunca tocam rede: a fonte é sempre o acervo semente.
+    __API_URL__: JSON.stringify(null),
   },
   test: {
     // Os módulos de `src/core/` são puros; o do prerender monta HTML por

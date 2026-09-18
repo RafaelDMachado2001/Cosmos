@@ -40,6 +40,10 @@ services:
         VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
     ports:
       - "${WEB_HTTP_PORT:-8080}:80"
+    volumes:
+      # Só os assets que o Filament publica. O PHP em si roda no serviço `app`;
+      # daqui o Nginx apenas serve os arquivos estáticos do painel.
+      - ./backend/public:/var/www/public:ro
     networks:
       - rdm-network
     restart: unless-stopped
@@ -47,8 +51,14 @@ services:
   ### Backend — escrito, mas fora do conjunto padrão #########################
   ### Sobe com: docker compose --profile backend up
   app:
-    image: php:8.3-fpm-alpine
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${DOCKER_UID:-1000}
+        GID: ${DOCKER_GID:-1000}
     profiles: [backend]
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     working_dir: /var/www
     volumes:
       - ./backend:/var/www
@@ -56,9 +66,17 @@ services:
       - DB_CONNECTION=pgsql
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_DATABASE=${DB_DATABASE:-rdm_labs}
+      # DB_DATABASE fica de fora de propósito: ele vem do backend/.env.
+      #
+      # O `force` do PHPUnit escreve em $_ENV e no putenv, mas não em $_SERVER —
+      # e é $_SERVER que o repositório de ambiente do Laravel consulta primeiro.
+      # Definido aqui, ele vencia o phpunit.xml e a suíte rodava contra o banco
+      # de desenvolvimento, que o RefreshDatabase apagava a cada execução.
       - DB_USERNAME=${DB_USERNAME:-rdm}
       - DB_PASSWORD=${DB_PASSWORD}
+      - ADMIN_NAME=${ADMIN_NAME:-RDM Labs}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@rdmlabs.dev}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - TZ=${TIMEZONE:-America/Sao_Paulo}
     depends_on:
       db:
