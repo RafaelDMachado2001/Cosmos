@@ -6,6 +6,13 @@ dist-ssr
 .DS_Store
 *.log
 .env
-/docs
+# As specs são a exceção: o desenho aprovado de cada fase é versionado junto do
+# código que ele governa. O resto de /docs continua fora. A cadeia precisa ser
+# re-incluída diretório a diretório — sob um pai excluído o Git não desce, e uma
+# negação direta em /docs/superpowers/ não teria efeito nenhum.
+/docs/*
+!/docs/superpowers/
+/docs/superpowers/*
+!/docs/superpowers/specs/
 # backend/ é versionado desde a fase 8. O que o Laravel gera — vendor, .env,
 # storage e os assets que o Filament publica — está em backend/.gitignore.
