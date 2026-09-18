@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { createStaticSource } from './PublicationsSource';
+import { createHttpSource, createStaticSource } from './PublicationsSource';
 import type { PublicationsSource } from './PublicationsSource';
 import { PUBLICATIONS } from './publications';
+import type { PublicationSummary } from '../core/types';
 
 /**
  * Suíte de contrato. Roda hoje contra o adapter estático; quando o adapter
@@ -102,3 +103,180 @@ export function describePublicationsSource(name: string, create: () => Publicati
 }
 
 describePublicationsSource('createStaticSource', () => createStaticSource(PUBLICATIONS));
+
+// ---------------------------------------------------------------------------
+// Adapter HTTP
+// ---------------------------------------------------------------------------
+
+/** Registra a requisição e devolve o que o teste mandar. Nada de rede. */
+function stubFetch(reply: { status?: number; body?: unknown } = {}) {
+  const calls: string[] = [];
+  const impl = (input: string): Promise<Response> => {
+    calls.push(input);
+    const status = reply.status ?? 200;
+    return Promise.resolve({
+      ok: status >= 200 && status < 300,
+      status,
+      json: () => Promise.resolve(reply.body ?? { data: [] }),
+    } as Response);
+  };
+  return { calls, impl: impl as unknown as typeof fetch };
+}
+
+const SUMMARY_ROW = {
+  slug: 'code-review-sem-atrito',
+  category: 'rotina',
+  published_at: '2025-09-12T12:00:00.000Z',
+  featured: false,
+  title: 'Code review sem atrito',
+  summary: 'Comentar o código, não a pessoa.',
+};
+
+describe('createHttpSource — a lista', () => {
+  it('pede o idioma', async () => {
+    const { calls, impl } = stubFetch();
+    await createHttpSource('https://api.rdmlabs.dev', impl).list({ locale: 'en' });
+    expect(calls[0]).toBe('https://api.rdmlabs.dev/api/publications?locale=en');
+  });
+
+  it('não duplica a barra quando a base traz uma', async () => {
+    const { calls, impl } = stubFetch();
+    await createHttpSource('https://api.rdmlabs.dev/', impl).list({ locale: 'pt' });
+    expect(calls[0]).toBe('https://api.rdmlabs.dev/api/publications?locale=pt');
+  });
+
+  it('manda a categoria só quando há uma', async () => {
+    const { calls, impl } = stubFetch();
+    const source = createHttpSource('https://x.dev', impl);
+    await source.list({ locale: 'pt', category: 'all' });
+    await source.list({ locale: 'pt', category: 'estudo' });
+    expect(calls[0]).not.toContain('category');
+    expect(calls[1]).toContain('category=estudo');
+  });
+
+  it('manda a busca só quando há texto', async () => {
+    const { calls, impl } = stubFetch();
+    const source = createHttpSource('https://x.dev', impl);
+    await source.list({ locale: 'pt', q: '   ' });
+    await source.list({ locale: 'pt', q: 'índice postgres' });
+    expect(calls[0]).not.toContain('q=');
+    expect(calls[1]).toContain('q=%C3%ADndice+postgres');
+  });
+
+  it('manda a janela temporal e o limite quando pedidos', async () => {
+    const { calls, impl } = stubFetch();
+    await createHttpSource('https://x.dev', impl).list({
+      locale: 'pt',
+      before: '2025-01-01T00:00:00.000Z',
+      limit: 20,
+    });
+    expect(calls[0]).toContain('before=2025-01-01T00%3A00%3A00.000Z');
+    expect(calls[0]).toContain('limit=20');
+  });
+
+  it('traduz published_at para o formato do domínio', async () => {
+    const { impl } = stubFetch({ body: { data: [SUMMARY_ROW] } });
+    const [item] = await createHttpSource('https://x.dev', impl).list({ locale: 'pt' });
+    expect(item).toEqual({
+      slug: 'code-review-sem-atrito',
+      publishedAt: '2025-09-12T12:00:00.000Z',
+      category: 'rotina',
+      featured: false,
+      title: 'Code review sem atrito',
+      summary: 'Comentar o código, não a pessoa.',
+    });
+  });
+
+  it('uma falha da API é uma falha, não uma lista vazia', async () => {
+    const { impl } = stubFetch({ status: 500 });
+    await expect(createHttpSource('https://x.dev', impl).list({ locale: 'pt' })).rejects.toThrow();
+  });
+});
+
+describe('createHttpSource — a publicação', () => {
+  it('pede o slug e o idioma', async () => {
+    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: ['um'] } } });
+    await createHttpSource('https://x.dev', impl).get('code-review-sem-atrito', 'pt');
+    expect(calls[0]).toBe('https://x.dev/api/publications/code-review-sem-atrito?locale=pt');
+  });
+
+  it('escapa o slug no caminho', async () => {
+    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: [] } } });
+    await createHttpSource('https://x.dev', impl).get('a/b?c', 'pt');
+    expect(calls[0]).toContain('/api/publications/a%2Fb%3Fc?locale=pt');
+  });
+
+  it('entrega o corpo já em parágrafos', async () => {
+    const { impl } = stubFetch({
+      body: { data: { ...SUMMARY_ROW, body: ['primeiro', 'segundo'] } },
+    });
+    const detail = await createHttpSource('https://x.dev', impl).get('x', 'pt');
+    expect(detail?.body).toEqual(['primeiro', 'segundo']);
+  });
+
+  it('404 é ausência, não erro', async () => {
+    const { impl } = stubFetch({ status: 404 });
+    await expect(createHttpSource('https://x.dev', impl).get('sumiu', 'pt')).resolves.toBeNull();
+  });
+
+  it('500 continua sendo erro', async () => {
+    const { impl } = stubFetch({ status: 500 });
+    await expect(createHttpSource('https://x.dev', impl).get('x', 'pt')).rejects.toThrow();
+  });
+});
+
+/**
+ * Um servidor de mentira que fala exatamente o que o Laravel vai falar.
+ *
+ * Serve o acervo semente pelo adapter estático, traduzindo a ida e a volta para
+ * a forma da API — query string na entrada, `snake_case` dentro de `data` na
+ * saída. É o que permite rodar a suíte de contrato contra o adapter HTTP: se o
+ * mapeamento errar em qualquer ponto, a mesma bateria que o estático passa
+ * quebra aqui.
+ */
+function apiFetch(): typeof fetch {
+  const backing = createStaticSource(PUBLICATIONS);
+
+  const toRow = (item: PublicationSummary) => ({
+    slug: item.slug,
+    category: item.category,
+    published_at: item.publishedAt,
+    featured: item.featured === true,
+    title: item.title,
+    summary: item.summary,
+  });
+
+  const reply = (status: number, body: unknown): Response =>
+    ({ ok: status < 300, status, json: () => Promise.resolve(body) }) as Response;
+
+  return (async (input: string) => {
+    const url = new URL(input);
+    const locale = url.searchParams.get('locale') === 'en' ? 'en' : 'pt';
+    const detail = /\/api\/publications\/(.+)$/.exec(url.pathname);
+
+    if (detail?.[1] !== undefined) {
+      const found = await backing.get(decodeURIComponent(detail[1]), locale);
+      if (found === null) return reply(404, { message: 'Not Found' });
+      const { body, ...summary } = found;
+      return reply(200, { data: { ...toRow(summary), body } });
+    }
+
+    const limit = url.searchParams.get('limit');
+    const items = await backing.list({
+      locale,
+      ...(url.searchParams.get('category') === null
+        ? {}
+        : { category: url.searchParams.get('category') as 'artigo' }),
+      ...(url.searchParams.get('q') === null ? {} : { q: url.searchParams.get('q') ?? '' }),
+      ...(url.searchParams.get('before') === null
+        ? {}
+        : { before: url.searchParams.get('before') ?? '' }),
+      ...(limit === null ? {} : { limit: Number(limit) }),
+    });
+    return reply(200, { data: items.map(toRow) });
+  }) as unknown as typeof fetch;
+}
+
+describePublicationsSource('createHttpSource', () =>
+  createHttpSource('https://api.rdmlabs.dev', apiFetch()),
+);

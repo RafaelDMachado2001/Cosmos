@@ -16,8 +16,7 @@ import type { MetaArticle } from '../core/seo';
 import { robotsTxt, sitemapXml } from '../core/sitemap';
 import { LOCALES, LOCALE_TAG } from '../core/types';
 import type { Locale } from '../core/types';
-import { createStaticSource } from '../data/PublicationsSource';
-import { PUBLICATIONS } from '../data/publications';
+import { createSource } from '../data/source';
 import { DICTIONARIES } from '../i18n/dictionaries';
 import { LocaleProvider } from '../i18n/LocaleProvider';
 import { SITE } from '../site';
@@ -60,13 +59,16 @@ function markup(locale: Locale, node: React.ReactElement): string {
 }
 
 export async function prerenderPages(): Promise<PrerenderOutput> {
-  const source = createStaticSource(PUBLICATIONS);
+  const source = createSource();
   const pages: PrerenderedPage[] = [];
+  /** O acervo como a fonte o devolve — é ele que o sitemap lista. */
+  const listed = new Map<string, string>();
 
   for (const locale of LOCALES) {
     const other = otherLocale(locale);
     const dictionary = DICTIONARIES[locale];
     const summaries = await source.list({ locale });
+    for (const summary of summaries) listed.set(summary.slug, summary.publishedAt);
 
     const index: readonly ArticleLink[] = summaries.map((summary) => ({
       href: articlePath(locale, summary.slug),
@@ -148,14 +150,17 @@ export async function prerenderPages(): Promise<PrerenderOutput> {
         />,
       ),
     },
-    // O sitemap lista o acervo, não as páginas: as duas raízes entram por conta
-    // dele, e a lista de publicações é a mesma nos dois idiomas.
+    /*
+     * O sitemap lista o que a fonte devolveu, não o acervo semente.
+     *
+     * Com a API ligada os dois deixam de coincidir no primeiro item publicado
+     * pelo painel — e o sitemap é justamente o que precisa refletir o que está
+     * no ar. As duas raízes entram por conta dele; a lista de publicações é a
+     * mesma nos dois idiomas, daí o Map por slug.
+     */
     sitemap: sitemapXml(
       SITE,
-      PUBLICATIONS.map((publication) => ({
-        slug: publication.slug,
-        publishedAt: publication.publishedAt,
-      })),
+      [...listed].map(([slug, publishedAt]) => ({ slug, publishedAt })),
     ),
     robots: robotsTxt(SITE),
   };
