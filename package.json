@@ -13,6 +13,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
+    "emit:seed": "vite-node scripts/emit-seed.ts",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "dependencies": {

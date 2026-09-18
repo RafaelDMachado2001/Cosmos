@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
   // '.' já resolve para a raiz do projeto e evita depender de @types/node aqui.
   const env = loadEnv(mode, '.', 'VITE_');
   const origin = (env.VITE_SITE_URL ?? FALLBACK_URL).replace(/\/+$/, '');
+  // Sem a variável, a constelação lê o acervo semente. Ver src/data/source.ts.
+  const apiUrl = env.VITE_API_URL === undefined || env.VITE_API_URL === ''
+    ? null
+    : env.VITE_API_URL.replace(/\/+$/, '');
   // Mesma porta dentro e fora do container: assim o cliente do HMR acerta
   // o websocket sozinho, sem precisar de server.hmr.clientPort.
   const port = Number(env.VITE_PORT ?? DEFAULT_PORT);
@@ -16,6 +20,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       __SITE_ORIGIN__: JSON.stringify(origin),
+      __API_URL__: JSON.stringify(apiUrl),
     },
     css: {
       // Fixo porque o build de SSR (prerender) precisa gerar exatamente os mesmos
@@ -27,6 +32,20 @@ export default defineConfig(({ mode }) => {
       host: true,
       port,
       strictPort: true,
+      /*
+       * A API no mesmo endereço do dev server.
+       *
+       * Com `VITE_API_URL=/` o adapter pede `/api/...` — mesma origem, sem
+       * CORS, exatamente como em produção, onde o Nginx serve as duas coisas.
+       * Em desenvolvimento quem faz esse papel é este proxy. O alvo é o nome do
+       * serviço no compose porque o Vite roda dentro da rede do Docker.
+       */
+      proxy: {
+        '/api': {
+          target: env.VITE_API_PROXY ?? 'http://web',
+          changeOrigin: true,
+        },
+      },
       watch: {
         ignored: ['**/dist/**', '**/dist-ssr/**'],
         // inotify atravessa bind mount no Linux nativo; polling só onde não atravessa.

@@ -10,13 +10,27 @@ import react from '@vitejs/plugin-react';
  * se os nomes de classe divergirem, o HTML gravado no disco sai sem estilo.
  */
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', 'VITE_');
+  // Prefixo vazio: PRERENDER_API_URL não vai para o bundle de cliente.
+  const env = loadEnv(mode, '.', '');
   const origin = (env.VITE_SITE_URL ?? 'http://localhost:5174').replace(/\/+$/, '');
+  /*
+   * O prerender roda em Node, onde não existe "mesma origem".
+   *
+   * `VITE_API_URL=/` resolve o navegador, mas aqui um caminho relativo não tem
+   * contra o que resolver: o build precisa de um endereço completo. Daí
+   * `PRERENDER_API_URL` — em Docker o navegador e o build alcançam a API por
+   * nomes diferentes, e fingir o contrário só adiaria o erro para o deploy.
+   */
+  const configured = env.PRERENDER_API_URL ?? env.VITE_API_URL;
+  const apiUrl = configured === undefined || configured === '' || configured === '/'
+    ? null
+    : configured.replace(/\/+$/, '');
 
   return {
     plugins: [react()],
     define: {
       __SITE_ORIGIN__: JSON.stringify(origin),
+      __API_URL__: JSON.stringify(apiUrl),
     },
     css: {
       modules: { generateScopedName: '[name]_[local]_[hash:base64:5]' },
