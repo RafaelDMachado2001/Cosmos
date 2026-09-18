@@ -33,6 +33,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header(
           por opacidade evita o salto de layout na travessia. */}
       <nav
         className={styles.nav}
+        aria-label={t.nav.primaryLabel}
         data-visible={inCosmos}
         aria-hidden={!inCosmos}
         {...(inCosmos ? {} : { inert: '' })}

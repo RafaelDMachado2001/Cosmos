@@ -13,6 +13,8 @@ export interface StarProps {
   readonly revealDelay: number;
   readonly onActivate: (star: PlacedStar) => void;
   readonly onHover: (slug: string | null) => void;
+  /** Só pelo teclado: a câmera precisa acompanhar para onde o foco foi. */
+  readonly onFocusStar: (star: PlacedStar) => void;
 }
 
 /**
@@ -35,6 +37,7 @@ export const Star = memo(function Star({
   revealDelay,
   onActivate,
   onHover,
+  onFocusStar,
 }: StarProps) {
   return (
     <a
@@ -64,6 +67,9 @@ export const Star = memo(function Star({
       }}
       onFocus={() => {
         onHover(star.slug);
+        // Sem isto o Tab levava o foco para estrelas fora do enquadramento: o
+        // anel de foco existia, mas do lado de fora da tela.
+        onFocusStar(star);
       }}
       onBlur={() => {
         onHover(null);
