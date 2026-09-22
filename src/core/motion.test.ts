@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DRAG_CLICK_THRESHOLD_PX,
+  isDrag,
   INERTIA,
   MAX_FRAME_DELTA_S,
   OPEN_DELAY_MS,
@@ -148,5 +149,21 @@ describe('pulso de energia do núcleo', () => {
   it('o shader roda em câmera lenta com movimento reduzido', () => {
     expect(TIME_SCALE.normal).toBe(1);
     expect(TIME_SCALE.reduced).toBe(0.25);
+  });
+});
+
+describe('arraste contra clique', () => {
+  it('trata o jitter de um clique parado como clique, não como arraste', () => {
+    // O defeito que este teste tranca: `dragMoved > 0`. Um mouse real quase
+    // nunca solta no mesmo pixel em que pressionou, então 1px de tremor
+    // engolia a abertura da publicação.
+    expect(isDrag(0)).toBe(false);
+    expect(isDrag(1)).toBe(false);
+    expect(isDrag(5.9)).toBe(false);
+  });
+
+  it('trata o movimento acima do limiar do handoff como arraste', () => {
+    expect(isDrag(DRAG_CLICK_THRESHOLD_PX)).toBe(true);
+    expect(isDrag(40)).toBe(true);
   });
 });
