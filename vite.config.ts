@@ -47,7 +47,19 @@ export default defineConfig(({ mode }) => {
         },
       },
       watch: {
-        ignored: ['**/dist/**', '**/dist-ssr/**'],
+        /*
+         * `backend/` está aqui por causa do vendor do Composer: 16 mil arquivos
+         * que o dev server não tem motivo nenhum para observar — nada em
+         * backend/ é importado pelo frontend, a API é alcançada por HTTP.
+         *
+         * Sob inotify isso era só desperdício. Sob polling é fatal: varrer 16 mil
+         * arquivos por tick através de um bind mount de drive Windows satura o
+         * event loop e o Vite para de responder a HTTP, mesmo continuando a
+         * detectar mudanças em src/.
+         *
+         * O Vite soma esta lista à dele, que já cobre .git e node_modules.
+         */
+        ignored: ['**/dist/**', '**/dist-ssr/**', '**/backend/**'],
         // inotify atravessa bind mount no Linux nativo; polling só onde não atravessa.
         usePolling: env.VITE_POLLING === '1',
       },
