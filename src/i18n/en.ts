@@ -12,7 +12,7 @@ export const en: Dictionary = {
     kicker: 'RDM LABS / COSMOS',
     title: 'Enter my universe',
     subtitle: 'Articles, studies, projects and field notes arranged as a timeline constellation.',
-    scrollHint: 'SCROLL TO PASS THROUGH',
+    scrollHint: 'Scroll to pass through',
   },
   nav: {
     brand: 'RDM LABS',
