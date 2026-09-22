@@ -31,7 +31,6 @@ RUN apk add --no-cache nodejs
 
 COPY --from=runner /app/dist-ssr /srv/render/dist-ssr
 COPY --from=runner /app/node_modules /srv/render/node_modules
-COPY --from=runner /app/dist /srv/render/dist
 
 # O container escreve em ./backend por bind mount: sem o mesmo UID do host,
 # tudo o que o Composer e o Artisan geram sai pertencendo ao root.
