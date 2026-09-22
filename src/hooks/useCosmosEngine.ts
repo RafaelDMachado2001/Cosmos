@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, RefObject } from 'react';
 
-import { INERTIA, lambdas, stepInertia } from '../core/motion';
+import { INERTIA, isDrag, lambdas, stepInertia } from '../core/motion';
 import {
   COSMOS_PHASE_ENTER,
   INPUT,
@@ -253,7 +253,7 @@ export function useCosmosEngine(
     s.pan = Math.min(boundsRef.current.max, Math.max(boundsRef.current.min, originPan));
   }, []);
 
-  const didDrag = useCallback(() => state.current.dragMoved > 0, []);
+  const didDrag = useCallback(() => isDrag(state.current.dragMoved), []);
 
   useEffect(() => {
     /**
