@@ -11,15 +11,19 @@
  * mesma coisa.
  */
 
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { homePath } from '../core/routing';
 import { DEFAULT_LOCALE } from '../core/types';
+import { PUBLICATIONS } from '../data/publications';
+import { createHttpSource, createStaticSource } from '../data/PublicationsSource';
+import { apiUrlFrom, distDir, templateDir } from './config';
 import { prerenderPages } from './pages';
 import type { PrerenderedPage } from './pages';
 
-const DIST = 'dist';
+const DIST = distDir(process.env);
+const TEMPLATE_DIR = templateDir(process.env);
 const SSR_DIR = 'dist-ssr';
 
 /** O ponto onde a casca entra. `src/main.tsx` a remove quando o React monta. */
@@ -72,25 +76,36 @@ function compose(template: string, page: PrerenderedPage, css: string): string {
     .replace(SLOT, `<div id="prerender">${page.body}</div>`);
 }
 
+/**
+ * Grava por arquivo temporario e `rename`.
+ *
+ * O volume `site` tem dois escritores — o entrypoint do Nginx e o job — e
+ * `rename` no mesmo sistema de arquivos e atomico: quem le ou pega o arquivo
+ * antigo inteiro, ou o novo inteiro, nunca meio HTML com 200.
+ */
 async function write(path: string, contents: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, contents, 'utf8');
+  const temporary = `${path}.${String(process.pid)}.tmp`;
+  await writeFile(temporary, contents, 'utf8');
+  await rename(temporary, path);
 }
 
 async function main(): Promise<void> {
-  const template = await readFile(join(DIST, 'index.html'), 'utf8');
+  const template = await readFile(join(TEMPLATE_DIR, 'index.html'), 'utf8');
 
   // Um prerender que não encontra onde injetar grava páginas idênticas ao
   // index e não avisa ninguém: o site sobe, e só os buscadores percebem.
   if (!template.includes(SLOT)) {
-    throw new Error(`${SLOT} não está em ${DIST}/index.html — nada a preencher.`);
+    throw new Error(`${SLOT} não está em ${TEMPLATE_DIR}/index.html — nada a preencher.`);
   }
   if (!template.includes('</head>')) {
-    throw new Error(`${DIST}/index.html sem </head> — não há onde pôr o cabeçalho.`);
+    throw new Error(`${TEMPLATE_DIR}/index.html sem </head> — não há onde pôr o cabeçalho.`);
   }
 
   const css = await readStaticCss();
-  const { pages, notFound, sitemap, robots } = await prerenderPages();
+  const apiUrl = apiUrlFrom(process.env);
+  const source = apiUrl === null ? createStaticSource(PUBLICATIONS) : createHttpSource(apiUrl);
+  const { pages, notFound, sitemap, robots } = await prerenderPages(source);
 
   for (const page of pages) {
     await write(join(DIST, page.path, 'index.html'), compose(template, page, css));
