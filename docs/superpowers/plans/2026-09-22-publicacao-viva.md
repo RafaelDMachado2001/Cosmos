@@ -45,6 +45,10 @@ Valem para toda tarefa. Os valores são literais da spec e do `CLAUDE.md`.
   rodar sem isso).
 - **Escrita no volume compartilhado é atômica**: arquivo temporário e `rename`, porque
   `web` e `queue` escrevem no mesmo diretório.
+- **Todo script de shell é gravado com LF, nunca CRLF.** O repositório está em
+  `core.autocrlf=true` e ainda não tem `.gitattributes` (a Tarefa 19 o cria). Um
+  `entrypoint.sh` com CRLF faz o container não subir, com
+  `bad interpreter: no such file or directory`. Vale já na Tarefa 4.
 - **Limite da API:** teto de 1000; `DEFAULT_LIMIT` continua 100.
 - **Atraso do job:** 5 segundos, `ShouldBeUnique`.
 - **Corte por slug só entra se o prerender completo passar de 30 segundos.**
@@ -1131,8 +1135,17 @@ use Illuminate\Support\Facades\Log;
  */
 class FallbackController extends Controller
 {
-    public function show(string $locale, string $slug): View
+    public function show(string $locale, string $segment, string $slug): View
     {
+        // Laravel entrega os parametros na ordem do padrao da rota, entao o
+        // `$segment` precisa estar na assinatura: sem ele, `$slug` receberia
+        // "publicacoes" e toda busca falharia.
+        //
+        // O par idioma/segmento e validado aqui e nao no `where` da rota: o
+        // cruzamento /pt/publications/... casa no padrao e precisa dar 404, que
+        // e o que a fase 6 comprou ao tirar o fallback para index.html.
+        abort_unless($segment === ($locale === 'pt' ? 'publicacoes' : 'publications'), 404);
+
         Log::warning('fallback @app alcancado', ['locale' => $locale, 'slug' => $slug]);
 
         $publication = Publication::query()
@@ -1195,13 +1208,29 @@ Route::get('/{locale}/{segment}/{slug}', [FallbackController::class, 'show'])
     ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
 ```
 
-O par locale/segmento é validado no controller? Não: o `where` acima aceita
-`/pt/publications/...`, que é o cruzamento que a fase 6 fez responder 404. Acrescente
-a guarda no início de `show()`:
+O `where` acima aceita `/pt/publications/...`, que é o cruzamento que a fase 6 fez
+responder 404. A guarda está no `abort_unless` do controller, já escrito no Passo 3.
+Acrescente o caso ao teste:
 
 ```php
-$expected = $locale === 'pt' ? 'publicacoes' : 'publications';
-abort_unless(request()->segment(2) === $expected, 404);
+public function test_o_segmento_do_outro_idioma_responde_404(): void
+{
+    $publication = Publication::create([
+        'slug' => 'cruzado',
+        'category' => 'artigo',
+        'published_at' => now(),
+        'featured' => false,
+        'status' => Publication::STATUS_PUBLISHED,
+    ]);
+    $publication->translations()->create([
+        'locale' => 'pt',
+        'title' => 'Cruzado',
+        'summary' => 'Resumo.',
+        'body' => 'Texto.',
+    ]);
+
+    $this->get('/pt/publications/cruzado')->assertNotFound();
+}
 ```
 
 - [ ] **Passo 6: rodar e ver passar**
@@ -1210,7 +1239,7 @@ abort_unless(request()->segment(2) === $expected, 404);
 docker compose --profile backend exec -T app php artisan test --filter=FallbackTest
 ```
 
-Esperado: PASSA, 3 testes.
+Esperado: PASSA, 4 testes.
 
 - [ ] **Passo 7: reativar o `@app` no Nginx**
 
@@ -1963,19 +1992,23 @@ promete.
 - Criar: `src/components/Shell/Shell.test.tsx`
 - Modificar: `vitest.config.ts`
 
-- [ ] **Passo 1: dar jsdom só aos testes de componente**
+- [ ] **Passo 1: confirmar o jsdom que a Tarefa 16 já configurou**
 
-Em `vitest.config.ts`, dentro de `test`:
+A Tarefa 16 é a dona de `environmentMatchGlobs` no `vitest.config.ts` — ela precisa de
+jsdom para o próprio teste do ErrorBoundary e executa antes desta. Confirme que a
+entrada existe e cobre `src/components/**`; estenda o glob se este teste morar fora
+dele, mas **não reescreva a linha**.
 
 ```ts
     // jsdom so onde precisa: a suite de core/ e pura e fica mais lenta com ele.
     environmentMatchGlobs: [['src/components/**', 'jsdom']],
 ```
 
-Instale o que falta:
+Se `@testing-library/user-event` ainda não estiver instalado (a Tarefa 16 só precisa
+de `@testing-library/react`):
 
 ```sh
-docker compose run --rm node npm i -D jsdom @testing-library/react @testing-library/user-event
+docker compose run --rm node npm i -D @testing-library/user-event
 ```
 
 - [ ] **Passo 2: escrever os cinco testes**
