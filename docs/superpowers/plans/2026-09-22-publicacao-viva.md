@@ -613,12 +613,27 @@ Criar `docker/web/entrypoint.sh` (LF, nunca CRLF — ver Restrições globais):
 # regrava por cima depois.
 set -e
 
-STAMP="$SITE_DIR/.build-id"
+# Sem isto, um SITE_DIR vazio faria o `cp` abaixo despejar o site sobre a raiz
+# do container. O ENV do Dockerfile ja garante o valor; a asercao existe para a
+# falha ser alta e imediata caso alguem o sobrescreva no compose.
+: "${SITE_DIR:?SITE_DIR nao definido}"
+
+# A marca NAO e o .build-id que vem dentro de /opt/site: aquele e copiado junto
+# com todo o resto, entao um `cp` interrompido podia deixar a marca no lugar com
+# metade dos arquivos faltando — e, marcada, a semeadura nunca mais tentaria de
+# novo. Esta marca e escrita por ultimo, so depois de a copia terminar.
+STAMP="$SITE_DIR/.seed-complete"
 BUILD_ID="$(cat /opt/site/.build-id)"
 
 if [ ! -f "$STAMP" ] || [ "$(cat "$STAMP")" != "$BUILD_ID" ]; then
   echo "entrypoint: semeando $SITE_DIR com o build $BUILD_ID"
+  # Esvaziar antes de copiar: `cp` sobrescreve mas nunca apaga, e um artigo
+  # despublicado que sobrevivesse no volume continuaria respondendo 200 —
+  # exatamente o soft-404 que a fase 6 eliminou ao tirar o fallback do Nginx.
+  # O deploy sobrescreve tudo por decisao da spec; o job regrava por cima.
+  find "$SITE_DIR" -mindepth 1 -delete
   cp -a /opt/site/. "$SITE_DIR/"
+  printf '%s\n' "$BUILD_ID" > "$STAMP"
 fi
 
 exec "$@"
