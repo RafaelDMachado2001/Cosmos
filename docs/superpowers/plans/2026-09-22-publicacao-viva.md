@@ -268,8 +268,8 @@ describe('configuracao do prerender', () => {
     // O prerender grava a home composta por cima de <DIST>/index.html. Se o
     // template viesse de la, a segunda publicacao leria um arquivo cujo SLOT ja
     // foi preenchido e morreria.
-    expect(templateDir({ DIST: '/srv/site', TEMPLATE_DIR: '/srv/render/dist' })).toBe(
-      '/srv/render/dist',
+    expect(templateDir({ DIST: '/srv/site', TEMPLATE_DIR: '/srv/render/dist-ssr' })).toBe(
+      '/srv/render/dist-ssr',
     );
   });
 
@@ -381,6 +381,48 @@ a `DIST` nas linhas 81, 86 e 89 são do molde, não do destino:
 
 Todas as escritas (`join(DIST, ...)`) continuam em `DIST`.
 
+- [ ] **Passo 5b: gravar o molde intocado ao lado do bundle**
+
+Medido: depois de `npm run build`, `dist/index.html` tem ~8,9 KB e o `SLOT` **já está
+preenchido** — o `postbuild` compõe a home por cima dele (linha 111). Logo o `dist`
+assado na imagem não é molde nenhum, e o job morreria já na primeira publicação.
+
+O molde passa a viajar em `dist-ssr/`, que a Tarefa 5 copia para a imagem e que o Nginx
+nunca serve — deixá-lo em `dist/` o exporia como uma página de casca vazia, que é o
+soft-404 que a fase 6 eliminou.
+
+Em `src/prerender/main.ts`, logo depois das duas validações do molde:
+
+```ts
+  /*
+   * O molde, intocado, ao lado do bundle.
+   *
+   * A linha que grava a raiz compoe por cima de <DIST>/index.html, entao o
+   * proprio destino deixa de servir de molde depois da primeira passada. O job
+   * da fase 9 roda este mesmo prerender a cada publicacao: sem esta copia ele
+   * leria um SLOT ja preenchido e morreria. Fica em dist-ssr porque o Nginx
+   * nao serve esse diretorio.
+   */
+  await write(join(SSR_DIR, 'template.html'), template);
+```
+
+E a leitura passa a preferir o molde quando ele existe:
+
+```ts
+async function readTemplate(): Promise<string> {
+  const sidecar = join(TEMPLATE_DIR, 'template.html');
+  try {
+    return await readFile(sidecar, 'utf8');
+  } catch {
+    // Primeira passada de um build novo: so existe o index.html que o Vite
+    // acabou de emitir, e ele ainda esta intocado.
+    return await readFile(join(TEMPLATE_DIR, 'index.html'), 'utf8');
+  }
+}
+```
+
+Trocar a linha 81 por `const template = await readTemplate();`.
+
 - [ ] **Passo 6: ligar a fonte no `main.ts`**
 
 Substituir a linha 93 de `src/prerender/main.ts`:
@@ -442,13 +484,26 @@ publicação.
 
 ```sh
 docker compose run --rm node sh -c "npm run build \
-  && DIST=/tmp/site2 TEMPLATE_DIR=dist node dist-ssr/prerender.js \
-  && DIST=/tmp/site2 TEMPLATE_DIR=dist node dist-ssr/prerender.js \
+  && DIST=/tmp/site2 TEMPLATE_DIR=dist-ssr node dist-ssr/prerender.js \
+  && DIST=/tmp/site2 TEMPLATE_DIR=dist-ssr node dist-ssr/prerender.js \
   && echo DUAS-PASSADAS-OK"
 ```
 
-Esperado: `DUAS-PASSADAS-OK`. Sem `TEMPLATE_DIR`, a segunda passada falharia com
-`<div id="prerender"></div> não está em /tmp/site2/index.html`.
+Esperado: `DUAS-PASSADAS-OK`.
+
+`TEMPLATE_DIR=dist-ssr`, e não `dist`: depois do `npm run build` o `dist/index.html`
+já é a home composta, e apontar o molde para lá falharia **na primeira** passada. É
+exatamente o defeito que o Passo 5b corrige — e a primeira versão desta verificação,
+que apontava para `dist`, o escondia.
+
+Confirme também que sem o molde a coisa quebra, para saber que o teste tem dente:
+
+```sh
+docker compose run --rm node sh -c "npm run build \
+  && DIST=/tmp/site3 TEMPLATE_DIR=dist node dist-ssr/prerender.js" ; echo "saiu $?"
+```
+
+Esperado: falha, com a mensagem de que o `SLOT` não está em `dist/index.html`.
 
 - [ ] **Passo 10: commitar**
 
@@ -670,9 +725,10 @@ COPY --from=runner /app/node_modules /srv/render/node_modules
 COPY --from=runner /app/dist /srv/render/dist
 ```
 
-O `dist` vem junto porque é ele que o job usa como **molde intocado**: o job aponta
-`DIST` para o volume e `TEMPLATE_DIR` para `/srv/render/dist`. Essa cópia nunca é
-escrita, então o `SLOT` continua vazio em toda publicação. Ver a Tarefa 2.
+O `dist` vem junto porque a Tarefa 4 semeia o volume a partir dele. O **molde** não
+vem dali: `dist/index.html` é a home composta depois do `postbuild`. Quem carrega o
+molde intocado é `dist-ssr/template.html`, gravado pelo Passo 5b da Tarefa 2 — por
+isso o job aponta `TEMPLATE_DIR` para `/srv/render/dist-ssr`.
 
 - [ ] **Passo 3: declarar o serviço `queue` no compose**
 
@@ -907,7 +963,9 @@ declare(strict_types=1);
 
 return [
     'site_dir' => env('SITE_DIR', '/srv/site'),
-    'template_dir' => env('TEMPLATE_DIR', '/srv/render/dist'),
+    // dist-ssr e nao dist: dist/index.html e a home composta depois do
+    // postbuild. O molde intocado e dist-ssr/template.html. Ver Tarefa 2.
+    'template_dir' => env('TEMPLATE_DIR', '/srv/render/dist-ssr'),
     'api_url' => env('PRERENDER_API_URL', 'http://web'),
 ];
 ```
