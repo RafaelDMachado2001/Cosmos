@@ -743,13 +743,27 @@ RUN apk add --no-cache nodejs
 
 COPY --from=runner /app/dist-ssr /srv/render/dist-ssr
 COPY --from=runner /app/node_modules /srv/render/node_modules
-COPY --from=runner /app/dist /srv/render/dist
 ```
 
-O `dist` vem junto porque a Tarefa 4 semeia o volume a partir dele. O **molde** não
-vem dali: `dist/index.html` é a home composta depois do `postbuild`. Quem carrega o
-molde intocado é `dist-ssr/template.html`, gravado pelo Passo 5b da Tarefa 2 — por
+**O `dist` não vem.** Uma versão anterior deste plano o copiava, justificando que a
+Tarefa 4 semeia o volume a partir dele — o que está errado: a Tarefa 4 semeia do
+`/opt/site` da imagem **web**, que é outro build. O job não toca `/srv/render/dist` em
+nenhum caminho: lê o molde de `dist-ssr/template.html`, o CSS estático de `dist-ssr/`,
+e escreve em `DIST`, que é o volume. Copiá-lo era um bundle inteiro de peso morto em
+toda imagem do backend.
+
+O molde intocado é `dist-ssr/template.html`, gravado pelo Passo 5b da Tarefa 2 — por
 isso o job aponta `TEMPLATE_DIR` para `/srv/render/dist-ssr`.
+
+O `COPY --from` grava como root e o serviço roda como uid 1000. O prerender **escreve**
+em `dist-ssr` (reescreve o molde a cada passada), então o diretório precisa pertencer
+ao usuário:
+
+```dockerfile
+RUN chown -R app:app /srv/render/dist-ssr
+```
+
+Vai depois do bloco `adduser`, que é quem cria o usuário.
 
 - [ ] **Passo 3: declarar o serviço `queue` no compose**
 
@@ -799,9 +813,14 @@ Em `backend/.env`, trocar `QUEUE_CONNECTION` para `database`. A tabela `jobs` j�
 
 ```sh
 docker compose --profile backend build queue
-docker compose --profile backend run --rm -e DIST=/tmp/prova queue \
+docker compose --profile backend run --rm \
+  -e DIST=/tmp/prova -e TEMPLATE_DIR=/srv/render/dist-ssr queue \
   sh -c "cd /srv/render && node dist-ssr/prerender.js && ls /tmp/prova/pt/publicacoes | wc -l"
 ```
+
+O `TEMPLATE_DIR` é obrigatório aqui: sem ele o `templateDir` recai no próprio `DIST`,
+que neste comando é um diretório vazio, e o prerender morre sem molde. É a mesma
+separação que a Tarefa 2 introduziu, e é o que o job faz em produção.
 
 Esperado: o prerender roda e imprime a contagem de artigos. Com `PRERENDER_API_URL`
 apontando para `web`, deve vir o que estiver no banco.
