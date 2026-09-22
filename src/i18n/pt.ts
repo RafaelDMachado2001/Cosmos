@@ -16,7 +16,8 @@ export const pt = {
     title: 'Entre no meu universo',
     subtitle:
       'Artigos, estudos, projetos e registros de rotina organizados como uma constelação temporal.',
-    scrollHint: 'ROLE PARA ATRAVESSAR',
+    /** Nome acessível do botão de entrada: não é mais renderizado na tela. */
+    scrollHint: 'Role para atravessar',
   },
   nav: {
     brand: 'RDM LABS',
