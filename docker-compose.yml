@@ -86,6 +86,39 @@ services:
       - rdm-network
     restart: unless-stopped
 
+  ### Worker de fila: roda o prerender fora do ciclo de request ###############
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        UID: ${DOCKER_UID:-1000}
+        GID: ${DOCKER_GID:-1000}
+    profiles: [backend]
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
+    working_dir: /var/www
+    command: php artisan queue:work --tries=3 --timeout=180
+    volumes:
+      - ./backend:/var/www
+      - site:/srv/site
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-rdm}
+      - DB_PASSWORD=${DB_PASSWORD}
+      # O prerender roda em Node: precisa de endereco absoluto, e dentro da
+      # rede do compose a API atende pelo nome do servico.
+      - PRERENDER_API_URL=http://web
+      - SITE_DIR=/srv/site
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rdm-network
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     profiles: [backend]

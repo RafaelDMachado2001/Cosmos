@@ -1,5 +1,14 @@
 # syntax=docker/dockerfile:1
 
+# O runner do prerender. Mesma origem do build do `web`: um segundo caminho de
+# compilacao divergiria do primeiro no primeiro ajuste.
+FROM node:22-alpine AS runner
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY . .
+RUN npm run build
+
 FROM php:8.3-fpm-alpine
 
 # Bibliotecas de execução e o que o Composer usa para resolver pacotes.
@@ -16,12 +25,26 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS libpq-dev icu-dev libz
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# Node no container do backend e o preco de nao ter um quarto servico. Fica
+# registrado na spec como o primeiro candidato a mudar se o deploy apertar.
+RUN apk add --no-cache nodejs
+
+COPY --from=runner /app/dist-ssr /srv/render/dist-ssr
+COPY --from=runner /app/node_modules /srv/render/node_modules
+COPY --from=runner /app/dist /srv/render/dist
+
 # O container escreve em ./backend por bind mount: sem o mesmo UID do host,
 # tudo o que o Composer e o Artisan geram sai pertencendo ao root.
 ARG UID=1000
 ARG GID=1000
 RUN addgroup -g "${GID}" app 2>/dev/null || true \
  && adduser -u "${UID}" -G "$(getent group "${GID}" | cut -d: -f1)" -s /bin/sh -D app 2>/dev/null || true
+
+# O COPY --from=runner acima grava como root. O prerender reescreve
+# dist-ssr/template.html a cada execucao (Tarefa 2) e roda como o mesmo
+# usuario sem privilegio do `app`/`queue` — sem isso ele morre com EACCES
+# antes de sequer falar com a API.
+RUN chown -R app:app /srv/render/dist-ssr
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_MEMORY_LIMIT=-1
