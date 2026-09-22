@@ -20,6 +20,10 @@ abstract class TestCase extends BaseTestCase
      * cada um desses testes executaria o prerender de verdade, contra um
      * `/srv/site` que sequer existe no container `app`. Testes que querem
      * observar o dispatch chamam `Queue::fake()` de novo — é idempotente.
+     * Um teste que precise mesmo do driver `sync` real tem que desfazer isto
+     * explicitamente: `Queue::clearResolvedInstance('queue'); $this->app
+     * ->forgetInstance('queue');` antes do trecho que depende da fila de
+     * verdade.
      */
     protected function setUp(): void
     {

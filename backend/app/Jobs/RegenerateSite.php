@@ -27,6 +27,18 @@ class RegenerateSite implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 180;
 
+    /**
+     * O timeout do processo e menor que o do job de proposito.
+     *
+     * Iguais, a corrida e entre o `Process` expirar educadamente — logando
+     * stderr e o tempo decorrido — e o worker matar o PHP por cima dele. Se o
+     * worker ganha, o `node` filho pode ficar orfao escrevendo em /srv/site
+     * enquanto a retentativa ja comecou, e o log nao tem nada alem da excecao
+     * generica. Esta folga garante que quem expira primeiro e quem sabe
+     * explicar por que.
+     */
+    private const PROCESS_TIMEOUT = 150;
+
     public function __construct()
     {
         // Colapsa a rajada de edicoes de quem esta escrevendo no painel.
@@ -57,10 +69,27 @@ class RegenerateSite implements ShouldBeUnique, ShouldQueue
                 'VITE_SITE_URL' => config('app.url'),
             ],
             null,
-            $this->timeout,
+            self::PROCESS_TIMEOUT,
         );
 
-        $process->run();
+        /*
+         * O try existe porque `run()` lanca antes de `isSuccessful()` em dois
+         * casos que interessam: timeout e erro de infraestrutura (cwd que nao
+         * existe, binario ausente). Sem ele, justamente a falha mais provavel
+         * quando isto rodar desacompanhado seria a que sai com o pior
+         * diagnostico — a excecao generica do Laravel, sem stderr nem tempo.
+         */
+        try {
+            $process->run();
+        } catch (\Throwable $exception) {
+            Log::error('RegenerateSite nao chegou a terminar', [
+                'motivo' => $exception->getMessage(),
+                'saida' => $process->getErrorOutput(),
+                'segundos' => round(microtime(true) - $started, 1),
+            ]);
+
+            throw $exception;
+        }
 
         $seconds = round(microtime(true) - $started, 1);
 
@@ -73,8 +102,10 @@ class RegenerateSite implements ShouldBeUnique, ShouldQueue
             throw new \RuntimeException('prerender falhou: '.$process->getErrorOutput());
         }
 
-        // A spec poe o corte por slug em cima de trinta segundos. A medicao
-        // mora aqui para que a decisao seja tomada com numero, nao com palpite.
+        // O tempo vai para o log porque a spec condiciona o corte por slug a
+        // ele: se a regeracao completa passar de trinta segundos, o caminho
+        // por slug entra. A medicao mora aqui para que a decisao seja tomada
+        // com numero, nao com palpite.
         Log::info('RegenerateSite concluido', [
             'segundos' => $seconds,
             'saida' => trim($process->getOutput()),

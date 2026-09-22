@@ -31,7 +31,7 @@ class RegenerateSiteTest extends TestCase
 
     public function test_uma_rajada_de_edicoes_colapsa_num_job_so(): void
     {
-        $queue = Queue::fake();
+        Queue::fake();
 
         $publication = Publication::create([
             'slug' => 'publicacao-editada',
@@ -40,19 +40,98 @@ class RegenerateSiteTest extends TestCase
             'featured' => false,
             'status' => Publication::STATUS_DRAFT,
         ]);
-        // A trava de ShouldBeUnique e real e sincrona: ela e adquirida dentro
-        // do proprio dispatch(), nao so quando o worker de fato roda o job.
-        // Sem soltar aqui, as duas escritas seguintes seriam silenciosamente
-        // descartadas pela trava — que e a deduplicacao de verdade, e o que
-        // este teste quer isolar e o observer, nao ela. Por isso soltar entre
-        // uma escrita e outra: cada dispatch() deve tentar de novo.
+        $publication->update(['status' => Publication::STATUS_PUBLISHED]);
+        $publication->update(['featured' => true]);
+
+        // Tres escritas, um job. E o mecanismo central da fase: quem esta
+        // escrevendo no painel salva varias vezes seguidas, e cada salvamento
+        // custaria um prerender de um minuto se ShouldBeUnique nao colapsasse
+        // a rajada. Nao libere a trava aqui — liberar apaga justamente a prova.
+        Queue::assertPushed(RegenerateSite::class, 1);
+    }
+
+    public function test_o_observer_dispara_em_toda_escrita_e_nao_so_na_criacao(): void
+    {
+        $queue = Queue::fake();
+
+        $publication = Publication::create([
+            'slug' => 'publicacao-reeditada',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_DRAFT,
+        ]);
+        // A trava e liberada de proposito: aqui o que se mede e o observer, nao
+        // a deduplicacao. O teste acima e quem cobre a deduplicacao.
         $queue->releaseUniqueJobLocks();
         $publication->update(['status' => Publication::STATUS_PUBLISHED]);
         $queue->releaseUniqueJobLocks();
         $publication->update(['featured' => true]);
 
-        // ShouldBeUnique responde pela deduplicacao real na fila; aqui o que se
-        // garante e que o observer dispara em toda escrita, e nao so na criacao.
         Queue::assertPushed(RegenerateSite::class, 3);
+    }
+
+    public function test_apagar_uma_publicacao_tambem_regenera(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'publicacao-apagada',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+
+        // Depois da criacao: interessa o dispatch do delete, nao o dela.
+        $queue = Queue::fake();
+        $publication->delete();
+
+        Queue::assertPushed(RegenerateSite::class);
+    }
+
+    public function test_editar_so_a_traducao_tambem_regenera(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'publicacao-traduzida',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+        $translation = $publication->translations()->create([
+            'locale' => 'pt',
+            'title' => 'Titulo original',
+            'summary' => 'Resumo.',
+            'body' => 'Texto.',
+        ]);
+
+        // Um ajuste de titulo nao encosta na linha de `publications`, entao so
+        // o observer de PublicationTranslation o pega. E a metade menos obvia
+        // da fiacao, e a que regride em silencio.
+        $queue = Queue::fake();
+        $translation->update(['title' => 'Titulo corrigido']);
+
+        Queue::assertPushed(RegenerateSite::class);
+    }
+
+    public function test_apagar_a_traducao_tambem_regenera(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'publicacao-sem-traducao',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+        $translation = $publication->translations()->create([
+            'locale' => 'en',
+            'title' => 'Title',
+            'summary' => 'Summary.',
+            'body' => 'Text.',
+        ]);
+
+        $queue = Queue::fake();
+        $translation->delete();
+
+        Queue::assertPushed(RegenerateSite::class);
     }
 }
