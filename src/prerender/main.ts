@@ -90,17 +90,48 @@ async function write(path: string, contents: string): Promise<void> {
   await rename(temporary, path);
 }
 
+/**
+ * O molde, preferindo a cópia intocada gravada ao lado do bundle.
+ *
+ * `<TEMPLATE_DIR>/index.html` só serve de molde na primeira passada de um
+ * build novo — depois disso a raiz composta é gravada por cima dele (ver a
+ * escrita da raiz em `main`). `template.html` é o sidecar que sobrevive a
+ * qualquer número de publicações; ver Passo 5b.
+ */
+async function readTemplate(): Promise<{ html: string; path: string }> {
+  const sidecar = join(TEMPLATE_DIR, 'template.html');
+  try {
+    return { html: await readFile(sidecar, 'utf8'), path: sidecar };
+  } catch {
+    // Primeira passada de um build novo: só existe o index.html que o Vite
+    // acabou de emitir, e ele ainda está intocado.
+    const fallback = join(TEMPLATE_DIR, 'index.html');
+    return { html: await readFile(fallback, 'utf8'), path: fallback };
+  }
+}
+
 async function main(): Promise<void> {
-  const template = await readFile(join(TEMPLATE_DIR, 'index.html'), 'utf8');
+  const { html: template, path: templatePath } = await readTemplate();
 
   // Um prerender que não encontra onde injetar grava páginas idênticas ao
   // index e não avisa ninguém: o site sobe, e só os buscadores percebem.
   if (!template.includes(SLOT)) {
-    throw new Error(`${SLOT} não está em ${TEMPLATE_DIR}/index.html — nada a preencher.`);
+    throw new Error(`${SLOT} não está em ${templatePath} — nada a preencher.`);
   }
   if (!template.includes('</head>')) {
-    throw new Error(`${TEMPLATE_DIR}/index.html sem </head> — não há onde pôr o cabeçalho.`);
+    throw new Error(`${templatePath} sem </head> — não há onde pôr o cabeçalho.`);
   }
+
+  /*
+   * O molde, intocado, ao lado do bundle.
+   *
+   * A linha que grava a raiz compõe por cima de <DIST>/index.html, então o
+   * próprio destino deixa de servir de molde depois da primeira passada. O job
+   * da fase 9 roda este mesmo prerender a cada publicação: sem esta cópia ele
+   * leria um SLOT já preenchido e morreria. Fica em dist-ssr porque o Nginx
+   * não serve esse diretório.
+   */
+  await write(join(SSR_DIR, 'template.html'), template);
 
   const css = await readStaticCss();
   const apiUrl = apiUrlFrom(process.env);

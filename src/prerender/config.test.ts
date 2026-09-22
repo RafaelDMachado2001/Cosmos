@@ -23,8 +23,8 @@ describe('configuracao do prerender', () => {
     // O prerender grava a home composta por cima de <DIST>/index.html. Se o
     // template viesse de la, a segunda publicacao leria um arquivo cujo SLOT ja
     // foi preenchido e morreria.
-    expect(templateDir({ DIST: '/srv/site', TEMPLATE_DIR: '/srv/render/dist' })).toBe(
-      '/srv/render/dist',
+    expect(templateDir({ DIST: '/srv/site', TEMPLATE_DIR: '/srv/render/dist-ssr' })).toBe(
+      '/srv/render/dist-ssr',
     );
   });
 
