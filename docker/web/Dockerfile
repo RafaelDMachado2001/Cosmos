@@ -24,5 +24,12 @@ RUN npm run build
 
 FROM nginx:1.27-alpine-slim AS web
 COPY docker/web/default.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist /opt/site
+COPY docker/web/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+ && date -u +%Y%m%d%H%M%S > /opt/site/.build-id \
+ && mkdir -p /srv/site
+ENV SITE_DIR=/srv/site
 EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

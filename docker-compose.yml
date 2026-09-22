@@ -44,6 +44,7 @@ services:
       # Só os assets que o Filament publica. O PHP em si roda no serviço `app`;
       # daqui o Nginx apenas serve os arquivos estáticos do painel.
       - ./backend/public:/var/www/public:ro
+      - site:/srv/site
     networks:
       - rdm-network
     restart: unless-stopped
@@ -110,6 +111,7 @@ services:
 volumes:
   node_modules:
   postgres:
+  site:
 
 networks:
   rdm-network:
