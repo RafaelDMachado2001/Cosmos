@@ -5,12 +5,14 @@
  * `dist-ssr/prerender.js`, e é disparado pelo `postbuild` do npm — o
  * `docker/web/Dockerfile` conta com isso e não acrescenta um segundo RUN.
  *
- * Parte do `dist/index.html` que o Vite acabou de escrever, em vez de remontar
- * as tags de script e de estilo a partir do manifest: ali os nomes com hash já
- * estão corretos, e recalculá-los seria uma segunda fonte de verdade para a
- * mesma coisa.
+ * Parte do HTML que o Vite emitiu no build de cliente — o `index.html` na
+ * primeira passada, o sidecar `dist-ssr/template.html` depois disso (ver
+ * `readTemplate`) — em vez de remontar as tags de script e de estilo a partir
+ * do manifest: ali os nomes com hash já estão corretos, e recalculá-los seria
+ * uma segunda fonte de verdade para a mesma coisa.
  */
 
+import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
@@ -81,11 +83,15 @@ function compose(template: string, page: PrerenderedPage, css: string): string {
  *
  * O volume `site` tem dois escritores — o entrypoint do Nginx e o job — e
  * `rename` no mesmo sistema de arquivos e atomico: quem le ou pega o arquivo
- * antigo inteiro, ou o novo inteiro, nunca meio HTML com 200.
+ * antigo inteiro, ou o novo inteiro, nunca meio HTML com 200. O sufixo usa
+ * `randomUUID`, não `process.pid`: os dois escritores rodam em containers
+ * Docker separados, cada um com seu próprio namespace de PID, então os dois
+ * podem ser PID 1 ao mesmo tempo — um nome baseado só no PID colidiria entre
+ * eles.
  */
 async function write(path: string, contents: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  const temporary = `${path}.${String(process.pid)}.tmp`;
+  const temporary = `${path}.${randomUUID()}.tmp`;
   await writeFile(temporary, contents, 'utf8');
   await rename(temporary, path);
 }
@@ -102,9 +108,13 @@ async function readTemplate(): Promise<{ html: string; path: string }> {
   const sidecar = join(TEMPLATE_DIR, 'template.html');
   try {
     return { html: await readFile(sidecar, 'utf8'), path: sidecar };
-  } catch {
-    // Primeira passada de um build novo: só existe o index.html que o Vite
-    // acabou de emitir, e ele ainda está intocado.
+  } catch (error) {
+    // Só a ausência do sidecar (primeira passada de um build novo, onde só
+    // existe o index.html que o Vite acabou de emitir) justifica cair para o
+    // fallback. Qualquer outro erro — permissão, leitura parcial — precisa
+    // estourar aqui: escondê-lo atrás do index.html faria a validação do SLOT
+    // culpar o arquivo errado.
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     const fallback = join(TEMPLATE_DIR, 'index.html');
     return { html: await readFile(fallback, 'utf8'), path: fallback };
   }
