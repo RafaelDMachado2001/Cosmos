@@ -443,6 +443,7 @@ pela metade, e um HTML truncado servido com 200 é pior que um 404. Substituir `
 em `src/prerender/main.ts:75`:
 
 ```ts
+import { randomUUID } from 'node:crypto';
 import { rename } from 'node:fs/promises';
 
 /**
@@ -451,10 +452,15 @@ import { rename } from 'node:fs/promises';
  * O volume `site` tem dois escritores — o entrypoint do Nginx e o job — e
  * `rename` no mesmo sistema de arquivos e atomico: quem le ou pega o arquivo
  * antigo inteiro, ou o novo inteiro, nunca meio HTML com 200.
+ *
+ * O sufixo e aleatorio e nao o PID: cada container tem namespace de PID
+ * proprio, entao os dois escritores podem ambos ser o PID 1 e calcular o mesmo
+ * nome temporario — que e exatamente a colisao que este write existe para
+ * evitar.
  */
 async function write(path: string, contents: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  const temporary = `${path}.${String(process.pid)}.tmp`;
+  const temporary = `${path}.${randomUUID()}.tmp`;
   await writeFile(temporary, contents, 'utf8');
   await rename(temporary, path);
 }
