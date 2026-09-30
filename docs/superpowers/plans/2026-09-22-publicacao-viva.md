@@ -922,9 +922,96 @@ class RegenerateSiteTest extends TestCase
         $publication->update(['status' => Publication::STATUS_PUBLISHED]);
         $publication->update(['featured' => true]);
 
-        // ShouldBeUnique responde pela deduplicacao real na fila; aqui o que se
-        // garante e que o observer dispara em toda escrita, e nao so na criacao.
+        // Tres escritas, um job. E o mecanismo central da fase: quem esta
+        // escrevendo no painel salva varias vezes seguidas, e cada salvamento
+        // custaria um prerender de um minuto se ShouldBeUnique nao colapsasse
+        // a rajada. Nao libere a trava aqui — liberar apaga justamente a prova.
+        Queue::assertPushed(RegenerateSite::class, 1);
+    }
+
+    public function test_o_observer_dispara_em_toda_escrita_e_nao_so_na_criacao(): void
+    {
+        $queue = Queue::fake();
+
+        $publication = Publication::create([
+            'slug' => 'publicacao-reeditada',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_DRAFT,
+        ]);
+        // A trava e liberada de proposito: aqui o que se mede e o observer, nao
+        // a deduplicacao. O teste acima e quem cobre a deduplicacao.
+        $queue->releaseUniqueJobLocks();
+        $publication->update(['status' => Publication::STATUS_PUBLISHED]);
+        $queue->releaseUniqueJobLocks();
+        $publication->update(['featured' => true]);
+
         Queue::assertPushed(RegenerateSite::class, 3);
+    }
+
+    public function test_apagar_uma_publicacao_tambem_regenera(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'publicacao-apagada',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+
+        // Depois da criacao: interessa o dispatch do delete, nao o dela.
+        $queue = Queue::fake();
+        $publication->delete();
+
+        Queue::assertPushed(RegenerateSite::class);
+    }
+
+    public function test_editar_so_a_traducao_tambem_regenera(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'publicacao-traduzida',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+        $translation = $publication->translations()->create([
+            'locale' => 'pt',
+            'title' => 'Titulo original',
+            'summary' => 'Resumo.',
+            'body' => 'Texto.',
+        ]);
+
+        // Um ajuste de titulo nao encosta na linha de `publications`, entao so
+        // o observer de PublicationTranslation o pega. E a metade menos obvia
+        // da fiacao, e a que regride em silencio.
+        $queue = Queue::fake();
+        $translation->update(['title' => 'Titulo corrigido']);
+
+        Queue::assertPushed(RegenerateSite::class);
+    }
+
+    public function test_apagar_a_traducao_tambem_regenera(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'publicacao-sem-traducao',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+        $translation = $publication->translations()->create([
+            'locale' => 'en',
+            'title' => 'Title',
+            'summary' => 'Summary.',
+            'body' => 'Text.',
+        ]);
+
+        $queue = Queue::fake();
+        $translation->delete();
+
+        Queue::assertPushed(RegenerateSite::class);
     }
 }
 ```
@@ -966,13 +1053,33 @@ class RegenerateSite implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
-    /** Colapsa a rajada de edicoes de quem esta escrevendo no painel. */
-    public int $delay = 5;
+    /**
+     * Colapsa a rajada de edicoes de quem esta escrevendo no painel.
+     *
+     * Atribuido no construtor, e nao como propriedade tipada: `Queueable` ja
+     * declara `$delay`, e redeclara-la aqui e erro fatal neste PHP/Laravel.
+     */
+    public function __construct()
+    {
+        $this->delay = 5;
+    }
 
     /** Depois disto a trava cai, mesmo que o job tenha morrido sem soltar. */
     public int $uniqueFor = 300;
 
     public int $timeout = 180;
+
+    /**
+     * O timeout do processo e menor que o do job de proposito.
+     *
+     * Iguais, a corrida e entre o `Process` expirar educadamente — logando
+     * stderr e o tempo decorrido — e o worker matar o PHP por cima dele. Se o
+     * worker ganha, o `node` filho pode ficar orfao escrevendo em /srv/site
+     * enquanto a retentativa ja comecou, e o log nao tem nada alem da excecao
+     * generica. Esta folga garante que quem expira primeiro e quem sabe
+     * explicar por que.
+     */
+    private const PROCESS_TIMEOUT = 150;
 
     public function handle(): void
     {
@@ -991,10 +1098,27 @@ class RegenerateSite implements ShouldBeUnique, ShouldQueue
                 'VITE_SITE_URL' => config('app.url'),
             ],
             null,
-            $this->timeout,
+            self::PROCESS_TIMEOUT,
         );
 
-        $process->run();
+        /*
+         * O try existe porque `run()` lanca antes de `isSuccessful()` em dois
+         * casos que interessam: timeout e erro de infraestrutura (cwd que nao
+         * existe, binario ausente). Sem ele, justamente a falha mais provavel
+         * quando isto rodar desacompanhado seria a que sai com o pior
+         * diagnostico — a excecao generica do Laravel, sem stderr nem tempo.
+         */
+        try {
+            $process->run();
+        } catch (\Throwable $exception) {
+            Log::error('RegenerateSite nao chegou a terminar', [
+                'motivo' => $exception->getMessage(),
+                'saida' => $process->getErrorOutput(),
+                'segundos' => round(microtime(true) - $started, 1),
+            ]);
+
+            throw $exception;
+        }
 
         $seconds = round(microtime(true) - $started, 1);
 
@@ -1007,7 +1131,9 @@ class RegenerateSite implements ShouldBeUnique, ShouldQueue
             throw new \RuntimeException('prerender falhou: '.$process->getErrorOutput());
         }
 
-        // A spec poe o corte por slug em cima de trinta segundos. A medicao
+        // O tempo vai para o log porque a spec condiciona o corte por slug a
+        // ele: se a regeracao completa passar de trinta segundos, o caminho
+        // por slug entra. A medicao
         // mora aqui para que a decisao seja tomada com numero, nao com palpite.
         Log::info('RegenerateSite concluido', [
             'segundos' => $seconds,
@@ -1129,7 +1255,7 @@ Esperado: `200`, `1` ou mais, `1` ou mais. **É este o critério de aceite 1.**
 Limpe depois:
 
 ```sh
-docker compose --profile backend exec -T app php artisan tinker --execute="App\Models\Publication::where('slug','prova-da-fase-9')->delete();"
+docker compose --profile backend exec -T app php artisan tinker --execute="App\Models\Publication::where('slug','prova-da-fase-9')->first()->delete();"
 ```
 
 - [ ] **Passo 9: commitar**
