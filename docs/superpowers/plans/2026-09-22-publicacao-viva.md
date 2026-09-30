@@ -111,7 +111,7 @@ suíte que ela cria.
 
 | Ordem | Fatia | Tarefas | Entrega |
 |---|---|---|---|
-| 1º | 1 · Pipeline | 1–7 | **Critério de aceite 1.** Publicar pelo painel faz a URL responder 200. |
+| 1º | 1 · Pipeline | 1–7, 24 | **Critério de aceite 1.** Publicar pelo painel faz a URL responder 200. |
 | 2º | 2 · Contrato e escala | 8–11 | Critério 2. Nenhuma publicação some em silêncio. |
 | 3º | 3 · Fronteiras | 12–15 | Código testável; sem mudança de comportamento. |
 | 4º | 4 · Resiliência | 16 | Critério 5. |
@@ -2403,7 +2403,7 @@ Conferência do plano contra cada seção da spec, feita depois de escrito.
 
 | Seção da spec | Tarefas |
 |---|---|
-| 1 · Pipeline de publicação | 1, 2, 4, 5, 6 |
+| 1 · Pipeline de publicação | 1, 2, 4, 5, 6, 24 |
 | 1 · Open Graph de carona | 17 |
 | 2 · Fallback `@app` | 7 |
 | 3 · Contrato e escala | 8, 9, 10, 11 |
@@ -2414,5 +2414,124 @@ Conferência do plano contra cada seção da spec, feita depois de escrito.
 | Testes (Shell, escala) | 22, 23 |
 | — (achado fora da spec) | 3 |
 
-Critérios de aceite: **1** fecha na Tarefa 6 Passo 8; **2** nas Tarefas 8–11 e 23;
+Critérios de aceite: **1** fecha na Tarefa 6 Passo 8 (publicar) e na Tarefa 24 Passo 6 (despublicar); **2** nas Tarefas 8–11 e 23;
 **3** na 17; **4** na 18; **5** na 16.
+
+---
+
+### Tarefa 24: o prerender poda o que o acervo não contém mais
+
+Descoberto ao verificar a Tarefa 6. Publicar funciona; **despublicar não**. O observer
+dispara, o job roda, o `sitemap.xml` e as duas homes perdem o artigo — mas o arquivo
+por slug continua no disco, e o Nginx o serve com 200. É o soft-404 que a fase 6
+eliminou ao tirar o fallback, reintroduzido pela porta dos fundos.
+
+Esvaziar o `DIST` antes de escrever **não** serve: a regeneração completa leva cerca de
+um minuto, e o site ficaria fora do ar nessa janela inteira. A poda é por diferença:
+só some o que esta passada não gravou.
+
+**Arquivos:**
+- Criar: `src/core/prune.ts`, `src/core/prune.test.ts`
+- Modificar: `src/prerender/main.ts`
+
+**Interfaces:**
+- Produz: `stalePages(existing: readonly string[], written: ReadonlySet<string>): readonly string[]`
+  em `src/core/prune.ts` — puro, sem `fs`, devolve os caminhos a remover. É o que a
+  regra do projeto pede: a lógica nasce em `core/`, testada, e o `main.ts` só a liga
+  ao disco.
+
+- [ ] **Passo 1: escrever o teste que falha**
+
+```ts
+import { describe, expect, it } from 'vitest';
+
+import { stalePages } from './prune';
+
+describe('poda do que o acervo nao contem mais', () => {
+  it('marca para remocao o que existe no disco e nao foi gravado', () => {
+    const written = new Set(['pt/publicacoes/vivo/index.html']);
+    const existing = ['pt/publicacoes/vivo/index.html', 'pt/publicacoes/morto/index.html'];
+
+    expect(stalePages(existing, written)).toEqual(['pt/publicacoes/morto/index.html']);
+  });
+
+  it('nao remove nada quando o disco e o acervo coincidem', () => {
+    const written = new Set(['pt/publicacoes/a/index.html', 'en/publications/a/index.html']);
+    const existing = ['pt/publicacoes/a/index.html', 'en/publications/a/index.html'];
+
+    expect(stalePages(existing, written)).toEqual([]);
+  });
+
+  it('nao se confunde com um acervo vazio: tudo o que esta no disco sai', () => {
+    const existing = ['pt/publicacoes/a/index.html'];
+
+    expect(stalePages(existing, new Set())).toEqual(['pt/publicacoes/a/index.html']);
+  });
+});
+```
+
+- [ ] **Passo 2: rodar e ver falhar**
+
+```sh
+docker compose run --rm node npx vitest run src/core/prune.test.ts
+```
+
+Esperado: FALHA — `Cannot find module './prune'`.
+
+- [ ] **Passo 3: implementar o mínimo**
+
+```ts
+/**
+ * O que sobrou no disco de uma publicacao que nao existe mais.
+ *
+ * O job regenera o site inteiro a cada publicacao, mas gravar nao apaga: um
+ * artigo despublicado continuaria servido com 200, que e o soft-404 que a fase
+ * 6 eliminou ao tirar o fallback do Nginx.
+ *
+ * Por diferenca, e nao esvaziando o destino antes: a regeracao completa leva
+ * perto de um minuto, e esvaziar deixaria o site fora do ar nessa janela.
+ */
+export function stalePages(
+  existing: readonly string[],
+  written: ReadonlySet<string>,
+): readonly string[] {
+  return existing.filter((path) => !written.has(path));
+}
+```
+
+- [ ] **Passo 4: rodar e ver passar**
+
+```sh
+docker compose run --rm node npx vitest run src/core/prune.test.ts
+```
+
+- [ ] **Passo 5: ligar no `main.ts`**
+
+Colecione os caminhos gravados enquanto escreve as páginas, liste o que há no disco sob
+os diretórios de artigo dos dois idiomas, e remova a diferença. O diretório de artigo
+de cada idioma sai de `dirname(articlePath(locale, 'x'))` — `routing.ts` continua sendo
+o dono único do mapa de segmentos traduzidos, e derivá-lo aqui evita uma segunda cópia
+dele.
+
+Remova o diretório do slug inteiro, não só o `index.html`: um diretório vazio deixado
+para trás faria o `try_files $uri/index.html` cair no `@app` em vez de 404.
+
+- [ ] **Passo 6: provar o ciclo completo**
+
+Com a pilha de pé e o `queue` rodando, crie uma publicação, confirme 200, apague-a com
+`->first()->delete()` (delete de modelo: o delete em massa do query builder **não**
+dispara observer nenhum) e confirme que a URL volta a **404**, não a 200.
+
+```sh
+curl -s -o /dev/null -w "depois de apagar: %{http_code}\n" \
+  http://localhost:8080/pt/publicacoes/prova-da-poda
+```
+
+Esperado: `404`.
+
+- [ ] **Passo 7: conferir que a poda não apaga o que deve ficar**
+
+Depois do ciclo acima, os 14 artigos do acervo continuam respondendo 200, e
+`ls /srv/site/pt/publicacoes | wc -l` continua em 14.
+
+- [ ] **Passo 8: commitar**
