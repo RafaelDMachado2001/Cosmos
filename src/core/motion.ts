@@ -75,6 +75,20 @@ export function stepInertia(velocity: number): number {
 /** Acima disto o ponteiro arrastou, e o clique não abre a publicação. */
 export const DRAG_CLICK_THRESHOLD_PX = 6;
 
+/**
+ * O gesto foi arraste, e não clique?
+ *
+ * `distancePx` é o caminho percorrido pelo ponteiro entre pressionar e soltar,
+ * acumulado em valor absoluto — não o deslocamento líquido.
+ *
+ * O limiar existe porque um mouse real quase nunca solta no mesmo pixel em que
+ * pressionou. Tratar qualquer movimento como arraste faria a constelação
+ * engolir o clique e a publicação nunca abriria.
+ */
+export function isDrag(distancePx: number): boolean {
+  return distancePx >= DRAG_CLICK_THRESHOLD_PX;
+}
+
 /** Espera entre avançar a câmera e montar a vista de leitura. */
 export const OPEN_DELAY_MS = { normal: 760, reduced: 120 } as const;
 

@@ -23,9 +23,30 @@ export const Hero = forwardRef<HTMLDivElement, HeroProps>(function Hero({ onEnte
       <h1 className={styles.title}>{t.hero.title}</h1>
       <p className={styles.subtitle}>{t.hero.subtitle}</p>
 
-      <button type="button" className={styles.enter} onClick={onEnter}>
-        {t.hero.scrollHint}
-        <span className={styles.dash} aria-hidden="true" />
+      {/*
+       * O ícone é decorativo; quem nomeia o botão é o aria-label. Sem texto
+       * visível, `scrollHint` deixa de ser rótulo na tela e passa a existir só
+       * para leitor de tela — por isso está em caixa de sentença no i18n.
+       */}
+      <button
+        type="button"
+        className={styles.enter}
+        onClick={onEnter}
+        aria-label={t.hero.scrollHint}
+      >
+        <svg className={styles.mouse} viewBox="0 0 24 38" aria-hidden="true" focusable="false">
+          <rect
+            x="1"
+            y="1"
+            width="22"
+            height="36"
+            rx="11"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <circle className={styles.wheel} cx="12" cy="10" r="2" fill="currentColor" />
+        </svg>
       </button>
     </div>
   );

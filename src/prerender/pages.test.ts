@@ -4,6 +4,7 @@ import { prerenderPages } from './pages';
 import { PUBLICATIONS } from '../data/publications';
 import { LOCALES } from '../core/types';
 import { SITE } from '../site';
+import { createStaticSource } from '../data/PublicationsSource';
 
 const output = await prerenderPages();
 const at = (path: string) => output.pages.find((page) => page.path === path);
@@ -76,5 +77,25 @@ describe('prerenderPages', () => {
     for (const publication of PUBLICATIONS) {
       expect(output.sitemap).toContain(`/pt/publicacoes/${publication.slug}</loc>`);
     }
+  });
+
+  it('prerenderiza a partir da fonte injetada, nao do acervo semente', async () => {
+    const fixture = createStaticSource([
+      {
+        slug: 'so-esta-publicacao',
+        category: 'artigo',
+        publishedAt: '2026-01-15T12:00:00.000Z',
+        content: {
+          pt: { title: 'So esta', summary: 'Resumo.', body: ['Paragrafo.'] },
+          en: { title: 'Only this', summary: 'Summary.', body: ['Paragraph.'] },
+        },
+      },
+    ]);
+
+    const { pages } = await prerenderPages(fixture);
+
+    const articles = pages.filter((page) => page.path.includes('/publicacoes/'));
+    expect(articles).toHaveLength(1);
+    expect(articles[0]?.path).toContain('so-esta-publicacao');
   });
 });
