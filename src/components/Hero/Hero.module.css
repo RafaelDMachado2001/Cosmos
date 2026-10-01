@@ -35,34 +35,62 @@
   text-wrap: pretty;
 }
 
+/*
+ * Só a área clicável do ícone: sem pílula, sem borda. O anel de foco vem do
+ * `:focus-visible` global — nada aqui pode zerar o outline, porque sem a borda
+ * ele passou a ser a única indicação de foco deste botão.
+ */
 .enter {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
   margin-top: clamp(18px, 3.4vh, 34px);
-  padding: 11px 20px;
-  border: 1px solid var(--color-accent-line);
-  border-radius: var(--radius-round);
+  padding: 6px;
+  border: none;
   background: transparent;
   color: var(--color-accent-soft);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: var(--tracking-hint);
   cursor: pointer;
-  transition:
-    border-color var(--dur-ui) var(--ease),
-    color var(--dur-ui) var(--ease),
-    background var(--dur-ui) var(--ease);
+  transition: color var(--dur-ui) var(--ease);
 }
 
 .enter:hover {
-  border-color: var(--color-accent-line-strong);
-  background: var(--color-accent-wash);
-  color: #fff;
+  color: var(--color-accent-hover);
 }
 
-.dash {
-  width: 22px;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(169, 155, 255, 0.2), var(--color-accent-soft));
+.mouse {
+  display: block;
+  width: clamp(19px, 2.4vh, 23px);
+  height: auto;
+}
+
+/*
+ * A rodinha nasce no topo, desce e some. O último keyframe volta ao estado de
+ * repouso de propósito: o bloco global de `prefers-reduced-motion` colapsa a
+ * animação para 0.01ms com uma iteração só, congelando no frame final — se ele
+ * fosse o ponto apagado, o mouse ficaria permanentemente sem rodinha.
+ */
+.wheel {
+  animation: wheel-scroll 1.6s var(--ease) infinite;
+}
+
+@keyframes wheel-scroll {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  55% {
+    transform: translateY(9px);
+    opacity: 0;
+  }
+
+  56% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

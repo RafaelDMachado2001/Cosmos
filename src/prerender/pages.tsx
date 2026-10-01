@@ -17,6 +17,7 @@ import { robotsTxt, sitemapXml } from '../core/sitemap';
 import { LOCALES, LOCALE_TAG } from '../core/types';
 import type { Locale } from '../core/types';
 import { createSource } from '../data/source';
+import type { PublicationsSource } from '../data/PublicationsSource';
 import { DICTIONARIES } from '../i18n/dictionaries';
 import { LocaleProvider } from '../i18n/LocaleProvider';
 import { SITE } from '../site';
@@ -58,8 +59,9 @@ function markup(locale: Locale, node: React.ReactElement): string {
   return renderToStaticMarkup(<LocaleProvider initial={locale}>{node}</LocaleProvider>);
 }
 
-export async function prerenderPages(): Promise<PrerenderOutput> {
-  const source = createSource();
+export async function prerenderPages(
+  source: PublicationsSource = createSource(),
+): Promise<PrerenderOutput> {
   const pages: PrerenderedPage[] = [];
   /** O acervo como a fonte o devolve — é ele que o sitemap lista. */
   const listed = new Map<string, string>();
