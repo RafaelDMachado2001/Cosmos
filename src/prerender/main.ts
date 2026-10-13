@@ -13,11 +13,12 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { homePath } from '../core/routing';
-import { DEFAULT_LOCALE } from '../core/types';
+import { stalePages } from '../core/prune';
+import { articlePath, homePath } from '../core/routing';
+import { DEFAULT_LOCALE, LOCALES } from '../core/types';
 import { PUBLICATIONS } from '../data/publications';
 import { createHttpSource, createStaticSource } from '../data/PublicationsSource';
 import { apiUrlFrom, distDir, templateDir } from './config';
@@ -120,6 +121,40 @@ async function readTemplate(): Promise<{ html: string; path: string }> {
   }
 }
 
+/**
+ * Apaga do disco os artigos que esta passada nao gravou.
+ *
+ * O diretorio de artigo de cada idioma sai de `articlePath`: `routing.ts`
+ * continua dono unico dos segmentos traduzidos. Some o diretorio do slug
+ * inteiro, nao so o `index.html` — um diretorio vazio deixado para tras faria
+ * o `try_files $uri/index.html` do Nginx cair no `@app` em vez de 404.
+ */
+async function pruneArticles(pages: readonly PrerenderedPage[]): Promise<readonly string[]> {
+  const written = new Set(pages.map((page) => page.path.replace(/^\/+/, '')));
+
+  const existing: string[] = [];
+  for (const locale of LOCALES) {
+    const articles = dirname(articlePath(locale, 'x')).replace(/^\/+/, '');
+    let entries;
+    try {
+      entries = await readdir(join(DIST, articles), { withFileTypes: true });
+    } catch (error) {
+      // Primeira passada num destino vazio: nada a podar neste idioma.
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
+      throw error;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) existing.push(`${articles}/${entry.name}`);
+    }
+  }
+
+  const stale = stalePages(existing, written);
+  for (const path of stale) {
+    await rm(join(DIST, path), { recursive: true, force: true });
+  }
+  return stale;
+}
+
 async function main(): Promise<void> {
   const { html: template, path: templatePath } = await readTemplate();
 
@@ -173,8 +208,13 @@ async function main(): Promise<void> {
   await write(join(DIST, 'sitemap.xml'), sitemap);
   await write(join(DIST, 'robots.txt'), robots);
 
+  // Depois de gravar tudo, nunca antes: o que fica no ar durante a passada e o
+  // site anterior inteiro, e o que sai e so o que o acervo nao contem mais.
+  const pruned = await pruneArticles(pages);
+
   console.log(
-    `prerender: ${pages.length} páginas, 404.html, sitemap.xml e robots.txt em ${DIST}/`,
+    `prerender: ${pages.length} páginas, 404.html, sitemap.xml e robots.txt em ${DIST}/` +
+      (pruned.length > 0 ? `; podados: ${pruned.join(', ')}` : ''),
   );
 }
 
