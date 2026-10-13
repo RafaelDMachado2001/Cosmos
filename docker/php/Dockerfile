@@ -7,6 +7,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
+
+# A origem do canonical, do hreflang e do sitemap fica assada no bundle do
+# prerender. Sem o mesmo valor do `web`, a primeira publicacao regravaria todas
+# as paginas apontando para o padrao de desenvolvimento.
+ARG VITE_SITE_URL=http://localhost:8080
+ENV VITE_SITE_URL=${VITE_SITE_URL}
+
 RUN npm run build
 
 FROM php:8.3-fpm-alpine
