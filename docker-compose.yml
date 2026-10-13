@@ -58,6 +58,8 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       args:
+        # O mesmo do `web`: o job regrava as paginas com este canonical.
+        VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
         UID: ${DOCKER_UID:-1000}
         GID: ${DOCKER_GID:-1000}
     profiles: [backend]
@@ -94,6 +96,8 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       args:
+        # O mesmo do `web`: o job regrava as paginas com este canonical.
+        VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
         UID: ${DOCKER_UID:-1000}
         GID: ${DOCKER_GID:-1000}
     profiles: [backend]
