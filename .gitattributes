@@ -1,0 +1,13 @@
+# Fim de linha: o repositorio normaliza para LF, e estes arquivos precisam sair
+# com LF na arvore tambem. Com core.autocrlf=true no Windows, sem isto um
+# checkout grava CRLF e todo script quebra dentro do container Linux.
+* text=auto eol=lf
+
+.githooks/*      text eol=lf
+docker/**/*.sh   text eol=lf
+backend/artisan  text eol=lf
+
+*.png binary
+*.jpg binary
+*.woff binary
+*.woff2 binary
