@@ -95,6 +95,7 @@ class PublicationController extends Controller
      * por `status` fica aqui, e não em cada método, porque esquecê-lo em um
      * deles publicaria rascunhos.
      */
+    /** @return Builder<Publication> */
     private function published(string $locale): Builder
     {
         return Publication::query()
@@ -113,7 +114,10 @@ class PublicationController extends Controller
             ->where('publications.status', Publication::STATUS_PUBLISHED);
     }
 
-    /** @param array<string, array<int, mixed>> $rules */
+    /**
+     * @param  array<string, array<int, mixed>>  $rules
+     * @return array<string, mixed>
+     */
     private function validated(Request $request, array $rules): array
     {
         $input = $request->validate([

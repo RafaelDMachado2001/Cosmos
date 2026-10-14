@@ -4,8 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "vite-node scripts/check-env.ts",
     "dev": "vite",
+    "prebuild": "vite-node scripts/check-env.ts",
     "build": "tsc -b && vite build",
+    "check:env": "vite-node scripts/check-env.ts",
     "postbuild": "vite build --config vite.prerender.config.ts && node dist-ssr/prerender.js",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "@playwright/test": "1.48.2",
     "@resvg/resvg-wasm": "^2.6.2",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
