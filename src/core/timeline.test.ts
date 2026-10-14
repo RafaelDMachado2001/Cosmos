@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  FNV_OFFSET_BASIS,
-  TIMELINE,
-  fnv1a32,
-  hash01,
-  layoutHealth,
-  placeStars,
-  suggestGapPxPerDay,
-} from './timeline';
+import { FNV_OFFSET_BASIS, fnv1a32, hash01 } from './hash';
+import { TIMELINE, layoutHealth, placeStars, suggestGapPxPerDay } from './timeline';
 import { makeDataset, makeNewer, makeRandom } from './testing';
 import type { PublicationInput } from './types';
 

@@ -12,16 +12,13 @@ import { articlePath, homePath } from './routing';
 import { DEFAULT_LOCALE, LOCALES } from './types';
 import type { MetaSite } from './seo';
 import type { Locale } from './types';
+import { absolute } from './url';
 
 /** O mínimo que uma URL do sitemap precisa saber da publicação. */
 export interface SitemapEntry {
   readonly slug: string;
   /** ISO 8601. Vira o `lastmod`, que é uma data, não um instante. */
   readonly publishedAt: string;
-}
-
-function absolute(origin: string, path: string): string {
-  return `${origin.replace(/\/+$/, '')}${path}`;
 }
 
 /** `lastmod` aceita a data sozinha, e é tudo o que se sabe: não há data de revisão. */

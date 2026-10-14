@@ -1,5 +1,21 @@
 #!/bin/sh
-# Gate de qualidade antes de cada commit: typecheck + lint + testes.
-# Roda no container, que é onde o toolchain é válido (o Node do host difere).
+# Gate rapido: so o que mudou. A suite completa fica no pre-push.
+# Roda no container, que e onde o toolchain e valido (o Node do host difere).
 # Pular pontualmente com: git commit --no-verify
-exec docker compose run --rm -T node npm run check
+set -e
+
+STAGED="$(git diff --cached --name-only --diff-filter=ACM)"
+
+FRONT="$(echo "$STAGED" | grep -E '\.(ts|tsx)$' | grep -v '^backend/' || true)"
+if [ -n "$FRONT" ]; then
+  # shellcheck disable=SC2086 # um caminho por palavra, de proposito
+  docker compose run --rm -T node npx eslint $FRONT
+  docker compose run --rm -T node npm run typecheck
+fi
+
+# O container do backend tem /var/www como raiz, que e o backend/ daqui.
+BACK="$(echo "$STAGED" | grep -E '^backend/.*\.php$' | sed 's|^backend/||' || true)"
+if [ -n "$BACK" ]; then
+  # shellcheck disable=SC2086
+  docker compose --profile backend run --rm --no-deps -T app ./vendor/bin/pint --test $BACK
+fi

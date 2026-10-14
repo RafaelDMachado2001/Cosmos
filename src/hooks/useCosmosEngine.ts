@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, RefObject } from 'react';
 
-import { INERTIA, isDrag, lambdas, stepInertia } from '../core/motion';
+import * as camera from '../core/camera';
+import { isDrag, lambdas, stepInertia } from '../core/motion';
 import {
-  COSMOS_PHASE_ENTER,
-  INPUT,
   coreOpacity,
   cosmosReveal,
-  dominantAxisDelta,
   heroFade,
-  keyToDelta,
   panToScrubFraction,
   phaseFor,
-  push,
-  scrubToPan,
 } from '../core/navigation';
 import type { Phase } from '../core/navigation';
 import {
@@ -25,10 +20,12 @@ import {
   zoomTarget,
 } from '../core/reader';
 import type { ReaderState } from '../core/reader';
-import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/timeline';
+import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
 import type { PlacedStar } from '../core/timeline';
 import type { CoreScene } from '../three/CoreScene';
 import { damp } from '../utils/damp';
+import { useCosmosInput } from './useCosmosInput';
+import type { InputState } from './useCosmosInput';
 import { useFrameLoop } from './useFrameLoop';
 
 /** Margem de virtualização, em múltiplos da largura da viewport. */
@@ -88,23 +85,13 @@ export interface CosmosEngine {
 }
 
 /** Estado contínuo. Mutável de propósito: é escrito a cada quadro, fora do React. */
-interface MutableState {
-  enter: number;
-  pan: number;
-  enterS: number;
-  panS: number;
-  mouseX: number;
-  mouseY: number;
+interface MutableState extends InputState {
   mouseXS: number;
   mouseYS: number;
   zoomS: number;
   /** x em tela da estrela aberta — origem do avanço da câmera. */
   focusX: number;
   readerFade: number;
-  velocity: number;
-  dragging: false | 'pan' | 'scrub';
-  dragX: number;
-  dragMoved: number;
 }
 
 /**
@@ -168,237 +155,74 @@ export function useCosmosEngine(
 
   // -- Entradas -------------------------------------------------------------
 
-  const applyPush = useCallback((delta: number) => {
-    const next = push(state.current, delta, boundsRef.current);
-    state.current.enter = next.enter;
-    state.current.pan = next.pan;
-  }, []);
+  /**
+   * Com a vista de leitura em cena a constelação não recebe mais nada.
+   *
+   * Estável de propósito: os ouvintes de `useCosmosInput` dependem dele, e um
+   * novo a cada render os recadastraria a cada render.
+   */
+  const locked = useCallback((): boolean => readerRef.current.state.phase !== 'closed', []);
 
   const goHome = useCallback(() => {
-    state.current.enter = 0;
-    state.current.pan = boundsRef.current.min;
-    state.current.velocity = 0;
+    Object.assign(state.current, camera.goHome(state.current, boundsRef.current));
   }, []);
 
   const goCosmos = useCallback(() => {
     state.current.enter = 1;
   }, []);
 
-  /**
-   * Desliza a câmera até uma estrela, sem abrir nada.
-   *
-   * É o que a busca e o filtro usam para levar o leitor ao primeiro resultado:
-   * apagar as demais sem mover a câmera deixaria a tela vazia quando o que
-   * corresponde está fora do enquadramento.
-   */
   const slideTo = useCallback(
     (star: PlacedStar) => {
-      const s = state.current;
-      s.enter = 1;
-      s.velocity = 0;
-      s.pan = panForStar(stars, star, window.innerWidth);
+      const pan = panForStar(stars, star, window.innerWidth);
+      Object.assign(state.current, camera.slideTo(state.current, pan));
     },
     [stars],
   );
 
-  /**
-   * A chegada direta pela URL.
-   *
-   * Aqui os valores suavizados são escritos junto com os alvos, que é
-   * exatamente o que o resto do motor nunca faz. É deliberado: deixar só o alvo
-   * poria o `damp` a encenar uma travessia de portal que ninguém pediu — quem
-   * abriu o link de um artigo veria a viagem inteira antes de chegar ao texto.
-   * A animação conta a história de ter atravessado; quem chega pela URL não
-   * atravessou nada.
-   */
   const jumpTo = useCallback(
     (star: PlacedStar | null) => {
-      const s = state.current;
-      s.enter = 1;
-      s.enterS = 1;
-      s.velocity = 0;
-      if (star === null) return;
-      s.pan = panForStar(stars, star, window.innerWidth, 0.5);
-      s.panS = s.pan;
-      s.focusX = star.x - s.pan;
-      s.zoomS = 1;
+      const target =
+        star === null ? null : { pan: panForStar(stars, star, window.innerWidth, 0.5), x: star.x };
+      Object.assign(state.current, camera.jumpTo(state.current, target));
     },
     [stars],
   );
 
-  /**
-   * O primeiro tempo da abertura: centralizar a estrela.
-   *
-   * O `focusX` é medido depois de o pan ser limitado pelas bordas da linha do
-   * tempo — nas pontas a estrela não chega ao meio da tela, e assumir que
-   * chegou faria o avanço da câmera crescer em torno do ponto errado.
-   */
   const openStar = useCallback(
     (star: PlacedStar) => {
-      const s = state.current;
-      const originPan = s.pan;
-      s.enter = 1;
-      s.velocity = 0;
-      s.pan = panForStar(stars, star, window.innerWidth, 0.5);
-      s.focusX = star.x - s.pan;
+      const originPan = state.current.pan;
+      const target = { pan: panForStar(stars, star, window.innerWidth, 0.5), x: star.x };
+      Object.assign(state.current, camera.openStar(state.current, target));
       return originPan;
     },
     [stars],
   );
 
   const closeReader = useCallback((originPan: number | null) => {
-    const s = state.current;
-    s.velocity = 0;
-    if (originPan === null) return;
-    s.pan = Math.min(boundsRef.current.max, Math.max(boundsRef.current.min, originPan));
+    Object.assign(state.current, camera.closeReader(state.current, originPan, boundsRef.current));
   }, []);
 
   const didDrag = useCallback(() => isDrag(state.current.dragMoved), []);
 
-  useEffect(() => {
-    /**
-     * Com a vista de leitura em cena a constelação não recebe mais nada.
-     *
-     * Vale já durante a abertura, quando a câmera ainda viaja: rolar ali
-     * deslocaria o pan que o fechamento promete devolver. E é o que devolve a
-     * roda ao artigo — sem esta saída antecipada o `preventDefault` abaixo
-     * impediria o texto de rolar.
-     */
-    const locked = (): boolean => readerRef.current.state.phase !== 'closed';
+  const { onCosmosPointerDown, onRailPointerDown } = useCosmosInput({
+    state,
+    boundsRef,
+    locked,
+    goHome,
+    cosmos: refs.cosmos,
+    rail: refs.rail,
+  });
 
+  useEffect(() => {
     const onResize = (): void => {
       setViewportWidth(window.innerWidth);
       sceneRef.current?.resize(window.innerWidth, window.innerHeight);
     };
-
-    const onWheel = (event: WheelEvent): void => {
-      if (locked()) return;
-      event.preventDefault();
-      applyPush(event.deltaY * INPUT.wheelGain);
-    };
-
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (locked()) return;
-      const action = keyToDelta(event.key);
-      if (!action) return;
-      event.preventDefault();
-      if (action.kind === 'home') {
-        goHome();
-        return;
-      }
-      if (action.kind === 'end') {
-        state.current.enter = 1;
-        state.current.pan = boundsRef.current.max;
-        return;
-      }
-      applyPush(action.value);
-    };
-
-    const onPointerMove = (event: PointerEvent): void => {
-      state.current.mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-      state.current.mouseY = -((event.clientY / window.innerHeight) * 2 - 1);
-
-      const dragging = state.current.dragging;
-      if (!dragging) return;
-
-      if (dragging === 'scrub') {
-        const rect = refs.rail.current?.getBoundingClientRect();
-        if (rect) {
-          state.current.pan = scrubToPan(event.clientX, rect, boundsRef.current);
-        }
-        return;
-      }
-
-      const dx = state.current.dragX - event.clientX;
-      state.current.dragX = event.clientX;
-      state.current.dragMoved += Math.abs(dx);
-      state.current.velocity = dx * INPUT.panGain;
-      state.current.pan = Math.min(
-        boundsRef.current.max,
-        Math.max(boundsRef.current.min, state.current.pan + dx * INPUT.dragGain),
-      );
-      // O arraste é direto: suavizar aqui faria a constelação escorregar
-      // atrás do dedo.
-      state.current.panS = state.current.pan;
-    };
-
-    const onPointerUp = (): void => {
-      const dragging = state.current.dragging;
-      if (!dragging) return;
-      state.current.dragging = false;
-      state.current.velocity =
-        dragging === 'scrub' ? 0 : state.current.velocity * INERTIA.releaseBoost;
-      if (refs.cosmos.current) refs.cosmos.current.style.cursor = 'grab';
-      // Zera depois do ciclo de clique, para o clique saber que houve arraste.
-      window.setTimeout(() => {
-        state.current.dragMoved = 0;
-      }, 60);
-    };
-
-    let touchX = 0;
-    let touchY = 0;
-    const onTouchStart = (event: TouchEvent): void => {
-      const touch = event.touches[0];
-      if (!touch) return;
-      touchX = touch.clientX;
-      touchY = touch.clientY;
-    };
-    const onTouchMove = (event: TouchEvent): void => {
-      if (locked()) return;
-      const touch = event.touches[0];
-      if (!touch) return;
-      const dx = touchX - touch.clientX;
-      const dy = touchY - touch.clientY;
-      touchX = touch.clientX;
-      touchY = touch.clientY;
-      applyPush(dominantAxisDelta(dx, dy) * INPUT.touchGain);
-    };
-
     window.addEventListener('resize', onResize);
-    window.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    window.addEventListener('pointerup', onPointerUp);
-    window.addEventListener('pointercancel', onPointerUp);
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-
     return () => {
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('wheel', onWheel);
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
     };
-  }, [applyPush, goHome, refs.cosmos, refs.rail]);
-
-  const onCosmosPointerDown = useCallback(
-    (event: React.PointerEvent) => {
-      if (readerRef.current.state.phase !== 'closed') return;
-      if (state.current.enterS < COSMOS_PHASE_ENTER) return;
-      state.current.dragging = 'pan';
-      state.current.dragX = event.clientX;
-      state.current.dragMoved = 0;
-      state.current.velocity = 0;
-      if (refs.cosmos.current) refs.cosmos.current.style.cursor = 'grabbing';
-    },
-    [refs.cosmos],
-  );
-
-  const onRailPointerDown = useCallback(
-    (event: React.PointerEvent) => {
-      if (readerRef.current.state.phase !== 'closed') return;
-      state.current.dragging = 'scrub';
-      state.current.dragMoved = 0;
-      state.current.velocity = 0;
-      const rect = refs.rail.current?.getBoundingClientRect();
-      if (rect) state.current.pan = scrubToPan(event.clientX, rect, boundsRef.current);
-    },
-    [refs.rail],
-  );
+  }, []);
 
   // -- O quadro -------------------------------------------------------------
 
@@ -478,7 +302,9 @@ export function useCosmosEngine(
         const scrub = refs.scrub.current;
         if (scrub) {
           scrub.style.opacity = String(reveal * 0.95 * (1 - zoom));
-          scrub.style.pointerEvents = zoom > 0.3 ? 'none' : 'auto';
+          // Invisível na entrada, mas ainda por cima do botão de atravessar: sem
+          // a condição da revelação, o clique no botão caía na régua.
+          scrub.style.pointerEvents = reveal > 0.9 && zoom <= 0.3 ? 'auto' : 'none';
         }
         const fraction = panToScrubFraction(s.panS, boundsRef.current);
         const marker = refs.marker.current;

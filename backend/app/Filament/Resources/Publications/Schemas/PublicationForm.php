@@ -9,12 +9,11 @@ use App\Models\PublicationTranslation;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Model;
 
 class PublicationForm
 {
@@ -37,7 +36,7 @@ class PublicationForm
 
                     Select::make('category')
                         ->required()
-                        ->options(array_combine(Publication::CATEGORIES, [
+                        ->options(array_combine(Publication::categories(), [
                             'Artigo técnico',
                             'Projeto',
                             'Estudo',
@@ -73,7 +72,7 @@ class PublicationForm
                         // Dois idiomas e nada mais: a chave única do banco é
                         // (publication_id, locale), e uma terceira linha seria
                         // recusada lá embaixo, depois de a pessoa ter escrito.
-                        ->maxItems(count(PublicationTranslation::LOCALES))
+                        ->maxItems(count(PublicationTranslation::locales()))
                         ->itemLabel(fn (array $state): ?string => match ($state['locale'] ?? null) {
                             'pt' => 'Português',
                             'en' => 'English',
@@ -109,10 +108,10 @@ class PublicationForm
     }
 
     /** O que a lista mostra como nome de cada linha. */
-    public static function titleFor(Model $record): string
+    public static function titleFor(Publication $record): string
     {
-        return $record->translations->firstWhere('locale', 'pt')?->title
-            ?? $record->translations->first()?->title
+        return $record->translations->firstWhere('locale', 'pt')->title
+            ?? $record->translations->first()->title
             ?? $record->slug;
     }
 }

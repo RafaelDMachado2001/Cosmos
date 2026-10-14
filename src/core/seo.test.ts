@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { articleJsonLd, articleMeta, homeMeta, notFoundHeadTags, renderHeadTags } from './seo';
+import { ogImagePath } from './og';
+import {
+  articleJsonLd,
+  articleMeta,
+  articleOgCard,
+  homeMeta,
+  homeOgCard,
+  notFoundHeadTags,
+  renderHeadTags,
+} from './seo';
 import type { MetaSite } from './seo';
 
 const SITE: MetaSite = {
@@ -15,6 +24,7 @@ const ARTICLE = {
   summary: 'Revisar sem travar o time.',
   publishedAt: '2025-09-09T00:00:00.000Z',
   categoryLabel: 'Artigo técnico',
+  category: 'artigo' as const,
 };
 
 describe('articleMeta', () => {
@@ -193,5 +203,43 @@ describe('notFoundHeadTags', () => {
   it('não canoniza nem anuncia alternativas', () => {
     expect(html).not.toContain('canonical');
     expect(html).not.toContain('hreflang');
+  });
+});
+
+describe('og:image', () => {
+  it('o artigo aponta para o cartao dele, com URL absoluta', () => {
+    const og = articleMeta(SITE, 'pt', ARTICLE).og;
+    expect(og['og:image']).toBe(`https://rdmlabs.dev${ogImagePath(articleOgCard('pt', ARTICLE))}`);
+    expect(og['og:image:width']).toBe('1200');
+    expect(og['og:image:height']).toBe('630');
+    expect(og['og:image:alt']).toBe('Code review sem atrito');
+  });
+
+  it('o cartao do artigo desenha titulo, categoria e data, no idioma da pagina', () => {
+    expect(articleOgCard('en', ARTICLE)).toEqual({
+      locale: 'en',
+      title: 'Code review sem atrito',
+      kicker: 'Artigo técnico',
+      category: 'artigo',
+      date: '2025-09-09',
+    });
+  });
+
+  it('a home tambem tem cartao, com o nome do site no lugar da categoria', () => {
+    const copy = { title: 'Entre no meu universo', description: 'Constelação.' };
+    const og = homeMeta(SITE, 'pt', copy).og;
+    expect(homeOgCard(SITE, 'pt', copy)).toEqual({
+      locale: 'pt',
+      title: 'Entre no meu universo',
+      kicker: 'RDM Labs',
+    });
+    expect(og['og:image']).toBe(
+      `https://rdmlabs.dev${ogImagePath(homeOgCard(SITE, 'pt', copy))}`,
+    );
+  });
+
+  it('nao duplica a barra quando a origem termina nela', () => {
+    const og = articleMeta({ ...SITE, origin: 'https://rdmlabs.dev/' }, 'pt', ARTICLE).og;
+    expect(og['og:image']).toMatch(/^https:\/\/rdmlabs\.dev\/og\//);
   });
 });
