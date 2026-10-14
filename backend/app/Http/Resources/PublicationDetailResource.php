@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
  */
 class PublicationDetailResource extends PublicationResource
 {
+    /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
         return [
