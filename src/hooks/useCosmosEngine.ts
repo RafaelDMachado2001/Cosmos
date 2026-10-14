@@ -25,7 +25,7 @@ import {
   zoomTarget,
 } from '../core/reader';
 import type { ReaderState } from '../core/reader';
-import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/timeline';
+import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
 import type { PlacedStar } from '../core/timeline';
 import type { CoreScene } from '../three/CoreScene';
 import { damp } from '../utils/damp';
