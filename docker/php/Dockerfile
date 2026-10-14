@@ -14,6 +14,14 @@ COPY . .
 ARG VITE_SITE_URL=http://localhost:8080
 ENV VITE_SITE_URL=${VITE_SITE_URL}
 
+# O molde que o job usa sai deste build, mas as paginas que ele grava sao
+# servidas com os assets do build do `web`. Os nomes com hash so coincidem se as
+# entradas coincidirem: qualquer ARG que o estagio de build do `web` tenha
+# precisa estar aqui com o mesmo valor. O prerender recusa um molde cujos assets
+# o destino nao tem (src/prerender/assets.ts).
+ARG VITE_API_URL=/
+ENV VITE_API_URL=${VITE_API_URL}
+
 RUN npm run build
 
 FROM php:8.3-fpm-alpine
