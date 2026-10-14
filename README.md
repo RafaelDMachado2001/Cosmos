@@ -20,9 +20,9 @@ The project is being built as an experiment in expressive interfaces: a place wh
 - Three.js, used directly without React Three Fiber
 - CSS Modules
 - CSS custom properties for shared design tokens
-- Laravel 11 and PostgreSQL 16 planned for the backend
+- Laravel 13, Filament 5 and PostgreSQL 16 for the API, the admin panel and the publishing queue
 
-The backend is not implemented yet. The current application is focused on the frontend experience, content model, routing, rendering strategy, and SEO foundation.
+Laravel 13 rather than 11: every Laravel 11 release still available carries open security advisories, and Composer refuses to install them. Filament 3 does not run on Laravel 13, hence Filament 5.
 
 ## Technical direction
 Cosmos deliberately avoids an animation library. Motion is implemented with exponential damping (`damp`) and CSS keyframes. This keeps the animation model small and explicit, while making it easier to control what runs every frame.
@@ -76,7 +76,7 @@ During the build, `npm run postbuild` generates:
 - a page title and meta description;
 - canonical URLs;
 - Portuguese and English `hreflang` links;
-- Open Graph metadata;
+- Open Graph metadata, including a 1200×630 `og:image` card drawn from the real design tokens;
 - `Article` JSON-LD;
 - `sitemap.xml`;
 - `robots.txt`;
@@ -89,10 +89,52 @@ The homepage is designed as a constellation rather than a conventional feed. Pub
 
 The visual metaphor is there to support discovery, not to hide the content. A publication still has a stable URL, server-generated metadata, and a non-WebGL page representation. The experience can be playful at the surface while remaining conventional and dependable underneath.
 
-## Project status
-Cosmos is currently a frontend-focused project. The interactive client, the Three.js scene, translated routing, prerendering, and SEO foundation are being developed first.
+## Publishing pipeline
+Publications are written in the Filament panel at `/admin`. Saving one makes its URL answer 200 with the full text, without rebuilding any image:
 
-The planned backend will use Laravel 11 with PostgreSQL 16. It is intended to provide the future content and publishing layer, but it is not part of the current implementation yet.
+1. A model observer dispatches `RegenerateSite` to the database queue. A burst of saves collapses into one job.
+2. The `queue` service runs the same prerender the build runs, against the live API, and writes into the `site` volume that Nginx serves. Writes are atomic (temporary file and `rename`), so a reader never gets half an HTML document.
+3. Whatever the archive no longer contains is pruned by difference, after everything else is written: an unpublished article goes back to a real 404, and the site never goes dark during the roughly one-minute regeneration.
+4. Between saving and the job finishing, Nginx falls back to a minimal Laravel page with `noindex` and logs a warning. Reaching it means the pipeline has not caught up yet.
+
+Two guards keep the pipeline honest. If the API reports a truncated archive (`meta.truncated`), the prerender fails instead of publishing half the site. And if the HTML template references assets that the served volume does not have, the prerender refuses to write anything.
+
+The archive has a single source: `src/data/publications.ts`. `npm run emit:seed` generates the backend seed and `backend/config/publications.php` (locales, categories and search dictionaries) from it.
+
+## Development
+Everything runs in Docker; the host's Node is not used.
+
+```sh
+docker compose up node                                  # Vite with HMR on :5174
+docker compose run --rm node npm run check              # typecheck + lint + tests
+docker compose --profile backend up -d db app queue web # API, panel, queue and Nginx on :8080
+```
+
+`npm run check:env` compares `.env` and `backend/.env` with their `.env.example` files, and in production also requires `APP_DEBUG=false`, an `APP_KEY`, a database password and an absolute `VITE_SITE_URL`. It runs before `dev`, before `build` and in CI.
+
+## CI and hooks
+`.github/workflows/ci.yml` runs four jobs on every pull request and on `main`:
+
+- **frontend** — environment check, typecheck, lint, the whole Vitest suite (including the shell in jsdom and the 500/1000-publication scale budget) and the build with prerender.
+- **backend** — Postgres service, `pint --test`, PHPStan level 8 with Larastan and no baseline, and `php artisan test` against a database ending in `_test`.
+- **e2e** — Playwright against the build served by the real Nginx: opening a star and going back, a real 404 status, the other locale's segment answering 404, and the article readable without JavaScript.
+- **integração** — the full stack with the backend profile. Publishing makes the article URL answer 200 with its text, served from disk; deleting it brings back a 404. This is the job that proves the publishing pipeline.
+
+`.github/workflows/review.yml` asks Claude to review each pull request. It is inert until the repository has an `ANTHROPIC_API_KEY` secret.
+
+Git hooks live in `.githooks` (`git config core.hooksPath .githooks`). `pre-commit` only lints and typechecks when TypeScript changed, and only runs `pint --test` on the PHP files being committed. `pre-push` runs the full `npm run check`.
+
+### Branch protection
+Documented here and deliberately not applied: changing repository settings is a decision for whoever administers it. The intended rule for `main`:
+
+- require a pull request before merging, with 1 approval and stale approvals dismissed on new commits;
+- require status checks to pass, branches up to date before merging: `frontend`, `backend`, `e2e`, `integração`;
+- require linear history;
+- do not allow force pushes or deletions;
+- apply the rules to administrators as well.
+
+## Project status
+The interactive client, the Three.js scene, translated routing, prerendering and SEO, the Laravel API, the Filament panel and live publishing are implemented. Designs and implementation plans live in `docs/superpowers/`.
 
 ## Why this project exists
 Cosmos is not trying to make a blog harder to use. It is trying to make the act of arriving somewhere feel intentional again.
