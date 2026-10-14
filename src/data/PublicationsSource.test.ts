@@ -191,6 +191,31 @@ describe('createHttpSource — a lista', () => {
     const { impl } = stubFetch({ status: 500 });
     await expect(createHttpSource('https://x.dev', impl).list({ locale: 'pt' })).rejects.toThrow();
   });
+
+  /** Uma API que respondeu, mas declarou ter cortado o acervo. */
+  const truncatedFetch = (() =>
+    Promise.resolve(
+      new Response(JSON.stringify({ data: [], meta: { count: 2, limit: 2, truncated: true } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    )) as unknown as typeof fetch;
+
+  it('lanca quando a API diz que truncou, para o build nao publicar meio acervo', async () => {
+    const source = createHttpSource('http://api', truncatedFetch);
+
+    await expect(source.list({ locale: 'pt' })).rejects.toThrow(/truncad/i);
+  });
+
+  it('avisa em vez de lancar quando quem chama oferece onTruncated', async () => {
+    const avisos: { count: number; limit: number }[] = [];
+    const source = createHttpSource('http://api', truncatedFetch, {
+      onTruncated: (meta) => avisos.push(meta),
+    });
+
+    await expect(source.list({ locale: 'pt' })).resolves.toEqual([]);
+    expect(avisos).toEqual([{ count: 2, limit: 2 }]);
+  });
 });
 
 describe('createHttpSource — a publicação', () => {

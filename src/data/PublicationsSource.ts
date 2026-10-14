@@ -134,9 +134,28 @@ function fromApi(row: ApiPublication): PublicationSummary {
  * parâmetros da API planejada. A constelação não sabe qual dos dois está
  * montado, e a suíte de contrato roda contra os dois.
  */
+interface ApiMeta {
+  readonly count: number;
+  readonly limit: number;
+  readonly truncated: boolean;
+}
+
+export interface HttpSourceOptions {
+  /**
+   * Chamado quando a API declara que cortou o acervo.
+   *
+   * Sem isto, truncamento lanca — que e o comportamento que o prerender quer:
+   * um site publicado com metade do acervo e pior que um build vermelho. No
+   * cliente, truncamento e falha de operacao, nao estado de leitura, entao la
+   * quem chama passa um aviso de console e a constelacao segue.
+   */
+  readonly onTruncated?: (meta: { count: number; limit: number }) => void;
+}
+
 export function createHttpSource(
   baseUrl: string,
   fetchImpl: typeof fetch = fetch,
+  options: HttpSourceOptions = {},
 ): PublicationsSource {
   const root = `${baseUrl.replace(/\/+$/, '')}/api/publications`;
 
@@ -165,7 +184,21 @@ export function createHttpSource(
       if (query.before !== undefined) params.set('before', query.before);
       if (query.limit !== undefined) params.set('limit', String(query.limit));
 
-      const payload = await json<{ data: readonly ApiPublication[] }>(`${root}?${params.toString()}`);
+      const payload = await json<{ data: readonly ApiPublication[]; meta?: ApiMeta }>(
+        `${root}?${params.toString()}`,
+      );
+
+      if (payload.meta?.truncated === true) {
+        const meta = { count: payload.meta.count, limit: payload.meta.limit };
+        if (options.onTruncated === undefined) {
+          throw new Error(
+            `Acervo truncado pela API em ${String(meta.limit)} publicacoes, e havia mais. ` +
+              'Publicar o site assim esconderia publicacoes.',
+          );
+        }
+        options.onTruncated(meta);
+      }
+
       return payload.data.map(fromApi);
     },
 

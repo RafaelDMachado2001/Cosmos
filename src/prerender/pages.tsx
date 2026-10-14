@@ -49,6 +49,15 @@ export interface PrerenderOutput {
 }
 
 /**
+ * Quanto o prerender pede à fonte: o teto que a API aceita.
+ *
+ * Sem `limit`, a API devolve 100 e declara o corte, e o adapter HTTP lança —
+ * a 101ª publicação derrubaria todo build e todo job. Passar daqui é o que o
+ * `truncated` existe para pegar.
+ */
+export const ARCHIVE_LIMIT = 1000;
+
+/**
  * Renderiza a casca estática de cada rota.
  *
  * `LocaleProvider` com `initial` nunca consulta `localStorage` nem
@@ -69,7 +78,7 @@ export async function prerenderPages(
   for (const locale of LOCALES) {
     const other = otherLocale(locale);
     const dictionary = DICTIONARIES[locale];
-    const summaries = await source.list({ locale });
+    const summaries = await source.list({ locale, limit: ARCHIVE_LIMIT });
     for (const summary of summaries) listed.set(summary.slug, summary.publishedAt);
 
     const index: readonly ArticleLink[] = summaries.map((summary) => ({
@@ -128,7 +137,7 @@ export async function prerenderPages(
   const fallbackLocale: Locale = 'pt';
   const fallback = DICTIONARIES[fallbackLocale];
   const fallbackIndex: readonly ArticleLink[] = (
-    await source.list({ locale: fallbackLocale })
+    await source.list({ locale: fallbackLocale, limit: ARCHIVE_LIMIT })
   ).map((summary) => ({
     href: articlePath(fallbackLocale, summary.slug),
     title: summary.title,
