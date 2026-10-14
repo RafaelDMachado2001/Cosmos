@@ -97,6 +97,18 @@ function Shell({ route }: { route: Route }) {
 
   const stars = useMemo(() => placeStars(summaries), [summaries]);
 
+  /**
+   * Indices por slug, montados uma vez por acervo.
+   *
+   * `labelFor` roda uma vez por estrela a cada render: com busca linear, 500
+   * publicacoes eram 250 mil comparacoes por passada.
+   */
+  const summaryBySlug = useMemo(
+    () => new Map(summaries.map((summary) => [summary.slug, summary])),
+    [summaries],
+  );
+  const starBySlug = useMemo(() => new Map(stars.map((star) => [star.slug, star])), [stars]);
+
   const refs = useMemo(
     () => ({
       hero: heroBlockRef,
@@ -135,10 +147,10 @@ function Shell({ route }: { route: Route }) {
 
   const labelFor = useCallback(
     (star: PlacedStar) => {
-      const title = summaries.find((item) => item.slug === star.slug)?.title ?? star.slug;
+      const title = summaryBySlug.get(star.slug)?.title ?? star.slug;
       return `${title} — ${t.categories[star.category]} — ${dateLabel(star.timestamp)}`;
     },
-    [summaries, t, dateLabel],
+    [summaryBySlug, t, dateLabel],
   );
 
   /**
@@ -150,7 +162,7 @@ function Shell({ route }: { route: Route }) {
    */
   const onHover = useCallback(
     (slug: string | null) => {
-      const star = slug === null ? undefined : stars.find((item) => item.slug === slug);
+      const star = slug === null ? undefined : starBySlug.get(slug);
       if (!star) {
         setHovered(null);
         return;
@@ -160,7 +172,7 @@ function Shell({ route }: { route: Route }) {
         side: hoverSide(star.x - engine.panRef.current, viewport.width),
       });
     },
-    [stars, engine.panRef, viewport.width],
+    [starBySlug, engine.panRef, viewport.width],
   );
 
   /**
@@ -181,7 +193,7 @@ function Shell({ route }: { route: Route }) {
 
   const hoverCard = useMemo<HoverCard | null>(() => {
     if (hovered === null) return null;
-    const item = summaries.find((summary) => summary.slug === hovered.slug);
+    const item = summaryBySlug.get(hovered.slug);
     if (!item) return null;
 
     return {
@@ -192,7 +204,7 @@ function Shell({ route }: { route: Route }) {
       title: item.title,
       summary: item.summary,
     };
-  }, [hovered, summaries, t, dateLabel]);
+  }, [hovered, summaryBySlug, t, dateLabel]);
 
   const onActivate = useCallback(
     (star: PlacedStar) => {
