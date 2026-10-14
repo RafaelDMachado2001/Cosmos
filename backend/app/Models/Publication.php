@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $slug
+ * @property string $category
+ * @property CarbonImmutable $published_at
+ * @property bool $featured
+ * @property string $status
+ * @property-read Collection<int, PublicationTranslation> $translations
+ */
 class Publication extends Model
 {
-    use HasFactory;
-
     /** Só publicações com este status chegam à API pública. */
     public const string STATUS_PUBLISHED = 'published';
 
@@ -40,6 +48,8 @@ class Publication extends Model
         ];
     }
 
+    /** @return HasMany<PublicationTranslation, $this> */
+    /** @return HasMany<PublicationTranslation, $this> */
     public function translations(): HasMany
     {
         return $this->hasMany(PublicationTranslation::class);

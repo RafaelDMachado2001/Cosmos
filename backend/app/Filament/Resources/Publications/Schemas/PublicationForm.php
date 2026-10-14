@@ -9,12 +9,11 @@ use App\Models\PublicationTranslation;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Model;
 
 class PublicationForm
 {
@@ -109,10 +108,10 @@ class PublicationForm
     }
 
     /** O que a lista mostra como nome de cada linha. */
-    public static function titleFor(Model $record): string
+    public static function titleFor(Publication $record): string
     {
-        return $record->translations->firstWhere('locale', 'pt')?->title
-            ?? $record->translations->first()?->title
+        return $record->translations->firstWhere('locale', 'pt')->title
+            ?? $record->translations->first()->title
             ?? $record->slug;
     }
 }
