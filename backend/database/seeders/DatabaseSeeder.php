@@ -20,10 +20,10 @@ class DatabaseSeeder extends Seeder
          * ambiente para não existir credencial escrita no repositório.
          */
         User::updateOrCreate(
-            ['email' => env('ADMIN_EMAIL', 'admin@rdmlabs.dev')],
+            ['email' => config('admin.email')],
             [
-                'name' => env('ADMIN_NAME', 'RDM Labs'),
-                'password' => Hash::make((string) env('ADMIN_PASSWORD', 'changeme')),
+                'name' => config('admin.name'),
+                'password' => Hash::make((string) config('admin.password')),
             ]
         );
 
