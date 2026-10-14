@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run check:env
+      # typecheck, lint e a suite inteira, incluindo a Shell em jsdom.
+      - run: npm run check
+      # O postbuild roda o prerender; sem VITE_API_URL, contra o acervo semente.
+      - run: npm run build
+
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          # Termina em _test: tests/TestCase.php recusa qualquer outro banco.
+          POSTGRES_DB: rdm_labs_test
+          POSTGRES_USER: rdm
+          POSTGRES_PASSWORD: ci-test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U rdm -d rdm_labs_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: rdm_labs_test
+      DB_USERNAME: rdm
+      DB_PASSWORD: ci-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, intl, zip
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: cp .env.example .env && php artisan key:generate
+      - run: ./vendor/bin/pint --test
+      # Nivel 8, sem baseline.
+      - run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+      - run: php artisan test
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      # O build servido pelo Nginx de verdade: 404 com status real e pagina sem
+      # JavaScript so existem la. VITE_API_URL vazia faz a constelacao ler o
+      # acervo semente; o caminho com a API e do job de integracao.
+      - run: docker compose build --build-arg VITE_API_URL= web
+      - run: docker compose up -d web
+      - name: Esperar o Nginx
+        run: |
+          for _ in $(seq 1 30); do
+            curl -fs -o /dev/null http://localhost:8080/pt && exit 0
+            sleep 2
+          done
+          docker compose logs web
+          exit 1
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        env:
+          E2E_BASE_URL: http://localhost:8080
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
+
+  integracao:
+    name: integração
+    runs-on: ubuntu-latest
+    # O job que prova a fase: publicar faz a URL responder 200 com o texto, sem
+    # rebuild de imagem; apagar a devolve a 404.
+    env:
+      SLUG: ci-publicacao-viva
+      TITLE: Publicacao viva no CI
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ambiente com valores de teste
+        run: |
+          # Valores de teste gerados aqui: nenhum segredo real entra no CI.
+          echo "DOCKER_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "DOCKER_GID=$(id -g)" >> "$GITHUB_ENV"
+          cp .env.example .env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-test/; s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=ci-admin-test/' .env
+          cp backend/.env.example backend/.env
+          sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-test/' backend/.env
+      - run: docker compose --profile backend build app queue web
+      - run: docker compose --profile backend up -d db
+      - run: docker compose --profile backend run --rm --no-deps app composer install --no-interaction --prefer-dist --no-progress
+      - run: docker compose --profile backend run --rm --no-deps app php artisan key:generate --force
+      - run: docker compose --profile backend up -d db app queue web
+      - run: docker compose --profile backend exec -T app php artisan migrate --seed --force
+      - name: Publicar
+        # O mesmo observer que o salvar do Filament dispara; o formulario em si
+        # e coberto por AdminPanelTest na suite do backend.
+        run: |
+          docker compose --profile backend exec -T app php artisan tinker --execute="
+          \$p = App\Models\Publication::create(['slug' => '$SLUG', 'category' => 'artigo', 'published_at' => now(), 'featured' => false, 'status' => App\Models\Publication::STATUS_PUBLISHED]);
+          \$p->translations()->create(['locale' => 'pt', 'title' => '$TITLE', 'summary' => 'Resumo.', 'body' => 'Texto do CI.']);
+          \$p->translations()->create(['locale' => 'en', 'title' => '$TITLE', 'summary' => 'Summary.', 'body' => 'CI text.']);
+          "
+      - name: A URL responde 200 com o texto, servida do disco
+        run: |
+          url="http://localhost:8080/pt/publicacoes/$SLUG"
+          for _ in $(seq 1 60); do
+            body="$(curl -fs "$url" || true)"
+            # Sem noindex: e o arquivo que o job gravou, nao a casca do @app.
+            if echo "$body" | grep -q "$TITLE" && ! echo "$body" | grep -q noindex; then
+              echo "publicado: $url"
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose --profile backend logs queue
+          exit 1
+      - name: Apagar devolve 404
+        run: |
+          docker compose --profile backend exec -T app php artisan tinker --execute="App\Models\Publication::where('slug', '$SLUG')->first()->delete();"
+          url="http://localhost:8080/pt/publicacoes/$SLUG"
+          for _ in $(seq 1 60); do
+            status="$(curl -s -o /dev/null -w '%{http_code}' "$url")"
+            if [ "$status" = 404 ]; then
+              echo "podado: $url"
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose --profile backend logs queue
+          exit 1
+      - if: failure()
+        run: docker compose --profile backend logs
