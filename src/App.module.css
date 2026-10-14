@@ -17,6 +17,12 @@
 .content {
   position: relative;
   z-index: var(--z-hero);
+  /*
+   * Ocupa a tela inteira por cima da constelação. Sem isto, depois da travessia
+   * todo clique e todo arraste caíam aqui e nenhuma estrela abria com o mouse.
+   * O hero recebe o ponteiro de volta pelo laço do motor enquanto está à vista.
+   */
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
