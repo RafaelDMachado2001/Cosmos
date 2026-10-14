@@ -442,6 +442,7 @@ function Shell({ route }: { route: Route }) {
       summary: detail.summary,
       publishedAt: detail.publishedAt,
       categoryLabel: t.categories[detail.category],
+      category: detail.category,
     };
   }, [reader.phase, reader.slug, article, t]);
 

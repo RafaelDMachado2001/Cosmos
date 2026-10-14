@@ -13,21 +13,28 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
+import { ogImagePath } from '../core/og';
+import type { OgCard } from '../core/og';
 import { stalePages } from '../core/prune';
 import { articlePath, homePath } from '../core/routing';
 import { DEFAULT_LOCALE, LOCALES } from '../core/types';
 import { PUBLICATIONS } from '../data/publications';
 import { createHttpSource, createStaticSource } from '../data/PublicationsSource';
 import { apiUrlFrom, distDir, templateDir } from './config';
+import { ogPng } from './og';
 import { prerenderPages } from './pages';
 import type { PrerenderedPage } from './pages';
 
 const DIST = distDir(process.env);
 const TEMPLATE_DIR = templateDir(process.env);
 const SSR_DIR = 'dist-ssr';
+
+/** Onde os cartões moram, igual ao prefixo de `ogImagePath`. */
+const OG_DIR = 'og';
 
 /** O ponto onde a casca entra. `src/main.tsx` a remove quando o React monta. */
 const SLOT = '<div id="prerender"></div>';
@@ -90,10 +97,10 @@ function compose(template: string, page: PrerenderedPage, css: string): string {
  * podem ser PID 1 ao mesmo tempo — um nome baseado só no PID colidiria entre
  * eles.
  */
-async function write(path: string, contents: string): Promise<void> {
+async function write(path: string, contents: string | Uint8Array): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const temporary = `${path}.${randomUUID()}.tmp`;
-  await writeFile(temporary, contents, 'utf8');
+  await writeFile(temporary, contents);
   await rename(temporary, path);
 }
 
@@ -155,6 +162,49 @@ async function pruneArticles(pages: readonly PrerenderedPage[]): Promise<readonl
   return stale;
 }
 
+/**
+ * Desenha só os cartões que ainda não existem.
+ *
+ * O nome é um hash de tudo o que o cartão mostra (ver `core/og.ts`): se o
+ * arquivo está lá, é o mesmo desenho. É o que impede cada publicação de
+ * redesenhar o acervo inteiro.
+ */
+async function drawOgImages(
+  pages: readonly PrerenderedPage[],
+): Promise<{ wanted: ReadonlySet<string>; drawn: number }> {
+  const cards = new Map<string, OgCard>();
+  for (const page of pages) if (page.og !== undefined) cards.set(ogImagePath(page.og), page.og);
+
+  let drawn = 0;
+  for (const [path, card] of cards) {
+    const file = join(DIST, path);
+    if (existsSync(file)) continue;
+    await write(file, await ogPng(card));
+    drawn += 1;
+  }
+  return { wanted: new Set(cards.keys()), drawn };
+}
+
+/**
+ * Apaga os cartões que nenhuma página cita mais: um título editado deixa o
+ * desenho antigo para trás. Só `.png` — um `.tmp` ali é escrita em andamento.
+ */
+async function pruneOgImages(wanted: ReadonlySet<string>): Promise<readonly string[]> {
+  let entries;
+  try {
+    entries = await readdir(join(DIST, OG_DIR), { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
+  }
+  const existing = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.png'))
+    .map((entry) => `/${OG_DIR}/${entry.name}`);
+  const stale = stalePages(existing, wanted);
+  for (const path of stale) await rm(join(DIST, path), { force: true });
+  return stale;
+}
+
 async function main(): Promise<void> {
   const { html: template, path: templatePath } = await readTemplate();
 
@@ -183,6 +233,10 @@ async function main(): Promise<void> {
   const source = apiUrl === null ? createStaticSource(PUBLICATIONS) : createHttpSource(apiUrl);
   const { pages, notFound, sitemap, robots } = await prerenderPages(source);
 
+  // Os cartões antes das páginas: nenhum HTML gravado aponta para um
+  // `og:image` que ainda não existe.
+  const ogPaths = await drawOgImages(pages);
+
   for (const page of pages) {
     await write(join(DIST, page.path, 'index.html'), compose(template, page, css));
   }
@@ -210,10 +264,11 @@ async function main(): Promise<void> {
 
   // Depois de gravar tudo, nunca antes: o que fica no ar durante a passada e o
   // site anterior inteiro, e o que sai e so o que o acervo nao contem mais.
-  const pruned = await pruneArticles(pages);
+  const pruned = [...(await pruneArticles(pages)), ...(await pruneOgImages(ogPaths.wanted))];
 
   console.log(
-    `prerender: ${pages.length} páginas, 404.html, sitemap.xml e robots.txt em ${DIST}/` +
+    `prerender: ${pages.length} páginas, 404.html, sitemap.xml e robots.txt em ${DIST}/; ` +
+      `${ogPaths.drawn} cartões desenhados, ${ogPaths.wanted.size - ogPaths.drawn} reaproveitados` +
       (pruned.length > 0 ? `; podados: ${pruned.join(', ')}` : ''),
   );
 }

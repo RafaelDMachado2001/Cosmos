@@ -5,10 +5,13 @@ import type { ArticleLink } from '../components/ArticlePage/ArticlePage';
 import { HomePage } from '../components/HomePage/HomePage';
 import { monthYearLabel } from '../core/format';
 import { articlePath, homePath, otherLocale } from '../core/routing';
+import type { OgCard } from '../core/og';
 import {
   articleJsonLd,
   articleMeta,
+  articleOgCard,
   homeMeta,
+  homeOgCard,
   notFoundHeadTags,
   renderHeadTags,
 } from '../core/seo';
@@ -31,6 +34,8 @@ export interface PrerenderedPage {
   readonly head: string;
   /** O HTML que preenche `#prerender`. */
   readonly body: string;
+  /** O cartão que o `og:image` do cabeçalho promete. O 404 não tem. */
+  readonly og?: OgCard;
 }
 
 export interface PrerenderOutput {
@@ -90,6 +95,7 @@ export async function prerenderPages(
       path: homePath(locale),
       lang: LOCALE_TAG[locale],
       head: renderHeadTags(homeMeta(SITE, locale, dictionary.meta), null),
+      og: homeOgCard(SITE, locale, dictionary.meta),
       body: markup(
         locale,
         <HomePage otherLocaleHref={homePath(other)} index={index} />,
@@ -108,6 +114,7 @@ export async function prerenderPages(
         summary: detail.summary,
         publishedAt: detail.publishedAt,
         categoryLabel: dictionary.categories[detail.category],
+        category: detail.category,
       };
 
       pages.push({
@@ -117,6 +124,7 @@ export async function prerenderPages(
           articleMeta(SITE, locale, meta),
           articleJsonLd(SITE, locale, meta),
         ),
+        og: articleOgCard(locale, meta),
         body: markup(
           locale,
           <ArticlePage
