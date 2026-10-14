@@ -13,6 +13,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
@@ -21,6 +22,7 @@ import { articlePath, homePath } from '../core/routing';
 import { DEFAULT_LOCALE, LOCALES } from '../core/types';
 import { PUBLICATIONS } from '../data/publications';
 import { createHttpSource, createStaticSource } from '../data/PublicationsSource';
+import { missingAssets } from './assets';
 import { apiUrlFrom, distDir, templateDir } from './config';
 import { prerenderPages } from './pages';
 import type { PrerenderedPage } from './pages';
@@ -165,6 +167,17 @@ async function main(): Promise<void> {
   }
   if (!template.includes('</head>')) {
     throw new Error(`${templatePath} sem </head> — não há onde pôr o cabeçalho.`);
+  }
+
+  // Antes de gravar qualquer coisa: um molde de outro build poria em cada
+  // página scripts que o destino não tem, e o site inteiro ficaria sem
+  // JavaScript respondendo 200.
+  const missing = missingAssets(template, (path) => existsSync(join(DIST, path)));
+  if (missing.length > 0) {
+    throw new Error(
+      `${templatePath} carrega assets que ${DIST}/ não tem: ${missing.join(', ')}. ` +
+        'O molde e o destino vêm de builds diferentes.',
+    );
   }
 
   /*
