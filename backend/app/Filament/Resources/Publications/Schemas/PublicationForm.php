@@ -37,7 +37,7 @@ class PublicationForm
 
                     Select::make('category')
                         ->required()
-                        ->options(array_combine(Publication::CATEGORIES, [
+                        ->options(array_combine(Publication::categories(), [
                             'Artigo técnico',
                             'Projeto',
                             'Estudo',
@@ -73,7 +73,7 @@ class PublicationForm
                         // Dois idiomas e nada mais: a chave única do banco é
                         // (publication_id, locale), e uma terceira linha seria
                         // recusada lá embaixo, depois de a pessoa ter escrito.
-                        ->maxItems(count(PublicationTranslation::LOCALES))
+                        ->maxItems(count(PublicationTranslation::locales()))
                         ->itemLabel(fn (array $state): ?string => match ($state['locale'] ?? null) {
                             'pt' => 'Português',
                             'en' => 'English',

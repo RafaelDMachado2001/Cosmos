@@ -67,7 +67,7 @@ class PublicationsTable
 
                 SelectFilter::make('category')
                     ->label('Categoria')
-                    ->options(array_combine(Publication::CATEGORIES, [
+                    ->options(array_combine(Publication::categories(), [
                         'Artigo técnico',
                         'Projeto',
                         'Estudo',

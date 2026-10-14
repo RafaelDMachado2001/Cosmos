@@ -32,6 +32,9 @@ return new class extends Migration
             $table->unique(['publication_id', 'locale']);
         });
 
+        // Copia congelada de config/publications.php (gerado de src/core/types.ts).
+        // Migration aplicada nao se reescreve: um idioma novo pede migration nova
+        // que recrie a coluna, nao edicao desta.
         $dictionary = "CASE WHEN locale = 'pt' THEN 'portuguese'::regconfig ELSE 'english'::regconfig END";
 
         DB::statement(<<<SQL

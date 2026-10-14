@@ -12,7 +12,16 @@ class PublicationTranslation extends Model
 {
     use HasFactory;
 
-    public const array LOCALES = ['pt', 'en'];
+    /**
+     * Lidos de config/publications.php, gerado de src/core/types.ts por
+     * `npm run emit:seed`.
+     *
+     * @return list<string>
+     */
+    public static function locales(): array
+    {
+        return config('publications.locales');
+    }
 
     protected $fillable = ['publication_id', 'locale', 'title', 'summary', 'body'];
 
