@@ -18,6 +18,11 @@ export default defineConfig({
     // Os módulos de `src/core/` são puros; o do prerender monta HTML por
     // string, sem DOM. Nada aqui precisa de navegador.
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // Os componentes sao a excecao: precisam de DOM, e so eles pagam por ele.
+    environmentMatchGlobs: [['src/components/**', 'jsdom']],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // O Vitest esvazia todo CSS importado, inclusive com `?raw`. O cartao de
+    // Open Graph le as cores deste arquivo como texto, e o teste precisa delas.
+    css: { include: [/src\/styles\/tokens\.css/] },
   },
 });

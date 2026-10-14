@@ -8,7 +8,7 @@
  * Módulo puro: sem DOM, sem React, sem Three.
  */
 
-import type { PanBounds } from './timeline';
+import type { PanBounds } from './geometry';
 
 export interface NavState {
   /** Progresso da travessia, 0 a 1. */

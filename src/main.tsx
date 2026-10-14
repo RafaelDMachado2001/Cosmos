@@ -19,16 +19,18 @@ import './styles/reset.css';
 import './styles/global.css';
 
 import App from './App';
+import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 
-// O HTML pré-renderizado é uma casca descartável: some antes do React montar,
-// então nada hidrata e não existe risco de mismatch.
-document.getElementById('prerender')?.remove();
-
+// O HTML pré-renderizado é uma casca: nada hidrata, então não existe risco de
+// mismatch. Ela só sai depois de o React montar (ver `App`), e volta se ele
+// quebrar (ver `ErrorBoundary`).
 const container = document.getElementById('root');
 if (!container) throw new Error('#root não encontrado');
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 );

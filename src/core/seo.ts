@@ -10,9 +10,12 @@
  * Módulo puro: sem DOM, sem React, sem Three.
  */
 
+import { OG_SIZE, ogImagePath } from './og';
+import type { OgCard } from './og';
 import { articlePath, homePath } from './routing';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_TAG, OG_LOCALE } from './types';
-import type { Locale } from './types';
+import type { Category, Locale } from './types';
+import { absolute } from './url';
 
 export interface MetaSite {
   /** URL absoluta do site, com ou sem barra final. */
@@ -28,6 +31,8 @@ export interface MetaArticle {
   /** ISO 8601, como vem do acervo. */
   readonly publishedAt: string;
   readonly categoryLabel: string;
+  /** Pinta o acento do cartão de Open Graph. */
+  readonly category: Category;
 }
 
 export interface Alternate {
@@ -57,17 +62,6 @@ export interface ArticleJsonLd {
 }
 
 /**
- * Junta origem e caminho sem duplicar a barra.
- *
- * `VITE_SITE_URL` vem do `.env` e a barra final depende de quem digitou. Duas
- * barras aqui não quebram o site, mas geram um canonical diferente do endereço
- * real — que é exatamente o que o canonical existe para evitar.
- */
-function absolute(origin: string, path: string): string {
-  return `${origin.replace(/\/+$/, '')}${path}`;
-}
-
-/**
  * Os dois idiomas mais o `x-default`.
  *
  * O `x-default` é obrigatório quando não há uma versão neutra: sem ele o
@@ -85,6 +79,39 @@ function otherOgLocales(locale: Locale): string {
   return LOCALES.filter((candidate) => candidate !== locale)
     .map((candidate) => OG_LOCALE[candidate])
     .join(',');
+}
+
+/** O cartão que representa o artigo quando o link é compartilhado. */
+export function articleOgCard(locale: Locale, article: MetaArticle): OgCard {
+  return {
+    locale,
+    title: article.title,
+    kicker: article.categoryLabel,
+    category: article.category,
+    date: article.publishedAt.slice(0, 10),
+  };
+}
+
+/** O da home: sem categoria nem data, com o nome do site na linha de cima. */
+export function homeOgCard(
+  site: MetaSite,
+  locale: Locale,
+  copy: { readonly title: string },
+): OgCard {
+  return { locale, title: copy.title, kicker: site.siteName };
+}
+
+/**
+ * As tags da imagem. Absoluta porque quem a lê é o robô de outro site, que não
+ * resolve caminho relativo; o `alt` repete o título, que é o que ela mostra.
+ */
+function ogImageTags(site: MetaSite, card: OgCard): Readonly<Record<string, string>> {
+  return {
+    'og:image': absolute(site.origin, ogImagePath(card)),
+    'og:image:width': String(OG_SIZE.width),
+    'og:image:height': String(OG_SIZE.height),
+    'og:image:alt': card.title,
+  };
 }
 
 export function articleMeta(
@@ -112,6 +139,7 @@ export function articleMeta(
       'og:locale:alternate': otherOgLocales(locale),
       'article:published_time': article.publishedAt,
       'article:section': article.categoryLabel,
+      ...ogImageTags(site, articleOgCard(locale, article)),
     },
   };
 }
@@ -136,6 +164,7 @@ export function homeMeta(
       'og:site_name': site.siteName,
       'og:locale': OG_LOCALE[locale],
       'og:locale:alternate': otherOgLocales(locale),
+      ...ogImageTags(site, homeOgCard(site, locale, copy)),
     },
   };
 }

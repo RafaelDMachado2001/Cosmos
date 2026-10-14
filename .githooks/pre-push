@@ -1,0 +1,5 @@
+#!/bin/sh
+# O gate de verdade: typecheck, lint e a suite inteira.
+# Pular pontualmente com: git push --no-verify
+set -e
+exec docker compose run --rm -T node npm run check
