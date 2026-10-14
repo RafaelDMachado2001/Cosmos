@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  TIMELINE,
   connectors,
-  hash01,
   panBounds,
   panBucket,
   panForStar,
-  placeStars,
   resolveBand,
   strandExtent,
   visibleRange,
@@ -15,7 +12,9 @@ import {
   yPx,
   yearAtCenter,
   yearMarkers,
-} from './timeline';
+} from './geometry';
+import { hash01 } from './hash';
+import { TIMELINE, placeStars } from './timeline';
 import { makeDataset, makeRandom } from './testing';
 import type { PublicationInput, Viewport } from './types';
 

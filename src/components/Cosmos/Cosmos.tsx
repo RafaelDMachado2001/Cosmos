@@ -11,7 +11,7 @@ import {
   visibleRange,
   yPx,
   yearMarkers,
-} from '../../core/timeline';
+} from '../../core/geometry';
 import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
 import { HoverPanel } from '../HoverPanel/HoverPanel';
