@@ -159,6 +159,41 @@ class PublicationApiTest extends TestCase
         $this->getJson('/api/publications?limit=3')->assertOk()->assertJsonCount(3, 'data');
     }
 
+    public function test_a_resposta_declara_count_limit_e_truncated(): void
+    {
+        $response = $this->getJson('/api/publications?locale=pt');
+
+        $response->assertOk();
+        $response->assertJsonPath('meta.count', 14);
+        $response->assertJsonPath('meta.limit', 100);
+        $response->assertJsonPath('meta.truncated', false);
+    }
+
+    public function test_truncated_fica_verdadeiro_quando_o_limite_corta(): void
+    {
+        $response = $this->getJson('/api/publications?locale=pt&limit=2');
+
+        $response->assertJsonCount(2, 'data');
+        $response->assertJsonPath('meta.count', 2);
+        $response->assertJsonPath('meta.limit', 2);
+        $response->assertJsonPath('meta.truncated', true);
+    }
+
+    public function test_limite_igual_ao_acervo_nao_e_truncamento(): void
+    {
+        // count === limit nao basta: so ha truncamento se havia mais linhas.
+        $response = $this->getJson('/api/publications?locale=pt&limit=14');
+
+        $response->assertJsonPath('meta.count', 14);
+        $response->assertJsonPath('meta.truncated', false);
+    }
+
+    public function test_o_teto_do_limite_e_mil(): void
+    {
+        $this->getJson('/api/publications?locale=pt&limit=1001')->assertStatus(422);
+        $this->getJson('/api/publications?locale=pt&limit=1000')->assertOk();
+    }
+
     public function test_recusa_parametros_invalidos(): void
     {
         $this->getJson('/api/publications?locale=fr')->assertStatus(422);

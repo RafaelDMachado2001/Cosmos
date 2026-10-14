@@ -30,10 +30,12 @@ class PublicationController extends Controller
             'category' => ['sometimes', Rule::in(Publication::CATEGORIES)],
             'q' => ['sometimes', 'string', 'max:200'],
             'before' => ['sometimes', 'date'],
-            'limit' => ['sometimes', 'integer', 'min:1', 'max:200'],
+            'limit' => ['sometimes', 'integer', 'min:1', 'max:1000'],
         ]);
 
         $locale = $input['locale'];
+        // A query string entrega texto; o contrato de `meta.limit` e inteiro.
+        $limit = (int) ($input['limit'] ?? self::DEFAULT_LIMIT);
 
         $publications = $this->published($locale)
             ->when(
@@ -52,10 +54,23 @@ class PublicationController extends Controller
                 )
             )
             ->orderByDesc('publications.published_at')
-            ->limit($input['limit'] ?? self::DEFAULT_LIMIT)
+            // Pede uma a mais do que cabe: e assim que se sabe que havia mais sem
+            // pagar um segundo count() sobre o join.
+            ->limit($limit + 1)
             ->get();
 
-        return PublicationResource::collection($publications);
+        $truncated = $publications->count() > $limit;
+        $publications = $publications->take($limit);
+
+        // Cortar sem avisar publicava metade do acervo em silencio. O prerender
+        // le `truncated` e prefere um build vermelho a um site pela metade.
+        return PublicationResource::collection($publications)->additional([
+            'meta' => [
+                'count' => $publications->count(),
+                'limit' => $limit,
+                'truncated' => $truncated,
+            ],
+        ]);
     }
 
     public function show(Request $request, string $slug): PublicationDetailResource
