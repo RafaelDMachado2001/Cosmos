@@ -17,8 +17,18 @@ class Publication extends Model
 
     public const string STATUS_DRAFT = 'draft';
 
-    /** As quatro do handoff. A constelação colore a estrela por elas. */
-    public const array CATEGORIES = ['artigo', 'projeto', 'estudo', 'rotina'];
+    /**
+     * As quatro do handoff. A constelação colore a estrela por elas.
+     *
+     * Lidas de config/publications.php, gerado de src/core/types.ts por
+     * `npm run emit:seed`: uma cópia escrita à mão divergiria no primeiro ajuste.
+     *
+     * @return list<string>
+     */
+    public static function categories(): array
+    {
+        return config('publications.categories');
+    }
 
     protected $fillable = ['slug', 'category', 'published_at', 'featured', 'status'];
 

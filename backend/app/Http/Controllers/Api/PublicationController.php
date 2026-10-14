@@ -21,13 +21,10 @@ class PublicationController extends Controller
 
     private const string DEFAULT_LOCALE = 'pt';
 
-    /** O dicionário de full-text de cada idioma, como na coluna gerada. */
-    private const array DICTIONARY = ['pt' => 'portuguese', 'en' => 'english'];
-
     public function index(Request $request): AnonymousResourceCollection
     {
         $input = $this->validated($request, [
-            'category' => ['sometimes', Rule::in(Publication::CATEGORIES)],
+            'category' => ['sometimes', Rule::in(Publication::categories())],
             'q' => ['sometimes', 'string', 'max:200'],
             'before' => ['sometimes', 'date'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:1000'],
@@ -50,7 +47,8 @@ class PublicationController extends Controller
                 isset($input['q']) && trim((string) $input['q']) !== '',
                 fn (Builder $query) => $query->whereRaw(
                     'translation.search_vector @@ websearch_to_tsquery(?::regconfig, ?)',
-                    [self::DICTIONARY[$locale], $input['q']]
+                    // O dicionario de cada idioma, como na coluna gerada.
+                    [config('publications.dictionaries')[$locale], $input['q']]
                 )
             )
             ->orderByDesc('publications.published_at')
@@ -119,7 +117,7 @@ class PublicationController extends Controller
     private function validated(Request $request, array $rules): array
     {
         $input = $request->validate([
-            'locale' => ['sometimes', Rule::in(PublicationTranslation::LOCALES)],
+            'locale' => ['sometimes', Rule::in(PublicationTranslation::locales())],
             ...$rules,
         ]);
 
