@@ -13,6 +13,7 @@
 import { articlePath, homePath } from './routing';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_TAG, OG_LOCALE } from './types';
 import type { Locale } from './types';
+import { absolute } from './url';
 
 export interface MetaSite {
   /** URL absoluta do site, com ou sem barra final. */
@@ -54,17 +55,6 @@ export interface ArticleJsonLd {
   readonly url: string;
   readonly mainEntityOfPage: { readonly '@type': string; readonly '@id': string };
   readonly author: { readonly '@type': string; readonly name: string };
-}
-
-/**
- * Junta origem e caminho sem duplicar a barra.
- *
- * `VITE_SITE_URL` vem do `.env` e a barra final depende de quem digitou. Duas
- * barras aqui não quebram o site, mas geram um canonical diferente do endereço
- * real — que é exatamente o que o canonical existe para evitar.
- */
-function absolute(origin: string, path: string): string {
-  return `${origin.replace(/\/+$/, '')}${path}`;
 }
 
 /**
