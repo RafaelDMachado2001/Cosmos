@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import styles from './App.module.css';
 import { Backdrop } from './components/Backdrop/Backdrop';
@@ -644,6 +644,17 @@ export default function App() {
    */
   const route = useMemo(() => parseRoute(window.location.pathname), []);
   const initial = routeLocale(route);
+
+  /*
+   * A casca sai depois do primeiro commit bem-sucedido, nao antes: se o React
+   * quebrar na montagem, ela precisa continuar la (ver `ErrorBoundary`).
+   * `hidden` e nao `remove()`, para o limite poder traze-la de volta. Layout
+   * effect porque roda antes da pintura: com o efeito comum haveria um quadro
+   * com a casca e a constelacao na tela ao mesmo tempo.
+   */
+  useLayoutEffect(() => {
+    document.getElementById('prerender')?.setAttribute('hidden', '');
+  }, []);
 
   return (
     // Numa carga direta de /en/publications/... a URL manda no idioma, não a
