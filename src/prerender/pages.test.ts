@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { prerenderPages } from './pages';
+import { ARCHIVE_LIMIT, prerenderPages } from './pages';
 import { PUBLICATIONS } from '../data/publications';
 import { LOCALES } from '../core/types';
 import { SITE } from '../site';
@@ -97,5 +97,24 @@ describe('prerenderPages', () => {
     const articles = pages.filter((page) => page.path.includes('/publicacoes/'));
     expect(articles).toHaveLength(1);
     expect(articles[0]?.path).toContain('so-esta-publicacao');
+  });
+
+  it('pede o acervo inteiro: o limite padrao da API derrubaria o build na 101a publicacao', async () => {
+    const asked: (number | undefined)[] = [];
+    const inner = createStaticSource(PUBLICATIONS);
+    const spy = {
+      list: (query: Parameters<typeof inner.list>[0]) => {
+        asked.push(query.limit);
+        return inner.list(query);
+      },
+      get: (...args: Parameters<typeof inner.get>) => inner.get(...args),
+    };
+
+    await prerenderPages(spy);
+
+    expect(asked.length).toBeGreaterThan(0);
+    // 1000 e o teto que a API aceita (PublicationController, regra de `limit`).
+    expect(ARCHIVE_LIMIT).toBe(1000);
+    expect(asked).toEqual(asked.map(() => 1000));
   });
 });
