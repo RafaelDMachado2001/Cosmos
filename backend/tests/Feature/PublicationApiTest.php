@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Publication;
+use Database\Seeders\PublicationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class PublicationApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(\Database\Seeders\PublicationSeeder::class);
+        $this->seed(PublicationSeeder::class);
     }
 
     private function publish(string $slug, string $category, string $date, array $pt, array $en, string $status = Publication::STATUS_PUBLISHED): Publication
@@ -112,7 +113,7 @@ class PublicationApiTest extends TestCase
         // "índices" no título; a busca por "índice" precisa achar, senão a
         // pesquisa depende de a pessoa acertar a flexão.
         $slugs = array_column(
-            $this->getJson('/api/publications?locale=pt&q=' . urlencode('índice'))->json('data'),
+            $this->getJson('/api/publications?locale=pt&q='.urlencode('índice'))->json('data'),
             'slug'
         );
 
@@ -146,7 +147,7 @@ class PublicationApiTest extends TestCase
         $all = $this->getJson('/api/publications')->json('data');
         $cutoff = $all[2]['published_at'];
 
-        $older = $this->getJson('/api/publications?before=' . urlencode($cutoff))->json('data');
+        $older = $this->getJson('/api/publications?before='.urlencode($cutoff))->json('data');
 
         $this->assertCount(count($all) - 3, $older);
         foreach ($older as $item) {
