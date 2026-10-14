@@ -302,7 +302,9 @@ export function useCosmosEngine(
         const scrub = refs.scrub.current;
         if (scrub) {
           scrub.style.opacity = String(reveal * 0.95 * (1 - zoom));
-          scrub.style.pointerEvents = zoom > 0.3 ? 'none' : 'auto';
+          // Invisível na entrada, mas ainda por cima do botão de atravessar: sem
+          // a condição da revelação, o clique no botão caía na régua.
+          scrub.style.pointerEvents = reveal > 0.9 && zoom <= 0.3 ? 'auto' : 'none';
         }
         const fraction = panToScrubFraction(s.panS, boundsRef.current);
         const marker = refs.marker.current;
