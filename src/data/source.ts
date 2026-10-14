@@ -16,5 +16,15 @@ import type { PublicationsSource } from './PublicationsSource';
  * para a API assume que ela responde também durante o build.
  */
 export function createSource(): PublicationsSource {
-  return __API_URL__ === null ? createStaticSource(PUBLICATIONS) : createHttpSource(__API_URL__);
+  if (__API_URL__ === null) return createStaticSource(PUBLICATIONS);
+
+  return createHttpSource(__API_URL__, fetch, {
+    // Falha de operacao, nao estado de leitura: a pessoa que le nao tem o que
+    // fazer com isso, e apagar a constelacao seria pior que mostra-la menor.
+    onTruncated: ({ count, limit }) => {
+      console.warn(
+        `A API truncou o acervo em ${String(limit)} publicacoes, e havia mais; a constelacao mostra so estas ${String(count)}.`,
+      );
+    },
+  });
 }
