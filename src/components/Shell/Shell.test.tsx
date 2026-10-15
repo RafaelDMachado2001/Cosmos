@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { UserEvent } from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,6 +21,15 @@ function constellationStars(): HTMLAnchorElement[] {
     .filter((link): link is HTMLAnchorElement =>
       (link.getAttribute('aria-label') ?? '').includes(' — '),
     );
+}
+
+/**
+ * O jsdom 25 nao tem `PointerEvent`, e o `fireEvent.pointerDown` cai num
+ * `Event` generico que descarta `pointerType` — justo o que se quer testar.
+ */
+function pointerDown(pointerType: 'mouse' | 'touch'): MouseEvent {
+  const event = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 });
+  return Object.assign(event, { pointerType });
 }
 
 async function entrarNaConstelacao(user: UserEvent): Promise<HTMLAnchorElement> {
@@ -131,6 +140,24 @@ describe('Shell', () => {
       },
       { timeout: 4000 },
     );
+  });
+
+  it('arrastar com o mouse nao seleciona texto, e o clique ainda abre a estrela', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+    const regua = screen.getByRole('slider');
+
+    // `fireEvent` devolve falso quando o padrao foi cancelado.
+    expect(fireEvent(estrela, pointerDown('mouse'))).toBe(false);
+    expect(fireEvent(regua, pointerDown('mouse'))).toBe(false);
+    expect(fireEvent.dragStart(estrela)).toBe(false);
+    // O toque segue nativo: e o padrao dele que distingue toque de rolagem.
+    expect(fireEvent(estrela, pointerDown('touch'))).toBe(true);
+    fireEvent.pointerUp(window);
+
+    await user.click(estrela);
+    expect(await screen.findByRole('dialog', {}, { timeout: 4000 })).toBeTruthy();
   });
 
   it('carga direta num slug que nao existe mostra o 404 dentro da constelacao', async () => {
