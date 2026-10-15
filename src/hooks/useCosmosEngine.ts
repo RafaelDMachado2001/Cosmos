@@ -49,6 +49,8 @@ export interface CosmosRefs {
   readonly rail: RefObject<HTMLElement>;
   /** Fallback em CSS do núcleo, quando não há WebGL. */
   readonly fallback: RefObject<HTMLElement>;
+  /** Céu estático, quando não há WebGL para o procedural. */
+  readonly skyFallback: RefObject<HTMLElement>;
   /** Overlay da vista de leitura. Só existe enquanto ela está montada. */
   readonly reader: RefObject<HTMLElement>;
 }
@@ -358,6 +360,8 @@ export function useCosmosEngine(
         // shader; o fallback em CSS precisa apagar aqui.
         const fallback = refs.fallback.current;
         if (fallback) fallback.style.opacity = String(coreOpacity(enter));
+        const skyFallback = refs.skyFallback.current;
+        if (skyFallback) skyFallback.style.opacity = String(atmosphereIntensity(reveal, zoom));
 
         // A vista de leitura sobe interpolada como todo o resto: nada aparece
         // instantaneamente. Enquanto ela não está no DOM o fade fica zerado,
@@ -402,6 +406,7 @@ export function useCosmosEngine(
         refs.rail,
         refs.reader,
         refs.scrub,
+        refs.skyFallback,
       ],
     ),
   );
