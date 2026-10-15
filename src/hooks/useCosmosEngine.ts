@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, RefObject } from 'react';
 
+import { atmosphereIntensity, generateSky } from '../core/atmosphere';
+import type { Rgb } from '../core/atmosphere';
 import * as camera from '../core/camera';
 import { isDrag, lambdas, stepInertia } from '../core/motion';
 import {
@@ -22,8 +24,10 @@ import {
 import type { ReaderState } from '../core/reader';
 import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
 import type { PlacedStar } from '../core/timeline';
+import type { Category } from '../core/types';
 import type { CoreScene } from '../three/CoreScene';
 import { damp } from '../utils/damp';
+import { hexToRgb, readColor } from '../utils/readColor';
 import { useCosmosInput } from './useCosmosInput';
 import type { InputState } from './useCosmosInput';
 import { useFrameLoop } from './useFrameLoop';
@@ -84,6 +88,14 @@ export interface CosmosEngine {
   onRailPointerDown: (event: React.PointerEvent) => void;
 }
 
+/** Roxo neutro para quando o token não puder ser lido. */
+const FALLBACK_TINT: Rgb = [0.55, 0.42, 1];
+
+/** A cor da categoria, lida dos mesmos tokens que pintam as estrelas. */
+function categoryRgb(category: Category): Rgb {
+  return hexToRgb(readColor(`--color-cat-${category}`, ''), FALLBACK_TINT);
+}
+
 /** Estado contínuo. Mutável de propósito: é escrito a cada quadro, fora do React. */
 interface MutableState extends InputState {
   mouseXS: number;
@@ -133,6 +145,12 @@ export function useCosmosEngine(
   // O laço lê o acervo para anunciar o ano na régua, sem se recriar por isso.
   const starsRef = useRef(stars);
   starsRef.current = stars;
+
+  // O céu é derivado do acervo inteiro, uma vez por acervo: a busca e o
+  // filtro esmaecem estrelas, não recompõem a atmosfera.
+  const sky = useMemo(() => generateSky(stars, categoryRgb), [stars]);
+  const skyRef = useRef(sky);
+  skyRef.current = sky;
 
   const [phase, setPhase] = useState<Phase>('hero');
   const [bucket, setBucket] = useState(0);
@@ -354,6 +372,8 @@ export function useCosmosEngine(
         if (scene) {
           scene.setEnter(enter);
           scene.setPointer(s.mouseXS, s.mouseYS);
+          scene.setSky(skyRef.current);
+          scene.setAtmosphere(s.panS, atmosphereIntensity(reveal, zoom));
           scene.render(delta);
         }
 

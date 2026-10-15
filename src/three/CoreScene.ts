@@ -16,15 +16,22 @@ import {
   IcosahedronGeometry,
   Mesh,
   MeshBasicMaterial,
+  OrthographicCamera,
   PerspectiveCamera,
+  PlaneGeometry,
   Points,
   Scene,
   ShaderMaterial,
   Vector2,
+  Vector3,
+  Vector4,
   WebGLRenderer,
 } from 'three';
 
+import { ATMOSPHERE, cullSky, emptyCull } from '../core/atmosphere';
+import type { Sky } from '../core/atmosphere';
 import {
+  ATMOSPHERE_TIME_SCALE,
   TIME_SCALE,
   decayPulse,
   nextPulseAt,
@@ -41,7 +48,16 @@ import {
 import { CAMERA_BASE_Z, CAMERA_FOV_DEG } from './framing';
 import type { Framing } from './framing';
 import { CORE_FRAGMENT_SHADER, CORE_VERTEX_SHADER } from './shaders/core';
+import {
+  BACKGROUND_FRAGMENT_SHADER,
+  BACKGROUND_VERTEX_SHADER,
+  MAX_GALAXIES,
+  MAX_NEBULAE,
+} from './shaders/background';
 import { DUST_FRAGMENT_SHADER, DUST_VERTEX_SHADER } from './shaders/dust';
+
+/** Abaixo disto a atmosfera não é desenhada: a passada inteira é pulada. */
+const ATMOSPHERE_VISIBLE_ABOVE = 0.001;
 
 /** Teto de pixel ratio, conforme o handoff. */
 const MAX_PIXEL_RATIO = 1.75;
@@ -65,6 +81,12 @@ export class CoreScene {
   private readonly coreMesh: Mesh;
   private readonly innerMesh: Mesh;
   private readonly dust: Points;
+  private readonly background: {
+    readonly scene: Scene;
+    readonly camera: OrthographicCamera;
+    readonly mesh: Mesh;
+    readonly uniforms: BackgroundUniforms;
+  };
   private readonly uniforms: {
     uTime: { value: number };
     uAmp: { value: number };
@@ -74,6 +96,14 @@ export class CoreScene {
   };
 
   private framing: Framing | null = null;
+  private sky: Sky = { nebulae: [], galaxies: [] };
+  private readonly cull = emptyCull();
+  private pan = 0;
+  private atmosphere = 0;
+  private atmosphereTime = 0;
+  private width = 0;
+  private height = 0;
+  private pixelRatio = 1;
   private enter = 0;
   private pointerX = 0;
   private pointerY = 0;
@@ -94,7 +124,12 @@ export class CoreScene {
       powerPreference: 'high-performance',
     });
     const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
+    this.pixelRatio = pixelRatio;
     this.renderer.setPixelRatio(pixelRatio);
+    // O fundo e o núcleo dividem o renderer: limpa-se uma vez, desenha-se o
+    // céu e por cima a cena.
+    this.renderer.autoClear = false;
+    this.renderer.setClearColor(0x000000, 0);
 
     this.scene = new Scene();
     this.camera = new PerspectiveCamera(CAMERA_FOV_DEG, 1, 0.1, 100);
@@ -136,6 +171,41 @@ export class CoreScene {
 
     this.dust = CoreScene.createDust(narrow ? DUST_COUNT.narrow : DUST_COUNT.wide, pixelRatio);
     this.scene.add(this.dust);
+
+    this.background = CoreScene.createBackground(pixelRatio);
+  }
+
+  private static createBackground(pixelRatio: number): CoreScene['background'] {
+    const uniforms: BackgroundUniforms = {
+      uRes: { value: new Vector2(1, 1) },
+      uDpr: { value: pixelRatio },
+      uPan: { value: 0 },
+      uTime: { value: 0 },
+      uReveal: { value: 0 },
+      uMy: { value: 0 },
+      uOctaves: { value: 5 },
+      uNeb: { value: Array.from({ length: MAX_NEBULAE }, () => new Vector4()) },
+      uNebC: { value: Array.from({ length: MAX_NEBULAE }, () => new Vector3()) },
+      uNebN: { value: 0 },
+      uGal: { value: Array.from({ length: MAX_GALAXIES }, () => new Vector4()) },
+      uGalB: { value: Array.from({ length: MAX_GALAXIES }, () => new Vector2(1, 0)) },
+      uGalN: { value: 0 },
+    };
+    const mesh = new Mesh(
+      new PlaneGeometry(2, 2),
+      new ShaderMaterial({
+        vertexShader: BACKGROUND_VERTEX_SHADER,
+        fragmentShader: BACKGROUND_FRAGMENT_SHADER,
+        uniforms,
+        depthTest: false,
+        depthWrite: false,
+        transparent: true,
+        premultipliedAlpha: true,
+      }),
+    );
+    const scene = new Scene();
+    scene.add(mesh);
+    return { scene, camera: new OrthographicCamera(-1, 1, 1, -1, 0, 1), mesh, uniforms };
   }
 
   private static createDust(count: number, pixelRatio: number): Points {
@@ -188,13 +258,30 @@ export class CoreScene {
     this.pointerY = y;
   }
 
+  /** O céu do acervo atual. Mesma referência, nada a fazer. */
+  setSky(sky: Sky): void {
+    this.sky = sky;
+  }
+
+  /**
+   * Pan suavizado e intensidade da atmosfera (já multiplicada pela revelação
+   * e pelo recuo da abertura de artigo). Em zero a passada é pulada.
+   */
+  setAtmosphere(pan: number, intensity: number): void {
+    this.pan = pan;
+    this.atmosphere = intensity;
+  }
+
   setReducedMotion(reduced: boolean): void {
     this.reducedMotion = reduced;
   }
 
   resize(width: number, height: number): void {
     if (width <= 0 || height <= 0) return;
+    this.width = width;
+    this.height = height;
     this.renderer.setSize(width, height, false);
+    this.background.uniforms.uRes.value.set(width * this.pixelRatio, height * this.pixelRatio);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
@@ -233,7 +320,40 @@ export class CoreScene {
     this.dust.rotation.y += deltaSeconds * 0.006;
     this.dust.position.z = dustZ(enter);
 
+    this.renderer.clear();
+    this.renderAtmosphere(deltaSeconds);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** O céu, antes do núcleo, só dentro do cosmos. */
+  private renderAtmosphere(deltaSeconds: number): void {
+    if (this.atmosphere <= ATMOSPHERE_VISIBLE_ABOVE) return;
+
+    const scale = this.reducedMotion ? ATMOSPHERE_TIME_SCALE.reduced : ATMOSPHERE_TIME_SCALE.normal;
+    this.atmosphereTime += deltaSeconds * scale;
+
+    const narrow = this.width < NARROW_WIDTH;
+    const maxNebulae = narrow ? ATMOSPHERE.maxNebulae.narrow : ATMOSPHERE.maxNebulae.wide;
+    cullSky(this.sky, this.pan, this.width, maxNebulae, this.cull);
+
+    const u = this.background.uniforms;
+    u.uTime.value = this.atmosphereTime;
+    u.uPan.value = this.pan;
+    u.uMy.value = this.pointerY;
+    u.uReveal.value = this.atmosphere;
+
+    this.cull.nebulae.forEach((nebula, index) => {
+      u.uNeb.value[index]?.set(nebula.px, nebula.y01 * this.height, nebula.radius, nebula.weight);
+      u.uNebC.value[index]?.set(nebula.color[0], nebula.color[1], nebula.color[2]);
+    });
+    u.uNebN.value = this.cull.nebulae.length;
+    this.cull.galaxies.forEach((galaxy, index) => {
+      u.uGal.value[index]?.set(galaxy.px, galaxy.y01 * this.height, galaxy.size, galaxy.angle);
+      u.uGalB.value[index]?.set(galaxy.squash, galaxy.brightness);
+    });
+    u.uGalN.value = this.cull.galaxies.length;
+
+    this.renderer.render(this.background.scene, this.background.camera);
   }
 
   /**
@@ -263,8 +383,27 @@ export class CoreScene {
     (this.innerMesh.material as MeshBasicMaterial).dispose();
     this.dust.geometry.dispose();
     (this.dust.material as ShaderMaterial).dispose();
+    this.background.mesh.geometry.dispose();
+    (this.background.mesh.material as ShaderMaterial).dispose();
 
     // Sem forceContextLoss: o canvas pertence ao React, que vai desmontá-lo.
     this.renderer.dispose();
   }
 }
+
+/** Alias, não interface: o ShaderMaterial exige a assinatura de índice implícita. */
+type BackgroundUniforms = {
+  uRes: { value: Vector2 };
+  uDpr: { value: number };
+  uPan: { value: number };
+  uTime: { value: number };
+  uReveal: { value: number };
+  uMy: { value: number };
+  uOctaves: { value: number };
+  uNeb: { value: Vector4[] };
+  uNebC: { value: Vector3[] };
+  uNebN: { value: number };
+  uGal: { value: Vector4[] };
+  uGalB: { value: Vector2[] };
+  uGalN: { value: number };
+};
