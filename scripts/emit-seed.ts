@@ -13,7 +13,7 @@ const rows = PUBLICATIONS.map((publication) => ({
     locale,
     title: publication.content[locale].title,
     summary: publication.content[locale].summary,
-    body: publication.content[locale].body.join('\n\n'),
+    body: publication.content[locale].body,
   })),
 }));
 

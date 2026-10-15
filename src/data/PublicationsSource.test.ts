@@ -92,7 +92,7 @@ export function describePublicationsSource(name: string, create: () => Publicati
       it('devolve o corpo no idioma pedido', async () => {
         const pt = await source.get('code-review-sem-atrito', 'pt');
         const en = await source.get('code-review-sem-atrito', 'en');
-        expect(pt?.body[0]).not.toBe(en?.body[0]);
+        expect(pt?.body).not.toBe(en?.body);
       });
 
       it('devolve null para slug desconhecido, em vez de lançar', async () => {
@@ -220,23 +220,23 @@ describe('createHttpSource — a lista', () => {
 
 describe('createHttpSource — a publicação', () => {
   it('pede o slug e o idioma', async () => {
-    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: ['um'] } } });
+    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: 'um' } } });
     await createHttpSource('https://x.dev', impl).get('code-review-sem-atrito', 'pt');
     expect(calls[0]).toBe('https://x.dev/api/publications/code-review-sem-atrito?locale=pt');
   });
 
   it('escapa o slug no caminho', async () => {
-    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: [] } } });
+    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: '' } } });
     await createHttpSource('https://x.dev', impl).get('a/b?c', 'pt');
     expect(calls[0]).toContain('/api/publications/a%2Fb%3Fc?locale=pt');
   });
 
-  it('entrega o corpo já em parágrafos', async () => {
+  it('entrega o corpo como a string de Markdown crua, sem dividir', async () => {
     const { impl } = stubFetch({
-      body: { data: { ...SUMMARY_ROW, body: ['primeiro', 'segundo'] } },
+      body: { data: { ...SUMMARY_ROW, body: 'primeiro\n\nsegundo' } },
     });
     const detail = await createHttpSource('https://x.dev', impl).get('x', 'pt');
-    expect(detail?.body).toEqual(['primeiro', 'segundo']);
+    expect(detail?.body).toBe('primeiro\n\nsegundo');
   });
 
   it('404 é ausência, não erro', async () => {
