@@ -203,6 +203,17 @@ class PublicationApiTest extends TestCase
         $this->getJson('/api/publications?before=nao-e-data')->assertStatus(422);
     }
 
+    public function test_a_61a_requisicao_no_mesmo_minuto_recebe_429(): void
+    {
+        // O limiter 'api' e por IP, e o cliente de teste usa sempre o mesmo —
+        // e exatamente o que se quer provar aqui.
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/api/publications?locale=pt')->assertOk();
+        }
+
+        $this->getJson('/api/publications?locale=pt')->assertStatus(429);
+    }
+
     public function test_a_publicacao_traz_o_corpo_como_markdown_cru(): void
     {
         $data = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')
