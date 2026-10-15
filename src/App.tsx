@@ -58,6 +58,7 @@ function Shell({ route }: { route: Route }) {
   const heroBlockRef = useRef<HTMLDivElement>(null);
   const cosmosRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
+  const yearsRef = useRef<HTMLDivElement>(null);
   const scrubRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<HTMLSpanElement>(null);
@@ -114,6 +115,7 @@ function Shell({ route }: { route: Route }) {
       hero: heroBlockRef,
       cosmos: cosmosRef,
       layer: layerRef,
+      years: yearsRef,
       scrub: scrubRef,
       marker: markerRef,
       rail: railRef,
@@ -571,6 +573,7 @@ function Shell({ route }: { route: Route }) {
         <Cosmos
           ref={cosmosRef}
           layerRef={layerRef}
+          yearsRef={yearsRef}
           stars={stars}
           viewport={viewport}
           pan={engine.panBucket * 512}

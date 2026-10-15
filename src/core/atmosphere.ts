@@ -197,3 +197,44 @@ export function cullSky(
     out.galaxies.push(galaxy);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Anos gigantes
+// ---------------------------------------------------------------------------
+
+/** Camada dos anos gigantes: anda a 75% do pan, atrás da constelação. */
+export const YEAR_LAYER = {
+  parallax: 0.75,
+  /** Fração da parallax do ponteiro e do avanço da câmera que a camada segue. */
+  pointerShare: 0.4,
+  pushShare: 0.6,
+  /** O quanto ela cresce com o artigo aberto: bem menos que a constelação. */
+  zoomGrowth: 0.4,
+} as const;
+
+/** x do numeral dentro da camada, a partir do x do 1º de janeiro na linha do tempo. */
+export function giantYearX(timelineX: number): number {
+  return timelineX * YEAR_LAYER.parallax;
+}
+
+export interface LayerTransform {
+  readonly x: number;
+  readonly scale: number;
+}
+
+/**
+ * Deslocamento da camada dos anos, a partir dos mesmos valores que movem a
+ * constelação: `pointerX` é a parallax do ponteiro e `push` o avanço da
+ * câmera na abertura de um artigo, ambos em px.
+ */
+export function yearLayerTransform(
+  pan: number,
+  pointerX: number,
+  push: number,
+  zoom: number,
+): LayerTransform {
+  return {
+    x: -pan * YEAR_LAYER.parallax + pointerX * YEAR_LAYER.pointerShare - push * YEAR_LAYER.pushShare,
+    scale: 1 + zoom * YEAR_LAYER.zoomGrowth,
+  };
+}

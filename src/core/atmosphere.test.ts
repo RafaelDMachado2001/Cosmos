@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { ATMOSPHERE, atmosphereIntensity, cullSky, emptyCull, generateSky } from './atmosphere';
+import {
+  ATMOSPHERE,
+  atmosphereIntensity,
+  cullSky,
+  emptyCull,
+  generateSky,
+  giantYearX,
+  yearLayerTransform,
+} from './atmosphere';
 import type { Nebula, Rgb } from './atmosphere';
 import { placeStars } from './timeline';
 import type { Category, PublicationInput } from './types';
@@ -143,5 +151,22 @@ describe('atmosphereIntensity', () => {
     expect(atmosphereIntensity(0, 0)).toBe(0);
     expect(atmosphereIntensity(0.5, 0)).toBe(0.5);
     expect(atmosphereIntensity(1, 1)).toBeCloseTo(0.45);
+  });
+});
+
+describe('anos gigantes', () => {
+  it('ficam a 75% da posição do ano e andam a 75% do pan', () => {
+    // Um numeral em x * 0.75 deslocado por -pan * 0.75 cai em tela em
+    // (x - pan) * 0.75: atrás da estrela, mais devagar que ela.
+    const x = giantYearX(4000);
+    const { x: offset, scale } = yearLayerTransform(1000, 0, 0, 0);
+    expect(x + offset).toBe((4000 - 1000) * 0.75);
+    expect(scale).toBe(1);
+  });
+
+  it('seguem só parte da parallax, do avanço e do zoom da constelação', () => {
+    expect(yearLayerTransform(0, 10, 0, 0).x).toBeCloseTo(4);
+    expect(yearLayerTransform(0, 0, 100, 0).x).toBeCloseTo(-60);
+    expect(yearLayerTransform(0, 0, 0, 1).scale).toBeCloseTo(1.4);
   });
 });
