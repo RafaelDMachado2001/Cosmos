@@ -7,6 +7,7 @@
  * para produção.
  */
 
+import { mulberry32 } from '../core/random';
 import { CATEGORIES } from '../core/types';
 import type { Publication } from '../core/types';
 
@@ -16,18 +17,6 @@ export interface SyntheticOptions {
   readonly seed?: number;
   readonly startISO?: string;
   readonly spanDays?: number;
-}
-
-/** PRNG determinístico (mulberry32). */
-function makeRandom(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 const TOPICS_PT = [
@@ -53,7 +42,7 @@ const TOPICS_EN = [
 ];
 
 export function makeSyntheticPublications(options: SyntheticOptions): readonly Publication[] {
-  const random = makeRandom(options.seed ?? 1);
+  const random = mulberry32(options.seed ?? 1);
   const start = Date.parse(`${options.startISO ?? '2019-01-01'}T00:00:00.000Z`);
   const spanDays = options.spanDays ?? 2600;
 
