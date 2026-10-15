@@ -78,13 +78,18 @@ export async function prerenderPages(
 ): Promise<PrerenderOutput> {
   const pages: PrerenderedPage[] = [];
   /** O acervo como a fonte o devolve — é ele que o sitemap lista. */
-  const listed = new Map<string, string>();
+  const listed = new Map<string, { publishedAt: string; updatedAt?: string }>();
 
   for (const locale of LOCALES) {
     const other = otherLocale(locale);
     const dictionary = DICTIONARIES[locale];
     const summaries = await source.list({ locale, limit: ARCHIVE_LIMIT });
-    for (const summary of summaries) listed.set(summary.slug, summary.publishedAt);
+    for (const summary of summaries) {
+      listed.set(summary.slug, {
+        publishedAt: summary.publishedAt,
+        ...(summary.updatedAt === undefined ? {} : { updatedAt: summary.updatedAt }),
+      });
+    }
 
     const index: readonly ArticleLink[] = summaries.map((summary) => ({
       href: articlePath(locale, summary.slug),
@@ -179,7 +184,7 @@ export async function prerenderPages(
      */
     sitemap: sitemapXml(
       SITE,
-      [...listed].map(([slug, publishedAt]) => ({ slug, publishedAt })),
+      [...listed].map(([slug, dates]) => ({ slug, ...dates })),
     ),
     robots: robotsTxt(SITE),
   };

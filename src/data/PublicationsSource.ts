@@ -38,6 +38,7 @@ function toSummary(publication: Publication, locale: Locale): PublicationSummary
     publishedAt: publication.publishedAt,
     category: publication.category,
     ...(publication.featured === undefined ? {} : { featured: publication.featured }),
+    ...(publication.updatedAt === undefined ? {} : { updatedAt: publication.updatedAt }),
     title: content.title,
     summary: content.summary,
   };
@@ -106,6 +107,7 @@ interface ApiPublication {
   readonly slug: string;
   readonly category: Category;
   readonly published_at: string;
+  readonly updated_at: string;
   readonly featured: boolean;
   readonly title: string;
   readonly summary: string;
@@ -119,6 +121,7 @@ function fromApi(row: ApiPublication): PublicationSummary {
   return {
     slug: row.slug,
     publishedAt: row.published_at,
+    updatedAt: row.updated_at,
     category: row.category,
     featured: row.featured,
     title: row.title,

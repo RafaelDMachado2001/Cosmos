@@ -17,13 +17,26 @@ import { absolute } from './url';
 /** O mínimo que uma URL do sitemap precisa saber da publicação. */
 export interface SitemapEntry {
   readonly slug: string;
-  /** ISO 8601. Vira o `lastmod`, que é uma data, não um instante. */
+  /** ISO 8601. Vira o `lastmod` quando não há edição depois da publicação. */
   readonly publishedAt: string;
+  /**
+   * ISO 8601. Maior que `publishedAt` quando o texto foi editado depois de
+   * publicado — editar só a tradução não toca a linha da publicação no
+   * banco, então o servidor já devolve o maior dos dois. Ausente nas
+   * publicações que nunca viram o backend (acervo semente, sintéticas).
+   */
+  readonly updatedAt?: string;
 }
 
-/** `lastmod` aceita a data sozinha, e é tudo o que se sabe: não há data de revisão. */
+/** `lastmod` aceita a data sozinha, e é tudo o que se sabe: não há hora de revisão. */
 function day(iso: string): string {
   return iso.slice(0, 10);
+}
+
+/** O mais recente dos dois, como dia — nunca o de publicação sozinho se houve edição depois. */
+function lastmod(entry: SitemapEntry): string {
+  if (entry.updatedAt === undefined) return day(entry.publishedAt);
+  return day(Date.parse(entry.updatedAt) > Date.parse(entry.publishedAt) ? entry.updatedAt : entry.publishedAt);
 }
 
 /**
@@ -60,7 +73,7 @@ export function sitemapXml(site: MetaSite, entries: readonly SitemapEntry[]): st
           site.origin,
           (target: Locale) => articlePath(target, entry.slug),
           locale,
-          day(entry.publishedAt),
+          lastmod(entry),
         ),
       ),
     ),

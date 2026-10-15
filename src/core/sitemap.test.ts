@@ -36,6 +36,29 @@ describe('sitemapXml', () => {
     expect(xml).toContain('<lastmod>2025-09-12</lastmod>');
   });
 
+  it('usa updatedAt como lastmod quando é mais recente que a publicação', () => {
+    const editada = sitemapXml(SITE, [
+      {
+        slug: 'editado-depois',
+        publishedAt: '2025-09-12T12:00:00.000Z',
+        updatedAt: '2026-02-01T08:00:00.000Z',
+      },
+    ]);
+    expect(editada).toContain('<lastmod>2026-02-01</lastmod>');
+    expect(editada).not.toContain('<lastmod>2025-09-12</lastmod>');
+  });
+
+  it('ignora updatedAt mais antigo que a publicação', () => {
+    const semEdicao = sitemapXml(SITE, [
+      {
+        slug: 'sem-edicao',
+        publishedAt: '2025-09-12T12:00:00.000Z',
+        updatedAt: '2025-09-12T12:00:00.000Z',
+      },
+    ]);
+    expect(semEdicao).toContain('<lastmod>2025-09-12</lastmod>');
+  });
+
   it('cada url aponta para as versões no outro idioma', () => {
     expect(xml).toContain(
       '<xhtml:link rel="alternate" hreflang="en" href="https://rdmlabs.dev/en/publications/code-review-sem-atrito"/>',
