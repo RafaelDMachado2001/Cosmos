@@ -18,6 +18,16 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    /*
+     * Login do painel. O allowlist não é lido daqui — é
+     * config('admin.email'), o mesmo endereço que o DatabaseSeeder já usa.
+     */
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

@@ -16,8 +16,10 @@ class DatabaseSeeder extends Seeder
          * O único acesso ao painel.
          *
          * O registro público está desligado — ver `AdminPanelProvider` — então
-         * é por aqui que o primeiro e único administrador nasce. A senha vem do
-         * ambiente para não existir credencial escrita no repositório.
+         * é por aqui que o primeiro e único administrador nasce. O login é por
+         * Google (`GoogleAuthController`); este e-mail é o allowlist, e a senha
+         * gerada aqui nunca autentica ninguém — só satisfaz a coluna
+         * obrigatória do schema. Nenhuma credencial fica escrita no repositório.
          */
         User::updateOrCreate(
             ['email' => config('admin.email')],
