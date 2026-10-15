@@ -50,8 +50,20 @@ class PublicationsTable
                 TextColumn::make('status')
                     ->label('Situação')
                     ->badge()
-                    ->color(fn (string $state): string => $state === Publication::STATUS_PUBLISHED ? 'success' : 'gray')
-                    ->formatStateUsing(fn (string $state): string => $state === Publication::STATUS_PUBLISHED ? 'Publicado' : 'Rascunho'),
+                    // "Publicado" com published_at no futuro não é visível na
+                    // API pública ainda — ver PublicationController::published().
+                    // O rótulo precisa dizer isso, senão pareceria publicado de
+                    // verdade até o comando de agendamento regenerar o site.
+                    ->color(fn (Publication $record): string => match (true) {
+                        $record->status !== Publication::STATUS_PUBLISHED => 'gray',
+                        $record->published_at->isFuture() => 'warning',
+                        default => 'success',
+                    })
+                    ->formatStateUsing(fn (Publication $record): string => match (true) {
+                        $record->status !== Publication::STATUS_PUBLISHED => 'Rascunho',
+                        $record->published_at->isFuture() => 'Agendado',
+                        default => 'Publicado',
+                    }),
 
                 IconColumn::make('featured')
                     ->label('Destaque')
