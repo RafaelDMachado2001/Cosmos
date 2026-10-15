@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CAPTION_BELOW_PX,
   connectors,
   monthMarkers,
   panBounds,
@@ -45,7 +46,8 @@ describe('resolveBand', () => {
     for (let height = 360; height <= 2000; height += 20) {
       const band = resolveBand(view(1280, height));
       expect(band.topPx).toBeGreaterThanOrEqual(HEADER_PX + 24);
-      expect(band.bottomPx).toBeLessThanOrEqual(height - RULER_PX - 24);
+      // E o rótulo sob a estrela mais baixa também cabe acima da régua.
+      expect(band.bottomPx + CAPTION_BELOW_PX).toBeLessThanOrEqual(height - RULER_PX - 24);
       expect(band.bottomPx).toBeGreaterThanOrEqual(band.topPx);
     }
   });

@@ -23,7 +23,8 @@ export interface TimelineConfig {
   readonly originX: number;
   /** Escala do eixo. FIXA — ver a nota sobre adaptividade em suggestGapPxPerDay. */
   readonly gapPxPerDay: number;
-  /** Distância mínima entre estrelas consecutivas. 32px do anel comum + 2. */
+  /** Distância mínima entre estrelas consecutivas: o alvo de clique de 88px + 2,
+   *  para que duas áreas de clique nunca se sobreponham. */
   readonly minGapPx: number;
   /** Folga à direita da última estrela, para a faixa não terminar no ponto. */
   readonly trailingPadPx: number;
@@ -34,7 +35,7 @@ export const TIMELINE: TimelineConfig = {
   originX: 300,
   /** 3.4 no handoff base; 4.6 desde a fase 10, que pôs um marcador por mês. */
   gapPxPerDay: 4.6,
-  minGapPx: 34,
+  minGapPx: 90,
   trailingPadPx: 380,
 };
 

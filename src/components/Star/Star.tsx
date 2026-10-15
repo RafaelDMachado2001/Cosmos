@@ -3,10 +3,17 @@ import { memo } from 'react';
 import styles from './Star.module.css';
 import type { PlacedStar } from '../../core/timeline';
 
+export interface StarCaption {
+  readonly title: string;
+  readonly date: string;
+}
+
 export interface StarProps {
   readonly star: PlacedStar;
   readonly yPx: number;
   readonly label: string;
+  /** Rótulo visível: título curto e data. Repete o `label`, por isso aria-hidden. */
+  readonly caption: StarCaption;
   readonly href: string;
   readonly dimmed: boolean;
   /** Atraso do fade de entrada, em ms. Ver `revealDelayMs`. */
@@ -32,6 +39,7 @@ export const Star = memo(function Star({
   star,
   yPx,
   label,
+  caption,
   href,
   dimmed,
   revealDelay,
@@ -77,6 +85,10 @@ export const Star = memo(function Star({
     >
       <span className={styles.core} aria-hidden="true" />
       <span className={styles.ring} aria-hidden="true" />
+      <span className={styles.caption} aria-hidden="true">
+        <span className={styles.captionTitle}>{caption.title}</span>
+        <span className={styles.captionDate}>{caption.date}</span>
+      </span>
     </a>
   );
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { monthLabel, monthYearLabel } from './format';
+import { monthLabel, monthYearLabel, shortTitle } from './format';
 
 const SET_2025 = Date.parse('2025-09-12T12:00:00.000Z');
 const JAN_2026 = Date.parse('2026-01-20T12:00:00.000Z');
@@ -34,5 +34,30 @@ describe('monthLabel', () => {
     expect(monthLabel(SET_2025, 'pt')).toBe('SET');
     expect(monthLabel(SET_2025, 'en')).toBe('SEPT');
     expect(monthLabel(Date.parse('2025-02-01T00:30:00.000Z'), 'pt')).toBe('FEV');
+  });
+});
+
+describe('shortTitle', () => {
+  it('deixa intacto o título que cabe', () => {
+    expect(shortTitle('Fundamentos de índices no PostgreSQL')).toBe(
+      'Fundamentos de índices no PostgreSQL',
+    );
+  });
+
+  it('corta na última palavra inteira e fecha com reticências', () => {
+    const short = shortTitle('Arquitetura e Orquestração de LLMs em sistemas de produção reais');
+    expect(short).toBe('Arquitetura e Orquestração de LLMs em…');
+    expect(short.length).toBeLessThanOrEqual(41);
+  });
+
+  it('corta no limite quando não há espaço razoável para quebrar', () => {
+    const short = shortTitle('Supercalifragilisticexpialidocious-e-outras-palavras-longas');
+    expect(short).toBe('Supercalifragilisticexpialidocious-e-out…');
+  });
+
+  it('não deixa espaço nem pontuação antes das reticências', () => {
+    expect(shortTitle('Um título qualquer, com vírgula, que passa do limite de largura')).not.toMatch(
+      /[\s,;:—-]…$/,
+    );
   });
 });
