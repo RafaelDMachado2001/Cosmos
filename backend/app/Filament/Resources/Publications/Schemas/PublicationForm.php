@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Publications\Schemas;
 use App\Models\Publication;
 use App\Models\PublicationTranslation;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -97,11 +98,24 @@ class PublicationForm
                                 ->rows(2)
                                 ->helperText('Aparece no cartão de hover e na meta description.'),
 
-                            Textarea::make('body')
+                            MarkdownEditor::make('body')
                                 ->label('Texto')
                                 ->required()
-                                ->rows(14)
-                                ->helperText('Separe os parágrafos com uma linha em branco: é assim que a API os divide.'),
+                                ->minHeight('22rem')
+                                // Restrita ao subconjunto que core/blocks.ts interpreta:
+                                // sem tabela e sem upload de arquivo, que não têm bloco
+                                // correspondente nesta fase. Uma imagem continua possível
+                                // digitando `![alt](url)` à mão.
+                                ->toolbarButtons([
+                                    ['bold', 'italic', 'link'],
+                                    ['heading'],
+                                    ['blockquote', 'codeBlock', 'bulletList', 'orderedList'],
+                                    ['undo', 'redo'],
+                                ])
+                                ->helperText(
+                                    'Markdown: títulos com ## ou ###, listas com - ou 1., citação '.
+                                    'com >, código entre ```, imagem com ![alt](url "legenda").'
+                                ),
                         ]),
                 ]),
         ]);
