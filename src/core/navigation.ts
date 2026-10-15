@@ -94,9 +94,14 @@ export function coreOpacity(enter: number): number {
   return 1 - ramp(enter, 0.5, 0.92);
 }
 
-/** A esfera opaca que dá a impressão de interior vazio. */
-export function innerOpacity(enter: number): number {
-  return 0.9 * Math.max(0, 1 - enter / 0.7);
+/**
+ * O brilho interno do núcleo, apagando na faixa `enter` 0→0.7.
+ *
+ * Até a fase 10 era uma esfera opaca a 90%, que lia como um furo; agora é luz
+ * aditiva, e a intensidade inteira é o ponto de partida.
+ */
+export function innerGlow(enter: number): number {
+  return Math.max(0, 1 - enter / 0.7);
 }
 
 /** Escala da esfera interna, encolhendo conforme se atravessa. */

@@ -14,7 +14,7 @@ import {
   needsSlide,
   panToScrubFraction,
   scrubToPan,
-  innerOpacity,
+  innerGlow,
   phaseFor,
   push,
 } from './navigation';
@@ -114,9 +114,9 @@ describe('funções de transferência do portal', () => {
   });
 
   it('a esfera interna some até 0.7', () => {
-    expect(innerOpacity(0)).toBeCloseTo(0.9, 9);
-    expect(innerOpacity(0.7)).toBe(0);
-    expect(innerOpacity(1)).toBe(0);
+    expect(innerGlow(0)).toBe(1);
+    expect(innerGlow(0.7)).toBe(0);
+    expect(innerGlow(1)).toBe(0);
   });
 
   it('a câmera vai de 4.3 a 0.25', () => {

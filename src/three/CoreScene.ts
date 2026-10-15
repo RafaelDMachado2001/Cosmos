@@ -15,7 +15,6 @@ import {
   Group,
   IcosahedronGeometry,
   Mesh,
-  MeshBasicMaterial,
   OrthographicCamera,
   PerspectiveCamera,
   PlaneGeometry,
@@ -42,7 +41,7 @@ import {
   coreOpacity,
   coreScale,
   dustZ,
-  innerOpacity,
+  innerGlow,
   innerScale,
 } from '../core/navigation';
 import { CAMERA_BASE_Z, CAMERA_FOV_DEG } from './framing';
@@ -55,6 +54,7 @@ import {
   MAX_NEBULAE,
 } from './shaders/background';
 import { DUST_FRAGMENT_SHADER, DUST_VERTEX_SHADER } from './shaders/dust';
+import { INNER_FRAGMENT_SHADER, INNER_VERTEX_SHADER } from './shaders/inner';
 
 /** Abaixo disto a atmosfera não é desenhada: a passada inteira é pulada. */
 const ATMOSPHERE_VISIBLE_ABOVE = 0.001;
@@ -80,6 +80,7 @@ export class CoreScene {
   private readonly group: Group;
   private readonly coreMesh: Mesh;
   private readonly innerMesh: Mesh;
+  private readonly innerUniforms: { uO: { value: number }; uP: { value: number } };
   private readonly dust: Points;
   private readonly background: {
     readonly scene: Scene;
@@ -158,10 +159,19 @@ export class CoreScene {
       }),
     );
 
-    // Esfera opaca por dentro: é ela que dá a leitura de interior vazio.
+    // Luz por dentro, não mais uma esfera escura: divide o pulso com a borda,
+    // e a energia que a percorre acende o centro junto.
+    this.innerUniforms = { uO: { value: 1 }, uP: this.uniforms.uPulse };
     this.innerMesh = new Mesh(
-      new IcosahedronGeometry(0.72, 3),
-      new MeshBasicMaterial({ color: 0x0a0714, transparent: true, opacity: 0.9 }),
+      new IcosahedronGeometry(0.8, 4),
+      new ShaderMaterial({
+        vertexShader: INNER_VERTEX_SHADER,
+        fragmentShader: INNER_FRAGMENT_SHADER,
+        uniforms: this.innerUniforms,
+        transparent: true,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      }),
     );
 
     this.group = new Group();
@@ -310,7 +320,7 @@ export class CoreScene {
     this.group.rotation.x = Math.sin(this.shaderTime * 0.11) * 0.1 - this.pointerY * 0.22;
 
     this.innerMesh.scale.setScalar(innerScale(enter));
-    (this.innerMesh.material as MeshBasicMaterial).opacity = innerOpacity(enter);
+    this.innerUniforms.uO.value = innerGlow(enter);
 
     this.camera.position.z = cameraZ(enter);
     this.camera.position.x = this.pointerX * 0.22;
@@ -380,7 +390,7 @@ export class CoreScene {
     this.coreMesh.geometry.dispose();
     (this.coreMesh.material as ShaderMaterial).dispose();
     this.innerMesh.geometry.dispose();
-    (this.innerMesh.material as MeshBasicMaterial).dispose();
+    (this.innerMesh.material as ShaderMaterial).dispose();
     this.dust.geometry.dispose();
     (this.dust.material as ShaderMaterial).dispose();
     this.background.mesh.geometry.dispose();
