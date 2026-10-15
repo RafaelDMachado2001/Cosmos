@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,9 +24,27 @@ class PublicationResource extends JsonResource
             'slug' => $this->resource->slug,
             'category' => $this->resource->category,
             'published_at' => $this->resource->published_at->toIso8601ZuluString('millisecond'),
+            'updated_at' => $this->updatedAt()->toIso8601ZuluString('millisecond'),
             'featured' => (bool) $this->resource->featured,
             'title' => $this->resource->title,
             'summary' => $this->resource->summary,
         ];
+    }
+
+    /**
+     * O mais recente entre a publicação e a tradução pedida.
+     *
+     * Editar só o texto não toca `publications.updated_at` — ver "editar só a
+     * tradução também regenera" na fase 9. O `sitemap.xml` do cliente usa isto
+     * como `lastmod`; sem o maior dos dois, uma edição de texto nunca mudaria
+     * a data que o buscador vê.
+     */
+    private function updatedAt(): Carbon
+    {
+        $translationUpdatedAt = Carbon::parse($this->resource->translation_updated_at);
+
+        return $translationUpdatedAt->greaterThan($this->resource->updated_at)
+            ? $translationUpdatedAt
+            : Carbon::parse($this->resource->updated_at);
     }
 }
