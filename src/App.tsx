@@ -63,6 +63,7 @@ function Shell({ route }: { route: Route }) {
   const railRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<HTMLSpanElement>(null);
   const fallbackRef = useRef<HTMLDivElement>(null);
+  const skyFallbackRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<HTMLDivElement>(null);
 
   const [hovered, setHovered] = useState<{
@@ -124,6 +125,7 @@ function Shell({ route }: { route: Route }) {
       marker: markerRef,
       rail: railRef,
       fallback: fallbackRef,
+      skyFallback: skyFallbackRef,
       reader: readerRef,
     }),
     [],
@@ -595,6 +597,7 @@ function Shell({ route }: { route: Route }) {
           reducedMotion={reducedMotion}
           sceneRef={engine.sceneRef}
           fallbackRef={fallbackRef}
+          skyFallbackRef={skyFallbackRef}
         />
         <div className={styles.vignette} aria-hidden="true" />
 

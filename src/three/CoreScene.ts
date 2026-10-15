@@ -24,10 +24,12 @@ import {
   Vector2,
   Vector3,
   Vector4,
+  WebGLRenderTarget,
   WebGLRenderer,
 } from 'three';
 
 import { ATMOSPHERE, cullSky, emptyCull } from '../core/atmosphere';
+import { QUALITY_LEVELS, createQualityGovernor, effectiveLevel } from '../core/quality';
 import type { Sky } from '../core/atmosphere';
 import {
   ATMOSPHERE_TIME_SCALE,
@@ -53,6 +55,7 @@ import {
   MAX_GALAXIES,
   MAX_NEBULAE,
 } from './shaders/background';
+import { COPY_FRAGMENT_SHADER, COPY_VERTEX_SHADER } from './shaders/copy';
 import { DUST_FRAGMENT_SHADER, DUST_VERTEX_SHADER } from './shaders/dust';
 import { INNER_FRAGMENT_SHADER, INNER_VERTEX_SHADER } from './shaders/inner';
 
@@ -105,6 +108,10 @@ export class CoreScene {
   private width = 0;
   private height = 0;
   private pixelRatio = 1;
+  private readonly quality = createQualityGovernor();
+  /** Só existe enquanto o céu é desenhado em resolução reduzida. */
+  private target: WebGLRenderTarget | null = null;
+  private readonly copy: { scene: Scene; mesh: Mesh; uniforms: { tMap: { value: unknown } } };
   private enter = 0;
   private pointerX = 0;
   private pointerY = 0;
@@ -183,6 +190,27 @@ export class CoreScene {
     this.scene.add(this.dust);
 
     this.background = CoreScene.createBackground(pixelRatio);
+    this.copy = CoreScene.createCopy();
+  }
+
+  /** Amplia o céu desenhado em meia resolução, sem tocar no alfa pré-multiplicado. */
+  private static createCopy(): CoreScene['copy'] {
+    const uniforms = { tMap: { value: null as unknown } };
+    const mesh = new Mesh(
+      new PlaneGeometry(2, 2),
+      new ShaderMaterial({
+        vertexShader: COPY_VERTEX_SHADER,
+        fragmentShader: COPY_FRAGMENT_SHADER,
+        uniforms,
+        depthTest: false,
+        depthWrite: false,
+        transparent: true,
+        premultipliedAlpha: true,
+      }),
+    );
+    const scene = new Scene();
+    scene.add(mesh);
+    return { scene, mesh, uniforms };
   }
 
   private static createBackground(pixelRatio: number): CoreScene['background'] {
@@ -291,7 +319,6 @@ export class CoreScene {
     this.width = width;
     this.height = height;
     this.renderer.setSize(width, height, false);
-    this.background.uniforms.uRes.value.set(width * this.pixelRatio, height * this.pixelRatio);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
@@ -339,14 +366,26 @@ export class CoreScene {
   private renderAtmosphere(deltaSeconds: number): void {
     if (this.atmosphere <= ATMOSPHERE_VISIBLE_ABOVE) return;
 
-    const scale = this.reducedMotion ? ATMOSPHERE_TIME_SCALE.reduced : ATMOSPHERE_TIME_SCALE.normal;
-    this.atmosphereTime += deltaSeconds * scale;
+    const timeScale = this.reducedMotion
+      ? ATMOSPHERE_TIME_SCALE.reduced
+      : ATMOSPHERE_TIME_SCALE.normal;
+    this.atmosphereTime += deltaSeconds * timeScale;
 
     const narrow = this.width < NARROW_WIDTH;
     const maxNebulae = narrow ? ATMOSPHERE.maxNebulae.narrow : ATMOSPHERE.maxNebulae.wide;
     cullSky(this.sky, this.pan, this.width, maxNebulae, this.cull);
 
+    // O custo medido é o do quadro inteiro, mas só conta enquanto o céu é
+    // desenhado: na entrada ele nem existe, e o núcleo pesa outra coisa.
+    this.quality.sample(deltaSeconds * 1000);
+    const level = QUALITY_LEVELS[effectiveLevel(this.quality.level, this.width)];
+    const scale = level?.scale ?? 1;
+    const ratio = this.pixelRatio * scale;
+
     const u = this.background.uniforms;
+    u.uOctaves.value = level?.octaves ?? 5;
+    u.uDpr.value = ratio;
+    u.uRes.value.set(Math.round(this.width * ratio), Math.round(this.height * ratio));
     u.uTime.value = this.atmosphereTime;
     u.uPan.value = this.pan;
     u.uMy.value = this.pointerY;
@@ -363,7 +402,27 @@ export class CoreScene {
     });
     u.uGalN.value = this.cull.galaxies.length;
 
+    if (scale === 1) {
+      this.renderer.render(this.background.scene, this.background.camera);
+      return;
+    }
+
+    const target = this.ensureTarget(u.uRes.value.x, u.uRes.value.y);
+    this.renderer.setRenderTarget(target);
+    this.renderer.clear();
     this.renderer.render(this.background.scene, this.background.camera);
+    this.renderer.setRenderTarget(null);
+    this.copy.uniforms.tMap.value = target.texture;
+    this.renderer.render(this.copy.scene, this.background.camera);
+  }
+
+  private ensureTarget(width: number, height: number): WebGLRenderTarget {
+    if (!this.target) {
+      this.target = new WebGLRenderTarget(width, height, { depthBuffer: false });
+    } else if (this.target.width !== width || this.target.height !== height) {
+      this.target.setSize(width, height);
+    }
+    return this.target;
   }
 
   /**
@@ -394,6 +453,9 @@ export class CoreScene {
     this.dust.geometry.dispose();
     (this.dust.material as ShaderMaterial).dispose();
     this.background.mesh.geometry.dispose();
+    this.copy.mesh.geometry.dispose();
+    (this.copy.mesh.material as ShaderMaterial).dispose();
+    this.target?.dispose();
     (this.background.mesh.material as ShaderMaterial).dispose();
 
     // Sem forceContextLoss: o canvas pertence ao React, que vai desmontá-lo.
