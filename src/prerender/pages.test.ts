@@ -79,6 +79,15 @@ describe('prerenderPages', () => {
     }
   });
 
+  it('traz um feed RSS por idioma, com o acervo daquele idioma', () => {
+    expect(output.rss.pt).toContain('<rss version="2.0">');
+    expect(output.rss.en).toContain('<rss version="2.0">');
+    for (const publication of PUBLICATIONS) {
+      expect(output.rss.pt).toContain(`/pt/publicacoes/${publication.slug}</link>`);
+      expect(output.rss.en).toContain(`/en/publications/${publication.slug}</link>`);
+    }
+  });
+
   it('prerenderiza a partir da fonte injetada, nao do acervo semente', async () => {
     const fixture = createStaticSource([
       {
