@@ -16,6 +16,7 @@ import {
   renderHeadTags,
 } from '../core/seo';
 import type { MetaArticle } from '../core/seo';
+import { rssXml } from '../core/rss';
 import { robotsTxt, sitemapXml } from '../core/sitemap';
 import { LOCALES, LOCALE_TAG } from '../core/types';
 import type { Locale } from '../core/types';
@@ -51,6 +52,8 @@ export interface PrerenderOutput {
   readonly notFound: PrerenderedPage;
   readonly sitemap: string;
   readonly robots: string;
+  /** Um feed RSS 2.0 por idioma, só com o que aquele idioma publicou. */
+  readonly rss: Record<Locale, string>;
 }
 
 /**
@@ -79,6 +82,7 @@ export async function prerenderPages(
   const pages: PrerenderedPage[] = [];
   /** O acervo como a fonte o devolve — é ele que o sitemap lista. */
   const listed = new Map<string, { publishedAt: string; updatedAt?: string }>();
+  const rss: Partial<Record<Locale, string>> = {};
 
   for (const locale of LOCALES) {
     const other = otherLocale(locale);
@@ -90,6 +94,9 @@ export async function prerenderPages(
         ...(summary.updatedAt === undefined ? {} : { updatedAt: summary.updatedAt }),
       });
     }
+    // Do mais novo para o mais antigo, igual à constelação — não há motivo
+    // para um leitor de RSS ver o acervo em outra ordem.
+    rss[locale] = rssXml(SITE.origin, locale, dictionary.meta, summaries);
 
     const index: readonly ArticleLink[] = summaries.map((summary) => ({
       href: articlePath(locale, summary.slug),
@@ -187,5 +194,8 @@ export async function prerenderPages(
       [...listed].map(([slug, dates]) => ({ slug, ...dates })),
     ),
     robots: robotsTxt(SITE),
+    // Todo LOCALES passa pelo laço acima, então toda chave existe — o cast
+    // é só o que o TypeScript não infere de um objeto montado por atribuição.
+    rss: rss as Record<Locale, string>,
   };
 }

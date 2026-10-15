@@ -243,7 +243,7 @@ async function main(): Promise<void> {
   const css = await readStaticCss();
   const apiUrl = apiUrlFrom(process.env);
   const source = apiUrl === null ? createStaticSource(PUBLICATIONS) : createHttpSource(apiUrl);
-  const { pages, notFound, sitemap, robots } = await prerenderPages(source);
+  const { pages, notFound, sitemap, robots, rss } = await prerenderPages(source);
 
   // Os cartões antes das páginas: nenhum HTML gravado aponta para um
   // `og:image` que ainda não existe.
@@ -273,13 +273,17 @@ async function main(): Promise<void> {
 
   await write(join(DIST, 'sitemap.xml'), sitemap);
   await write(join(DIST, 'robots.txt'), robots);
+  // Um feed por idioma, na mesma pasta do idioma — /pt/rss.xml, /en/rss.xml.
+  for (const locale of LOCALES) {
+    await write(join(DIST, locale, 'rss.xml'), rss[locale]);
+  }
 
   // Depois de gravar tudo, nunca antes: o que fica no ar durante a passada e o
   // site anterior inteiro, e o que sai e so o que o acervo nao contem mais.
   const pruned = [...(await pruneArticles(pages)), ...(await pruneOgImages(ogPaths.wanted))];
 
   console.log(
-    `prerender: ${pages.length} páginas, 404.html, sitemap.xml e robots.txt em ${DIST}/; ` +
+    `prerender: ${pages.length} páginas, 404.html, sitemap.xml, robots.txt e rss.xml por idioma em ${DIST}/; ` +
       `${ogPaths.drawn} cartões desenhados, ${ogPaths.wanted.size - ogPaths.drawn} reaproveitados` +
       (pruned.length > 0 ? `; podados: ${pruned.join(', ')}` : ''),
   );
