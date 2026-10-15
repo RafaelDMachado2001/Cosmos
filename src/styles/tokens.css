@@ -32,6 +32,7 @@
   --color-text-faint: #7c7f99; /* placeholders, datas */
   --color-text-ui: #c9cbe0; /* rótulos de painel */
   --color-text-year: #8285a0; /* marcadores de ano */
+  --color-year-giant: rgba(169, 155, 255, 0.045); /* anos gigantes ao fundo */
   --color-focus: #e8e9f2; /* anel de foco */
 
   /* --- Acento ------------------------------------------------------------ */

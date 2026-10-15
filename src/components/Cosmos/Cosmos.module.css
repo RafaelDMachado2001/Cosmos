@@ -13,6 +13,27 @@
   -webkit-touch-callout: none;
 }
 
+/* Anos gigantes: textura atrás da constelação, nunca mais fortes que ela. */
+.giantYears {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.giantYear {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-year-giant);
+  font-family: var(--font-sans);
+  font-size: min(36vh, 340px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+
 /* Movido só por transform, nunca por left/top: é o que mantém a animação
    fora do caminho do layout. */
 .layer {

@@ -2,6 +2,7 @@ import { forwardRef, useMemo } from 'react';
 import type { RefObject } from 'react';
 
 import styles from './Cosmos.module.css';
+import { giantYearX } from '../../core/atmosphere';
 import { revealDelayMs } from '../../core/collection';
 import {
   AXIS_PCT,
@@ -24,6 +25,8 @@ const VIRTUALIZE_ABOVE = 800;
 export interface CosmosProps {
   readonly stars: readonly PlacedStar[];
   readonly layerRef: RefObject<HTMLDivElement>;
+  /** Camada dos anos gigantes, movida pelo laço com parallax própria. */
+  readonly yearsRef: RefObject<HTMLDivElement>;
   readonly viewport: Viewport;
   readonly pan: number;
   readonly marginPx: number;
@@ -57,6 +60,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   {
     stars,
     layerRef,
+    yearsRef,
     viewport,
     pan,
     marginPx,
@@ -108,6 +112,19 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
       aria-hidden={!interactive}
       {...(interactive ? {} : { inert: '' })}
     >
+      {/* Atrás de tudo, só textura: aria-hidden e sem ponteiro. */}
+      <div ref={yearsRef} className={styles.giantYears} aria-hidden="true">
+        {years.map((marker) => (
+          <span
+            key={marker.year}
+            className={styles.giantYear}
+            style={{ left: `${giantYearX(marker.x)}px` }}
+          >
+            {marker.year}
+          </span>
+        ))}
+      </div>
+
       <div ref={layerRef} className={styles.layer}>
         <div
           className={styles.axis}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, RefObject } from 'react';
 
-import { atmosphereIntensity, generateSky } from '../core/atmosphere';
+import { atmosphereIntensity, generateSky, yearLayerTransform } from '../core/atmosphere';
 import type { Rgb } from '../core/atmosphere';
 import * as camera from '../core/camera';
 import { isDrag, lambdas, stepInertia } from '../core/motion';
@@ -42,6 +42,8 @@ export interface CosmosRefs {
   readonly hero: RefObject<HTMLElement>;
   readonly cosmos: RefObject<HTMLElement>;
   readonly layer: RefObject<HTMLElement>;
+  /** Anos gigantes ao fundo. */
+  readonly years: RefObject<HTMLElement>;
   readonly scrub: RefObject<HTMLElement>;
   readonly marker: RefObject<HTMLElement>;
   readonly rail: RefObject<HTMLElement>;
@@ -315,6 +317,12 @@ export function useCosmosEngine(
             `translate3d(${x}px, ${s.mouseYS * -6}px, 0) scale(${zoomScale(zoom)})`;
           layer.style.transformOrigin = `${s.focusX}px 55%`;
           layer.style.filter = `blur(${zoomBlurPx(zoom)}px)`;
+
+          const years = refs.years.current;
+          if (years) {
+            const t = yearLayerTransform(s.panS, parallax, push_, zoom);
+            years.style.transform = `translate3d(${t.x}px, 0, 0) scale(${t.scale})`;
+          }
         }
 
         const scrub = refs.scrub.current;
@@ -390,6 +398,7 @@ export function useCosmosEngine(
         refs.hero,
         refs.layer,
         refs.marker,
+        refs.years,
         refs.rail,
         refs.reader,
         refs.scrub,
