@@ -82,6 +82,9 @@ services:
       - ADMIN_NAME=${ADMIN_NAME:-RDM Labs}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@rdmlabs.dev}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
       - TZ=${TIMEZONE:-America/Sao_Paulo}
     depends_on:
       db:
