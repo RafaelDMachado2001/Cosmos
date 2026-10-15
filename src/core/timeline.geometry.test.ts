@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   connectors,
+  monthMarkers,
   panBounds,
   panBucket,
   panForStar,
@@ -179,6 +180,43 @@ describe('yearMarkers', () => {
     for (const marker of yearMarkers(stars)) {
       expect(marker.x).toBeCloseTo(xAtTime(stars, Date.UTC(marker.year, 0, 1)), 9);
     }
+  });
+});
+
+describe('monthMarkers', () => {
+  it('marca todo mês de janeiro do primeiro ano até o mês da mais recente', () => {
+    const stars = placeStars([
+      { slug: 'a', publishedAt: '2024-03-10T12:00:00.000Z', category: 'artigo' },
+      { slug: 'b', publishedAt: '2025-02-01T12:00:00.000Z', category: 'artigo' },
+    ]);
+    const months = monthMarkers(stars);
+
+    expect(months).toHaveLength(14);
+    expect(months[0]).toMatchObject({ year: 2024, month: 0, january: true, hasPublication: false });
+    expect(months.at(-1)).toMatchObject({ year: 2025, month: 1, hasPublication: true });
+    expect(months.filter((m) => m.january).map((m) => m.year)).toEqual([2024, 2025]);
+    expect(months.filter((m) => m.hasPublication).map((m) => m.key)).toEqual([
+      '2024-03',
+      '2025-02',
+    ]);
+  });
+
+  it('usa UTC: o mês de uma publicação não muda com o fuso de quem lê', () => {
+    // 23h do dia 31 em UTC-3 já é dia 1 em UTC; o que vale é o UTC.
+    const stars = placeStars([
+      { slug: 'virada', publishedAt: '2024-04-01T02:00:00.000Z', category: 'artigo' },
+    ]);
+    expect(monthMarkers(stars).filter((m) => m.hasPublication).map((m) => m.key)).toEqual([
+      '2024-04',
+    ]);
+  });
+
+  it('posiciona no espaço já empurrado, como os anos', () => {
+    const stars = placeStars(makeDataset(makeRandom(53), { count: 200, spanDays: 200 }));
+    for (const marker of monthMarkers(stars)) {
+      expect(marker.x).toBeCloseTo(xAtTime(stars, Date.UTC(marker.year, marker.month, 1)), 9);
+    }
+    expect(monthMarkers([])).toEqual([]);
   });
 });
 

@@ -119,7 +119,7 @@ describe('placeStars', () => {
   });
 
   it('não empurra ninguém quando as datas são esparsas', () => {
-    // Com gap 3.4 px/dia e minGap 34px, 10 dias já bastam para nunca colidir.
+    // Com gap 4.6 px/dia e o minGap atual, 30 dias já bastam para nunca colidir.
     const items = Array.from({ length: 40 }, (_, i) =>
       at(`sparse-${i}`, new Date(Date.UTC(2024, 0, 1 + i * 30)).toISOString().slice(0, 10)),
     );

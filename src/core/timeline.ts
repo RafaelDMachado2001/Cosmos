@@ -32,7 +32,8 @@ export interface TimelineConfig {
 export const TIMELINE: TimelineConfig = {
   epochISO: '2024-01-01',
   originX: 300,
-  gapPxPerDay: 3.4,
+  /** 3.4 no handoff base; 4.6 desde a fase 10, que pôs um marcador por mês. */
+  gapPxPerDay: 4.6,
   minGapPx: 34,
   trailingPadPx: 380,
 };

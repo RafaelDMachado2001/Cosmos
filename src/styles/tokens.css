@@ -33,6 +33,9 @@
   --color-text-ui: #c9cbe0; /* rótulos de painel */
   --color-text-year: #8285a0; /* marcadores de ano */
   --color-year-giant: rgba(169, 155, 255, 0.045); /* anos gigantes ao fundo */
+  --color-month-active: #b4a8ff; /* meses com publicação */
+  --color-month-filet: rgba(169, 155, 255, 0.3);
+  --color-month-filet-january: rgba(169, 155, 255, 0.45);
   --color-focus: #e8e9f2; /* anel de foco */
 
   /* --- Acento ------------------------------------------------------------ */
