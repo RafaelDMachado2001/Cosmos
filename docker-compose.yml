@@ -125,6 +125,37 @@ services:
       - rdm-network
     restart: unless-stopped
 
+  ### Agendador: nota publicação agendada vencendo e manda regenerar ##########
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args:
+        VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
+        UID: ${DOCKER_UID:-1000}
+        GID: ${DOCKER_GID:-1000}
+    profiles: [backend]
+    user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
+    working_dir: /var/www
+    # schedule:work roda o laço sozinho — sem precisar de cron do sistema no
+    # container, que é o motivo de existir no Laravel desde a versão 8.
+    command: php artisan schedule:work
+    volumes:
+      - ./backend:/var/www
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME:-rdm}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - TZ=${TIMEZONE:-America/Sao_Paulo}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rdm-network
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     profiles: [backend]

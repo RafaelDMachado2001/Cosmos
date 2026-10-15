@@ -46,6 +46,24 @@ class AdminPanelTest extends TestCase
             ->assertCountTableRecords(14);
     }
 
+    public function test_publicacao_agendada_mostra_situacao_propria(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $agendada = Publication::create([
+            'slug' => 'agendada-no-painel',
+            'category' => 'artigo',
+            'published_at' => now()->addWeek(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+
+        // "Publicado" com data futura não aparece na API pública ainda — o
+        // painel precisa dizer isso, não só repetir o status do banco.
+        Livewire::test(ListPublications::class)
+            ->assertTableColumnFormattedStateSet('status', 'Agendado', $agendada);
+    }
+
     public function test_publica_um_item_novo_com_as_duas_traducoes(): void
     {
         $this->actingAs(User::factory()->create());
