@@ -9,7 +9,7 @@ import type { CosmosStatusKind } from './components/CosmosStatus/CosmosStatus';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
 import { SkipLink } from './components/SkipLink/SkipLink';
-import type { HoverCard } from './components/HoverPanel/HoverPanel';
+import type { HoverCard, HoverVia } from './components/HoverPanel/HoverPanel';
 import { ReaderView } from './components/ReaderView/ReaderView';
 import type { ReaderCard } from './components/ReaderView/ReaderView';
 import { StarIndex } from './components/StarIndex/StarIndex';
@@ -65,7 +65,11 @@ function Shell({ route }: { route: Route }) {
   const fallbackRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<HTMLDivElement>(null);
 
-  const [hovered, setHovered] = useState<{ slug: string; side: HoverSide } | null>(null);
+  const [hovered, setHovered] = useState<{
+    slug: string;
+    side: HoverSide;
+    via: HoverVia;
+  } | null>(null);
   const [reader, setReader] = useState<ReaderState>(CLOSED);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | 'all'>('all');
@@ -185,7 +189,7 @@ function Shell({ route }: { route: Route }) {
    * some assim que a constelação se move sob o ponteiro.
    */
   const onHover = useCallback(
-    (slug: string | null) => {
+    (slug: string | null, via: HoverVia = 'pointer') => {
       const star = slug === null ? undefined : starBySlug.get(slug);
       if (!star) {
         setHovered(null);
@@ -194,6 +198,7 @@ function Shell({ route }: { route: Route }) {
       setHovered({
         slug: star.slug,
         side: hoverSide(star.x - engine.panRef.current, viewport.width),
+        via,
       });
     },
     [starBySlug, engine.panRef, viewport.width],
@@ -223,6 +228,7 @@ function Shell({ route }: { route: Route }) {
     return {
       slug: item.slug,
       side: hovered.side,
+      via: hovered.via,
       categoryLabel: t.categories[item.category],
       dateLabel: dateLabel(Date.parse(item.publishedAt)),
       title: item.title,

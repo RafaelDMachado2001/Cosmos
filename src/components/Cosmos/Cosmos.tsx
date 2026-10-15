@@ -19,7 +19,7 @@ import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
 import { useLocale } from '../../i18n/useLocale';
 import { HoverPanel } from '../HoverPanel/HoverPanel';
-import type { HoverCard } from '../HoverPanel/HoverPanel';
+import type { HoverCard, HoverVia } from '../HoverPanel/HoverPanel';
 import { Star } from '../Star/Star';
 import type { StarCaption } from '../Star/Star';
 
@@ -42,7 +42,7 @@ export interface CosmosProps {
   /** Cartão da estrela sob o ponteiro, ou nulo. */
   readonly hover: HoverCard | null;
   readonly onActivate: (star: PlacedStar) => void;
-  readonly onHover: (slug: string | null) => void;
+  readonly onHover: (slug: string | null, via?: HoverVia) => void;
   readonly onFocusStar: (star: PlacedStar) => void;
   readonly onPointerDown: (event: React.PointerEvent) => void;
   /**
@@ -111,7 +111,18 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
     <div
       ref={ref}
       className={styles.cosmos}
-      onPointerDown={onPointerDown}
+      onPointerDown={(event) => {
+        // No toque, tocar fora de qualquer estrela fecha o painel aberto pelo
+        // primeiro toque — o equivalente do mouse saindo de cima dela.
+        if (
+          event.pointerType === 'touch' &&
+          hover !== null &&
+          !(event.target instanceof Element && event.target.closest('a'))
+        ) {
+          onHover(null);
+        }
+        onPointerDown(event);
+      }}
       // Sem isto o navegador arrasta a estrela como link (o fantasma da URL)
       // em vez de deixar o gesto mover a linha do tempo.
       onDragStart={(event) => {
@@ -182,6 +193,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             caption={captionFor(star)}
             href={hrefFor(star.slug)}
             dimmed={dimmed.has(star.slug)}
+            hovered={hover?.slug === star.slug}
             revealDelay={revealDelayMs(star.index, reducedMotion)}
             onActivate={onActivate}
             onHover={onHover}

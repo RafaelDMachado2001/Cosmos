@@ -21,6 +21,8 @@ export const pt = {
   },
   nav: {
     brand: 'RDM LABS',
+    /** Volta à entrada pelo caminho da travessia. A seta é decorativa. */
+    home: 'INÍCIO',
     cosmos: 'CONSTELAÇÃO',
     categories: 'CATEGORIAS',
     portfolio: 'PORTFÓLIO',
@@ -44,6 +46,8 @@ export const pt = {
   },
   star: {
     openHint: 'CLIQUE PARA ABRIR',
+    /** No toque, o primeiro toque só mostra o painel. */
+    tapHint: 'TOQUE DE NOVO PARA ABRIR',
     indexLabel: 'Todas as publicações',
   },
   reader: {

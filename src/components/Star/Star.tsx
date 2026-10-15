@@ -1,7 +1,8 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 
 import styles from './Star.module.css';
 import type { PlacedStar } from '../../core/timeline';
+import type { HoverVia } from '../HoverPanel/HoverPanel';
 
 export interface StarCaption {
   readonly title: string;
@@ -16,10 +17,12 @@ export interface StarProps {
   readonly caption: StarCaption;
   readonly href: string;
   readonly dimmed: boolean;
+  /** Se o painel desta estrela está aberto. Decide o segundo toque. */
+  readonly hovered: boolean;
   /** Atraso do fade de entrada, em ms. Ver `revealDelayMs`. */
   readonly revealDelay: number;
   readonly onActivate: (star: PlacedStar) => void;
-  readonly onHover: (slug: string | null) => void;
+  readonly onHover: (slug: string | null, via?: HoverVia) => void;
   /** Só pelo teclado: a câmera precisa acompanhar para onde o foco foi. */
   readonly onFocusStar: (star: PlacedStar) => void;
 }
@@ -42,11 +45,21 @@ export const Star = memo(function Star({
   caption,
   href,
   dimmed,
+  hovered,
   revealDelay,
   onActivate,
   onHover,
   onFocusStar,
 }: StarProps) {
+  /*
+   * O que o ponteiro era ao pressionar, e se o painel já estava aberto. Lido
+   * no pointerdown porque o clique chega depois do foco, que já abre o painel.
+   */
+  const press = useRef<{ touch: boolean; wasHovered: boolean }>({
+    touch: false,
+    wasHovered: false,
+  });
+
   return (
     <a
       className={styles.hit}
@@ -65,13 +78,26 @@ export const Star = memo(function Star({
         // (ctrl, meio, nova aba) segue o comportamento nativo do link.
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
         event.preventDefault();
+        const { touch, wasHovered } = press.current;
+        press.current = { touch: false, wasHovered: false };
+        // No toque não há hover: o primeiro toque faz o papel dele, mostrando
+        // o painel, e só o segundo na mesma estrela abre o artigo.
+        if (touch && !wasHovered) {
+          onHover(star.slug, 'touch');
+          return;
+        }
         onActivate(star);
       }}
-      onPointerEnter={() => {
-        onHover(star.slug);
+      onPointerDown={(event) => {
+        press.current = { touch: event.pointerType === 'touch', wasHovered: hovered };
       }}
-      onPointerLeave={() => {
-        onHover(null);
+      // O toque dispara enter e leave em volta de cada toque; deixá-los mexer
+      // no painel o abriria e fecharia antes do clique decidir.
+      onPointerEnter={(event) => {
+        if (event.pointerType !== 'touch') onHover(star.slug);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== 'touch') onHover(null);
       }}
       onFocus={() => {
         onHover(star.slug);
