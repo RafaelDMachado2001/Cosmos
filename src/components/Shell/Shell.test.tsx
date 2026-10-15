@@ -32,6 +32,13 @@ function pointerDown(pointerType: 'mouse' | 'touch'): MouseEvent {
   return Object.assign(event, { pointerType });
 }
 
+/** Um toque completo: o jsdom nao gera a sequencia de ponteiro sozinho. */
+function tocar(element: HTMLElement): void {
+  fireEvent(element, pointerDown('touch'));
+  fireEvent.pointerUp(window);
+  fireEvent.click(element);
+}
+
 async function entrarNaConstelacao(user: UserEvent): Promise<HTMLAnchorElement> {
   await user.click(await screen.findByRole('button', { name: 'Role para atravessar' }));
   // A fase vira `cosmos` quando a travessia suavizada passa do limiar; so
@@ -158,6 +165,59 @@ describe('Shell', () => {
 
     await user.click(estrela);
     expect(await screen.findByRole('dialog', {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  it('no toque, o primeiro toque mostra o painel e o segundo abre a estrela', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+
+    tocar(estrela);
+    expect(await screen.findByText('TOQUE DE NOVO PARA ABRIR')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(window.location.pathname).toBe('/pt');
+
+    tocar(estrela);
+    expect(await screen.findByRole('dialog', {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  it('tocar numa area vazia fecha o painel', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+    tocar(estrela);
+    await screen.findByText('TOQUE DE NOVO PARA ABRIR');
+
+    // A camada da constelacao, fora de qualquer estrela.
+    fireEvent(estrela.parentElement as HTMLElement, pointerDown('touch'));
+    fireEvent.pointerUp(window);
+
+    await waitFor(() => {
+      expect(screen.queryByText('TOQUE DE NOVO PARA ABRIR')).toBeNull();
+    });
+  });
+
+  it('com o mouse, um clique abre direto e o painel diz clique', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+    await user.hover(estrela);
+    expect(await screen.findByText('CLIQUE PARA ABRIR')).toBeTruthy();
+  });
+
+  it('INICIO volta a entrada pelo mesmo caminho da travessia', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+
+    await user.click(screen.getByRole('button', { name: 'INÍCIO' }));
+
+    await waitFor(
+      () => {
+        expect(estrela.closest('[inert]')).not.toBeNull();
+      },
+      { timeout: 4000 },
+    );
   });
 
   it('carga direta num slug que nao existe mostra o 404 dentro da constelacao', async () => {

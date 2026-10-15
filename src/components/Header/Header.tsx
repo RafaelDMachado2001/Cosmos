@@ -38,6 +38,10 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header(
         aria-hidden={!inCosmos}
         {...(inCosmos ? {} : { inert: '' })}
       >
+        <button type="button" className={styles.navButton} onClick={onBrandClick}>
+          <span aria-hidden="true">← </span>
+          {t.nav.home}
+        </button>
         <span className={styles.navItem}>{t.nav.cosmos}</span>
         <button
           type="button"

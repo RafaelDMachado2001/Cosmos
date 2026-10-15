@@ -16,6 +16,7 @@ export const en: Dictionary = {
   },
   nav: {
     brand: 'RDM LABS',
+    home: 'START',
     cosmos: 'CONSTELLATION',
     categories: 'CATEGORIES',
     portfolio: 'PORTFOLIO',
@@ -39,6 +40,7 @@ export const en: Dictionary = {
   },
   star: {
     openHint: 'CLICK TO OPEN',
+    tapHint: 'TAP AGAIN TO OPEN',
     indexLabel: 'All publications',
   },
   reader: {

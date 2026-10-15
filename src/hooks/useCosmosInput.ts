@@ -115,7 +115,7 @@ export function useCosmosInput({
       const dx = state.current.dragX - event.clientX;
       state.current.dragX = event.clientX;
       state.current.dragMoved += Math.abs(dx);
-      state.current.velocity = dx * INPUT.panGain;
+      state.current.velocity = dx * INPUT.inertiaGain;
       state.current.pan = Math.min(
         boundsRef.current.max,
         Math.max(boundsRef.current.min, state.current.pan + dx * INPUT.dragGain),

@@ -22,13 +22,16 @@ export const INPUT = {
   /** Aplicado ao deltaY da roda antes de tudo. */
   wheelGain: 1.05,
   enterGain: 0.00085,
-  panGain: 1.15,
+  /** Roda sobre o pan. 1.15 no handoff base; 0.62 desde a fase 10. */
+  panGain: 0.62,
   /** Setas e PageUp/PageDown. */
   keyStepPx: 260,
   /** Arraste por toque, no eixo dominante. */
   touchGain: 2.4,
-  /** Arraste com ponteiro sobre a constelação. */
-  dragGain: 1.35,
+  /** Arraste com ponteiro sobre a constelação. 1.35 no handoff base. */
+  dragGain: 1,
+  /** Velocidade que o arraste deixa para a inércia, por px movido. Era 1.15. */
+  inertiaGain: 0.9,
 } as const;
 
 /**
