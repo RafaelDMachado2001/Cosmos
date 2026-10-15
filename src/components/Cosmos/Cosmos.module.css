@@ -7,6 +7,31 @@
   pointer-events: none;
   cursor: grab;
   touch-action: none;
+  /* Arrastar nunca seleciona: anos, rótulos, painel. Ver suppressMouseSelection. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Anos gigantes: textura atrás da constelação, nunca mais fortes que ela. */
+.giantYears {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.giantYear {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-year-giant);
+  font-family: var(--font-sans);
+  font-size: min(36vh, 340px);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
 }
 
 /* Movido só por transform, nunca por left/top: é o que mantém a animação
@@ -20,11 +45,12 @@
 .axis {
   position: absolute;
   height: 1px;
+  /* Mais suave desde a fase 10: os marcadores mensais é que desenham o eixo. */
   background: linear-gradient(
     90deg,
-    rgba(124, 92, 255, 0.02),
-    rgba(124, 92, 255, 0.14) 30%,
-    rgba(124, 92, 255, 0.28)
+    transparent,
+    rgba(124, 92, 255, 0.07) 20%,
+    rgba(124, 92, 255, 0.12)
   );
 }
 
@@ -35,17 +61,28 @@
   background: linear-gradient(90deg, rgba(124, 92, 255, 0.3), rgba(124, 92, 255, 0.06));
 }
 
-/**
- * Faixa própria, logo acima da régua. No protótipo os rótulos ficavam a 44px
- * do eixo e as estrelas da banda central sentavam em cima deles.
- */
-.year {
+/* Um marcador por mês, pendurado no eixo. Janeiro carrega o ano; os meses
+   com publicação acendem, os vazios ficam no cinza mais fraco permitido. */
+.month {
   position: absolute;
-  bottom: 72px;
-  padding: 6px 0 6px 10px;
-  border-left: 1px solid var(--color-accent-filet);
-  color: var(--color-text-year);
+  margin-top: -1px;
+  padding: 10px 0 2px 8px;
+  border-left: 1px solid var(--color-border-accent-faint);
+  color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: var(--tracking-year);
+  font-size: 8.5px;
+  letter-spacing: var(--tracking-meta);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.month[data-active='true'] {
+  border-left-color: var(--color-month-filet);
+  color: var(--color-month-active);
+}
+
+.month[data-january='true'] {
+  padding-top: 16px;
+  border-left-color: var(--color-month-filet-january);
+  font-size: 9.5px;
 }

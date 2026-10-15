@@ -26,6 +26,13 @@ const MIN_BAND_PX = 120;
 const GUTTER_PX = 24;
 
 /**
+ * O rótulo pende sob a estrela: metade do núcleo em destaque (22) + 22 de
+ * folga + duas linhas de título e a data (~58). Sem esta reserva, a estrela
+ * mais baixa da faixa assentava o rótulo em cima da régua.
+ */
+export const CAPTION_BELOW_PX = 102;
+
+/**
  * Faixa vertical disponível para as estrelas.
  *
  * A altura relativa de cada estrela (`y01`) é pura e invariante ao viewport;
@@ -35,7 +42,7 @@ const GUTTER_PX = 24;
  */
 export function resolveBand(viewport: Viewport): Band {
   const availableTop = viewport.headerPx + GUTTER_PX;
-  const availableBottom = viewport.height - viewport.rulerPx - GUTTER_PX;
+  const availableBottom = viewport.height - viewport.rulerPx - GUTTER_PX - CAPTION_BELOW_PX;
 
   const spreadTop = viewport.height * (AXIS_PCT - MAX_SPREAD_PCT);
   const spreadBottom = viewport.height * (AXIS_PCT + MAX_SPREAD_PCT);
@@ -161,6 +168,65 @@ export function yearMarkers(
   const markers: YearMarker[] = [];
   for (let year = firstYear; year <= lastYear; year += 1) {
     markers.push({ year, x: xAtTime(stars, Date.UTC(year, 0, 1), config) });
+  }
+  return markers;
+}
+
+export interface MonthMarker {
+  /** `2024-03`: chave estável para o React e para casar com as publicações. */
+  readonly key: string;
+  readonly year: number;
+  /** 0 a 11, como em `Date.UTC`. */
+  readonly month: number;
+  readonly timestamp: number;
+  readonly x: number;
+  /** Janeiro carrega o ano no rótulo e um filete mais forte. */
+  readonly january: boolean;
+  /** Meses com publicação ganham destaque; os vazios ficam apagados. */
+  readonly hasPublication: boolean;
+}
+
+function monthKey(year: number, month: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Um marcador por mês, de janeiro do primeiro ano até o mês da publicação mais
+ * recente. Começa em janeiro, e não no primeiro mês com dados, para que o ano
+ * inicial também tenha o seu rótulo `JAN 2024` no eixo.
+ */
+export function monthMarkers(
+  stars: readonly PlacedStar[],
+  config: TimelineConfig = TIMELINE,
+): readonly MonthMarker[] {
+  const first = stars[0];
+  const last = stars[stars.length - 1];
+  if (!first || !last) return [];
+
+  const withPublication = new Set(
+    stars.map((star) => {
+      const date = new Date(star.timestamp);
+      return monthKey(date.getUTCFullYear(), date.getUTCMonth());
+    }),
+  );
+
+  const end = new Date(last.timestamp);
+  const endIndex = end.getUTCFullYear() * 12 + end.getUTCMonth();
+  const markers: MonthMarker[] = [];
+  for (let index = new Date(first.timestamp).getUTCFullYear() * 12; index <= endIndex; index += 1) {
+    const year = Math.floor(index / 12);
+    const month = index % 12;
+    const timestamp = Date.UTC(year, month, 1);
+    const key = monthKey(year, month);
+    markers.push({
+      key,
+      year,
+      month,
+      timestamp,
+      x: xAtTime(stars, timestamp, config),
+      january: month === 0,
+      hasPublication: withPublication.has(key),
+    });
   }
   return markers;
 }

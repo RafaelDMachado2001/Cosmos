@@ -111,6 +111,9 @@ export const PULSE_INTERVAL_S = { min: 1.4, max: 5 } as const;
 /** O tempo do shader roda a 25% da velocidade com movimento reduzido. */
 export const TIME_SCALE = { normal: 1, reduced: 0.25 } as const;
 
+/** O céu do cosmos tem relógio próprio: a 30% com movimento reduzido. */
+export const ATMOSPHERE_TIME_SCALE = { normal: 1, reduced: 0.3 } as const;
+
 const PULSE_LAMBDA = {
   normal: -REFERENCE_FPS * Math.log(PULSE_DECAY_PER_FRAME.normal),
   reduced: -REFERENCE_FPS * Math.log(PULSE_DECAY_PER_FRAME.reduced),

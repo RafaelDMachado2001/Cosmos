@@ -11,6 +11,7 @@ import {
   scrubToPan,
 } from '../core/navigation';
 import type { PanBounds } from '../core/geometry';
+import { suppressMouseSelection } from '../utils/selection';
 
 /** O que a entrada escreve no estado contínuo do motor. */
 export interface InputState {
@@ -114,7 +115,7 @@ export function useCosmosInput({
       const dx = state.current.dragX - event.clientX;
       state.current.dragX = event.clientX;
       state.current.dragMoved += Math.abs(dx);
-      state.current.velocity = dx * INPUT.panGain;
+      state.current.velocity = dx * INPUT.inertiaGain;
       state.current.pan = Math.min(
         boundsRef.current.max,
         Math.max(boundsRef.current.min, state.current.pan + dx * INPUT.dragGain),
@@ -177,6 +178,7 @@ export function useCosmosInput({
 
   const onCosmosPointerDown = useCallback(
     (event: React.PointerEvent) => {
+      suppressMouseSelection(event);
       if (locked()) return;
       if (state.current.enterS < COSMOS_PHASE_ENTER) return;
       state.current.dragging = 'pan';
@@ -190,6 +192,7 @@ export function useCosmosInput({
 
   const onRailPointerDown = useCallback(
     (event: React.PointerEvent) => {
+      suppressMouseSelection(event);
       if (locked()) return;
       state.current.dragging = 'scrub';
       state.current.dragMoved = 0;

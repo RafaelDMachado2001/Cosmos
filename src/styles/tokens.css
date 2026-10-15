@@ -32,6 +32,10 @@
   --color-text-faint: #7c7f99; /* placeholders, datas */
   --color-text-ui: #c9cbe0; /* rótulos de painel */
   --color-text-year: #8285a0; /* marcadores de ano */
+  --color-year-giant: rgba(169, 155, 255, 0.045); /* anos gigantes ao fundo */
+  --color-month-active: #b4a8ff; /* meses com publicação */
+  --color-month-filet: rgba(169, 155, 255, 0.3);
+  --color-month-filet-january: rgba(169, 155, 255, 0.45);
   --color-focus: #e8e9f2; /* anel de foco */
 
   /* --- Acento ------------------------------------------------------------ */
@@ -88,11 +92,16 @@
   --dur-ui: 400ms;
 
   /* --- Geometria --------------------------------------------------------- */
-  --star-hit: 58px; /* alvo de clique */
-  --star-core: 15px;
-  --star-core-featured: 22px;
-  --star-ring: 32px;
-  --star-ring-featured: 46px;
+  /* Duas vezes maiores desde a fase 10, com rótulo sempre visível. */
+  --star-hit: 88px; /* alvo de clique */
+  --star-core: 30px;
+  --star-core-featured: 44px;
+  --star-core-hover-growth: 10px;
+  --star-ring: 58px;
+  --star-ring-featured: 78px;
+  --star-label-width: 180px;
+  --star-label-gap: 22px; /* da borda do núcleo ao rótulo */
+  --hover-panel-offset: 58px; /* da estrela ao cartão */
   --hover-panel-width: 330px;
   --cats-panel-width: 260px;
   --close-size: 46px;

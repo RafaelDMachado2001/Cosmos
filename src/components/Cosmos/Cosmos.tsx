@@ -2,10 +2,13 @@ import { forwardRef, useMemo } from 'react';
 import type { RefObject } from 'react';
 
 import styles from './Cosmos.module.css';
+import { giantYearX } from '../../core/atmosphere';
 import { revealDelayMs } from '../../core/collection';
+import { monthLabel, monthYearLabel } from '../../core/format';
 import {
   AXIS_PCT,
   connectors,
+  monthMarkers,
   resolveBand,
   strandExtent,
   visibleRange,
@@ -14,9 +17,11 @@ import {
 } from '../../core/geometry';
 import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
+import { useLocale } from '../../i18n/useLocale';
 import { HoverPanel } from '../HoverPanel/HoverPanel';
-import type { HoverCard } from '../HoverPanel/HoverPanel';
+import type { HoverCard, HoverVia } from '../HoverPanel/HoverPanel';
 import { Star } from '../Star/Star';
+import type { StarCaption } from '../Star/Star';
 
 /** Acima disto as estrelas fora da janela deixam de ser montadas. */
 const VIRTUALIZE_ABOVE = 800;
@@ -24,17 +29,20 @@ const VIRTUALIZE_ABOVE = 800;
 export interface CosmosProps {
   readonly stars: readonly PlacedStar[];
   readonly layerRef: RefObject<HTMLDivElement>;
+  /** Camada dos anos gigantes, movida pelo laço com parallax própria. */
+  readonly yearsRef: RefObject<HTMLDivElement>;
   readonly viewport: Viewport;
   readonly pan: number;
   readonly marginPx: number;
   readonly labelFor: (star: PlacedStar) => string;
+  readonly captionFor: (star: PlacedStar) => StarCaption;
   readonly hrefFor: (slug: string) => string;
   readonly dimmed: ReadonlySet<string>;
   readonly reducedMotion: boolean;
   /** Cartão da estrela sob o ponteiro, ou nulo. */
   readonly hover: HoverCard | null;
   readonly onActivate: (star: PlacedStar) => void;
-  readonly onHover: (slug: string | null) => void;
+  readonly onHover: (slug: string | null, via?: HoverVia) => void;
   readonly onFocusStar: (star: PlacedStar) => void;
   readonly onPointerDown: (event: React.PointerEvent) => void;
   /**
@@ -57,10 +65,12 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   {
     stars,
     layerRef,
+    yearsRef,
     viewport,
     pan,
     marginPx,
     labelFor,
+    captionFor,
     hrefFor,
     dimmed,
     reducedMotion,
@@ -77,6 +87,8 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   const extent = useMemo(() => strandExtent(stars), [stars]);
   const links = useMemo(() => connectors(stars, band), [stars, band]);
   const years = useMemo(() => yearMarkers(stars), [stars]);
+  const months = useMemo(() => monthMarkers(stars), [stars]);
+  const { locale } = useLocale();
 
   // Acima do limiar, monta só a janela. Abaixo dele, content-visibility já
   // resolve o custo e manter tudo no DOM preserva a ordem de Tab sem truque.
@@ -99,10 +111,39 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
     <div
       ref={ref}
       className={styles.cosmos}
-      onPointerDown={onPointerDown}
+      onPointerDown={(event) => {
+        // No toque, tocar fora de qualquer estrela fecha o painel aberto pelo
+        // primeiro toque — o equivalente do mouse saindo de cima dela.
+        if (
+          event.pointerType === 'touch' &&
+          hover !== null &&
+          !(event.target instanceof Element && event.target.closest('a'))
+        ) {
+          onHover(null);
+        }
+        onPointerDown(event);
+      }}
+      // Sem isto o navegador arrasta a estrela como link (o fantasma da URL)
+      // em vez de deixar o gesto mover a linha do tempo.
+      onDragStart={(event) => {
+        event.preventDefault();
+      }}
       aria-hidden={!interactive}
       {...(interactive ? {} : { inert: '' })}
     >
+      {/* Atrás de tudo, só textura: aria-hidden e sem ponteiro. */}
+      <div ref={yearsRef} className={styles.giantYears} aria-hidden="true">
+        {years.map((marker) => (
+          <span
+            key={marker.year}
+            className={styles.giantYear}
+            style={{ left: `${giantYearX(marker.x)}px` }}
+          >
+            {marker.year}
+          </span>
+        ))}
+      </div>
+
       <div ref={layerRef} className={styles.layer}>
         <div
           className={styles.axis}
@@ -128,14 +169,18 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
           />
         ))}
 
-        {years.map((marker) => (
+        {months.map((marker) => (
           <div
-            key={marker.year}
-            className={styles.year}
-            style={{ left: `${marker.x}px` }}
+            key={marker.key}
+            className={styles.month}
+            style={{ left: `${marker.x}px`, top: `${AXIS_PCT * 100}%` }}
+            data-january={marker.january}
+            data-active={marker.hasPublication}
             aria-hidden="true"
           >
-            {marker.year}
+            {marker.january
+              ? monthYearLabel(marker.timestamp, locale)
+              : monthLabel(marker.timestamp, locale)}
           </div>
         ))}
 
@@ -145,8 +190,10 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             star={star}
             yPx={yPx(star, band)}
             label={labelFor(star)}
+            caption={captionFor(star)}
             href={hrefFor(star.slug)}
             dimmed={dimmed.has(star.slug)}
+            hovered={hover?.slug === star.slug}
             revealDelay={revealDelayMs(star.index, reducedMotion)}
             onActivate={onActivate}
             onHover={onHover}

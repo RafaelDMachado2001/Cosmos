@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, RefObject } from 'react';
 
+import { atmosphereIntensity, generateSky, yearLayerTransform } from '../core/atmosphere';
+import type { Rgb } from '../core/atmosphere';
 import * as camera from '../core/camera';
 import { isDrag, lambdas, stepInertia } from '../core/motion';
 import {
@@ -22,8 +24,10 @@ import {
 import type { ReaderState } from '../core/reader';
 import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
 import type { PlacedStar } from '../core/timeline';
+import type { Category } from '../core/types';
 import type { CoreScene } from '../three/CoreScene';
 import { damp } from '../utils/damp';
+import { hexToRgb, readColor } from '../utils/readColor';
 import { useCosmosInput } from './useCosmosInput';
 import type { InputState } from './useCosmosInput';
 import { useFrameLoop } from './useFrameLoop';
@@ -38,11 +42,15 @@ export interface CosmosRefs {
   readonly hero: RefObject<HTMLElement>;
   readonly cosmos: RefObject<HTMLElement>;
   readonly layer: RefObject<HTMLElement>;
+  /** Anos gigantes ao fundo. */
+  readonly years: RefObject<HTMLElement>;
   readonly scrub: RefObject<HTMLElement>;
   readonly marker: RefObject<HTMLElement>;
   readonly rail: RefObject<HTMLElement>;
   /** Fallback em CSS do núcleo, quando não há WebGL. */
   readonly fallback: RefObject<HTMLElement>;
+  /** Céu estático, quando não há WebGL para o procedural. */
+  readonly skyFallback: RefObject<HTMLElement>;
   /** Overlay da vista de leitura. Só existe enquanto ela está montada. */
   readonly reader: RefObject<HTMLElement>;
 }
@@ -82,6 +90,14 @@ export interface CosmosEngine {
   didDrag: () => boolean;
   onCosmosPointerDown: (event: React.PointerEvent) => void;
   onRailPointerDown: (event: React.PointerEvent) => void;
+}
+
+/** Roxo neutro para quando o token não puder ser lido. */
+const FALLBACK_TINT: Rgb = [0.55, 0.42, 1];
+
+/** A cor da categoria, lida dos mesmos tokens que pintam as estrelas. */
+function categoryRgb(category: Category): Rgb {
+  return hexToRgb(readColor(`--color-cat-${category}`, ''), FALLBACK_TINT);
 }
 
 /** Estado contínuo. Mutável de propósito: é escrito a cada quadro, fora do React. */
@@ -133,6 +149,12 @@ export function useCosmosEngine(
   // O laço lê o acervo para anunciar o ano na régua, sem se recriar por isso.
   const starsRef = useRef(stars);
   starsRef.current = stars;
+
+  // O céu é derivado do acervo inteiro, uma vez por acervo: a busca e o
+  // filtro esmaecem estrelas, não recompõem a atmosfera.
+  const sky = useMemo(() => generateSky(stars, categoryRgb), [stars]);
+  const skyRef = useRef(sky);
+  skyRef.current = sky;
 
   const [phase, setPhase] = useState<Phase>('hero');
   const [bucket, setBucket] = useState(0);
@@ -297,6 +319,12 @@ export function useCosmosEngine(
             `translate3d(${x}px, ${s.mouseYS * -6}px, 0) scale(${zoomScale(zoom)})`;
           layer.style.transformOrigin = `${s.focusX}px 55%`;
           layer.style.filter = `blur(${zoomBlurPx(zoom)}px)`;
+
+          const years = refs.years.current;
+          if (years) {
+            const t = yearLayerTransform(s.panS, parallax, push_, zoom);
+            years.style.transform = `translate3d(${t.x}px, 0, 0) scale(${t.scale})`;
+          }
         }
 
         const scrub = refs.scrub.current;
@@ -332,6 +360,8 @@ export function useCosmosEngine(
         // shader; o fallback em CSS precisa apagar aqui.
         const fallback = refs.fallback.current;
         if (fallback) fallback.style.opacity = String(coreOpacity(enter));
+        const skyFallback = refs.skyFallback.current;
+        if (skyFallback) skyFallback.style.opacity = String(atmosphereIntensity(reveal, zoom));
 
         // A vista de leitura sobe interpolada como todo o resto: nada aparece
         // instantaneamente. Enquanto ela não está no DOM o fade fica zerado,
@@ -354,6 +384,8 @@ export function useCosmosEngine(
         if (scene) {
           scene.setEnter(enter);
           scene.setPointer(s.mouseXS, s.mouseYS);
+          scene.setSky(skyRef.current);
+          scene.setAtmosphere(s.panS, atmosphereIntensity(reveal, zoom));
           scene.render(delta);
         }
 
@@ -370,9 +402,11 @@ export function useCosmosEngine(
         refs.hero,
         refs.layer,
         refs.marker,
+        refs.years,
         refs.rail,
         refs.reader,
         refs.scrub,
+        refs.skyFallback,
       ],
     ),
   );
