@@ -92,11 +92,16 @@
   --dur-ui: 400ms;
 
   /* --- Geometria --------------------------------------------------------- */
-  --star-hit: 58px; /* alvo de clique */
-  --star-core: 15px;
-  --star-core-featured: 22px;
-  --star-ring: 32px;
-  --star-ring-featured: 46px;
+  /* Duas vezes maiores desde a fase 10, com rótulo sempre visível. */
+  --star-hit: 88px; /* alvo de clique */
+  --star-core: 30px;
+  --star-core-featured: 44px;
+  --star-core-hover-growth: 10px;
+  --star-ring: 58px;
+  --star-ring-featured: 78px;
+  --star-label-width: 180px;
+  --star-label-gap: 22px; /* da borda do núcleo ao rótulo */
+  --hover-panel-offset: 58px; /* da estrela ao cartão */
   --hover-panel-width: 330px;
   --cats-panel-width: 260px;
   --close-size: 46px;

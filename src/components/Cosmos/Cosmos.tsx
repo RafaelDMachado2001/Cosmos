@@ -21,6 +21,7 @@ import { useLocale } from '../../i18n/useLocale';
 import { HoverPanel } from '../HoverPanel/HoverPanel';
 import type { HoverCard } from '../HoverPanel/HoverPanel';
 import { Star } from '../Star/Star';
+import type { StarCaption } from '../Star/Star';
 
 /** Acima disto as estrelas fora da janela deixam de ser montadas. */
 const VIRTUALIZE_ABOVE = 800;
@@ -34,6 +35,7 @@ export interface CosmosProps {
   readonly pan: number;
   readonly marginPx: number;
   readonly labelFor: (star: PlacedStar) => string;
+  readonly captionFor: (star: PlacedStar) => StarCaption;
   readonly hrefFor: (slug: string) => string;
   readonly dimmed: ReadonlySet<string>;
   readonly reducedMotion: boolean;
@@ -68,6 +70,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
     pan,
     marginPx,
     labelFor,
+    captionFor,
     hrefFor,
     dimmed,
     reducedMotion,
@@ -176,6 +179,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             star={star}
             yPx={yPx(star, band)}
             label={labelFor(star)}
+            caption={captionFor(star)}
             href={hrefFor(star.slug)}
             dimmed={dimmed.has(star.slug)}
             revealDelay={revealDelayMs(star.index, reducedMotion)}

@@ -94,7 +94,7 @@ export function zoomTarget(state: ReaderState): number {
 }
 
 /** Abaixo desta distância da borda direita o cartão de hover inverte de lado. */
-export const HOVER_FLIP_PX = 360;
+export const HOVER_FLIP_PX = 400;
 
 export type HoverSide = 'left' | 'right';
 

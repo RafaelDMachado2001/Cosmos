@@ -164,7 +164,7 @@ export function dominantAxisDelta(deltaX: number, deltaY: number): number {
  * É o alvo de clique da estrela (`--star-hit`): colada na borda ela aparece
  * pela metade, e o anel de foco sai da tela junto com ela.
  */
-export const FOCUS_MARGIN_PX = 58;
+export const FOCUS_MARGIN_PX = 88;
 
 /**
  * Se o foco numa estrela precisa levar a câmera junto.

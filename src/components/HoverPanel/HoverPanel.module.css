@@ -18,11 +18,11 @@
 /* Ancorado ao lado da estrela, centrado na altura dela. Inverte perto da borda
    direita — o limite está em HOVER_FLIP_PX, em src/core/reader.ts. */
 .panel[data-side='right'] {
-  transform: translate(26px, -50%);
+  transform: translate(var(--hover-panel-offset), -50%);
 }
 
 .panel[data-side='left'] {
-  transform: translate(calc(-100% - 26px), -50%);
+  transform: translate(calc(-100% - var(--hover-panel-offset)), -50%);
 }
 
 /* Só a opacidade: animar o transform brigaria com o posicionamento acima. */

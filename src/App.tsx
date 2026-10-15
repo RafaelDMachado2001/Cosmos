@@ -15,7 +15,7 @@ import type { ReaderCard } from './components/ReaderView/ReaderView';
 import { StarIndex } from './components/StarIndex/StarIndex';
 import { TimeRuler } from './components/TimeRuler/TimeRuler';
 import { countByCategory, dimmedStars } from './core/filter';
-import { monthYearLabel } from './core/format';
+import { monthYearLabel, shortTitle } from './core/format';
 import type { SearchableStar } from './core/filter';
 import { OPEN_DELAY_MS } from './core/motion';
 import { needsSlide } from './core/navigation';
@@ -153,6 +153,28 @@ function Shell({ route }: { route: Route }) {
       return `${title} — ${t.categories[star.category]} — ${dateLabel(star.timestamp)}`;
     },
     [summaryBySlug, t, dateLabel],
+  );
+
+  /**
+   * Memoizado por acervo e idioma: a `Star` é memo, e um objeto novo a cada
+   * render a faria re-renderizar com qualquer hover.
+   */
+  const captions = useMemo(
+    () =>
+      new Map(
+        stars.map((star) => [
+          star.slug,
+          {
+            title: shortTitle(summaryBySlug.get(star.slug)?.title ?? star.slug),
+            date: dateLabel(star.timestamp),
+          },
+        ]),
+      ),
+    [stars, summaryBySlug, dateLabel],
+  );
+  const captionFor = useCallback(
+    (star: PlacedStar) => captions.get(star.slug) ?? { title: star.slug, date: '' },
+    [captions],
   );
 
   /**
@@ -579,6 +601,7 @@ function Shell({ route }: { route: Route }) {
           pan={engine.panBucket * 512}
           marginPx={engine.marginPx}
           labelFor={labelFor}
+          captionFor={captionFor}
           hrefFor={hrefFor}
           dimmed={dimmed}
           reducedMotion={reducedMotion}

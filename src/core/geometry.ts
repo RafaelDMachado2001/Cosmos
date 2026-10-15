@@ -26,6 +26,13 @@ const MIN_BAND_PX = 120;
 const GUTTER_PX = 24;
 
 /**
+ * O rótulo pende sob a estrela: metade do núcleo em destaque (22) + 22 de
+ * folga + duas linhas de título e a data (~58). Sem esta reserva, a estrela
+ * mais baixa da faixa assentava o rótulo em cima da régua.
+ */
+export const CAPTION_BELOW_PX = 102;
+
+/**
  * Faixa vertical disponível para as estrelas.
  *
  * A altura relativa de cada estrela (`y01`) é pura e invariante ao viewport;
@@ -35,7 +42,7 @@ const GUTTER_PX = 24;
  */
 export function resolveBand(viewport: Viewport): Band {
   const availableTop = viewport.headerPx + GUTTER_PX;
-  const availableBottom = viewport.height - viewport.rulerPx - GUTTER_PX;
+  const availableBottom = viewport.height - viewport.rulerPx - GUTTER_PX - CAPTION_BELOW_PX;
 
   const spreadTop = viewport.height * (AXIS_PCT - MAX_SPREAD_PCT);
   const spreadBottom = viewport.height * (AXIS_PCT + MAX_SPREAD_PCT);
