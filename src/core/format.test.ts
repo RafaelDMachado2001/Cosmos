@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { monthYearLabel } from './format';
+import { monthLabel, monthYearLabel } from './format';
 
 const SET_2025 = Date.parse('2025-09-12T12:00:00.000Z');
 const JAN_2026 = Date.parse('2026-01-20T12:00:00.000Z');
@@ -26,5 +26,13 @@ describe('monthYearLabel', () => {
     // 1º de março em UTC; 28 de fevereiro em qualquer fuso a oeste de Greenwich.
     const virada = Date.parse('2025-03-01T00:30:00.000Z');
     expect(monthYearLabel(virada, 'pt')).toBe('MAR 2025');
+  });
+});
+
+describe('monthLabel', () => {
+  it('só o mês, abreviado, em caixa alta e sem ponto', () => {
+    expect(monthLabel(SET_2025, 'pt')).toBe('SET');
+    expect(monthLabel(SET_2025, 'en')).toBe('SEPT');
+    expect(monthLabel(Date.parse('2025-02-01T00:30:00.000Z'), 'pt')).toBe('FEV');
   });
 });

@@ -38,3 +38,11 @@ export function monthYearLabel(timestamp: number, locale: Locale): string {
     .join(' ')
     .toUpperCase();
 }
+
+/** `FEV`: o marcador mensal da régua. Mesmas regras de `monthYearLabel`. */
+export function monthLabel(timestamp: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(DATE_LOCALE[locale], { month: 'short', timeZone: 'UTC' })
+    .format(new Date(timestamp))
+    .replace(/\./g, '')
+    .toUpperCase();
+}

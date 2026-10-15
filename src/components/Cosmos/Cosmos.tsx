@@ -4,9 +4,11 @@ import type { RefObject } from 'react';
 import styles from './Cosmos.module.css';
 import { giantYearX } from '../../core/atmosphere';
 import { revealDelayMs } from '../../core/collection';
+import { monthLabel, monthYearLabel } from '../../core/format';
 import {
   AXIS_PCT,
   connectors,
+  monthMarkers,
   resolveBand,
   strandExtent,
   visibleRange,
@@ -15,6 +17,7 @@ import {
 } from '../../core/geometry';
 import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
+import { useLocale } from '../../i18n/useLocale';
 import { HoverPanel } from '../HoverPanel/HoverPanel';
 import type { HoverCard } from '../HoverPanel/HoverPanel';
 import { Star } from '../Star/Star';
@@ -81,6 +84,8 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   const extent = useMemo(() => strandExtent(stars), [stars]);
   const links = useMemo(() => connectors(stars, band), [stars, band]);
   const years = useMemo(() => yearMarkers(stars), [stars]);
+  const months = useMemo(() => monthMarkers(stars), [stars]);
+  const { locale } = useLocale();
 
   // Acima do limiar, monta só a janela. Abaixo dele, content-visibility já
   // resolve o custo e manter tudo no DOM preserva a ordem de Tab sem truque.
@@ -150,14 +155,18 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
           />
         ))}
 
-        {years.map((marker) => (
+        {months.map((marker) => (
           <div
-            key={marker.year}
-            className={styles.year}
-            style={{ left: `${marker.x}px` }}
+            key={marker.key}
+            className={styles.month}
+            style={{ left: `${marker.x}px`, top: `${AXIS_PCT * 100}%` }}
+            data-january={marker.january}
+            data-active={marker.hasPublication}
             aria-hidden="true"
           >
-            {marker.year}
+            {marker.january
+              ? monthYearLabel(marker.timestamp, locale)
+              : monthLabel(marker.timestamp, locale)}
           </div>
         ))}
 
