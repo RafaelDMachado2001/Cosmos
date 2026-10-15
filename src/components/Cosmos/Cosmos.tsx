@@ -100,6 +100,11 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
       ref={ref}
       className={styles.cosmos}
       onPointerDown={onPointerDown}
+      // Sem isto o navegador arrasta a estrela como link (o fantasma da URL)
+      // em vez de deixar o gesto mover a linha do tempo.
+      onDragStart={(event) => {
+        event.preventDefault();
+      }}
       aria-hidden={!interactive}
       {...(interactive ? {} : { inert: '' })}
     >
