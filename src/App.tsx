@@ -9,13 +9,13 @@ import type { CosmosStatusKind } from './components/CosmosStatus/CosmosStatus';
 import { Header } from './components/Header/Header';
 import { Hero } from './components/Hero/Hero';
 import { SkipLink } from './components/SkipLink/SkipLink';
-import type { HoverCard } from './components/HoverPanel/HoverPanel';
+import type { HoverCard, HoverVia } from './components/HoverPanel/HoverPanel';
 import { ReaderView } from './components/ReaderView/ReaderView';
 import type { ReaderCard } from './components/ReaderView/ReaderView';
 import { StarIndex } from './components/StarIndex/StarIndex';
 import { TimeRuler } from './components/TimeRuler/TimeRuler';
 import { countByCategory, dimmedStars } from './core/filter';
-import { monthYearLabel } from './core/format';
+import { monthYearLabel, shortTitle } from './core/format';
 import type { SearchableStar } from './core/filter';
 import { OPEN_DELAY_MS } from './core/motion';
 import { needsSlide } from './core/navigation';
@@ -58,13 +58,19 @@ function Shell({ route }: { route: Route }) {
   const heroBlockRef = useRef<HTMLDivElement>(null);
   const cosmosRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
+  const yearsRef = useRef<HTMLDivElement>(null);
   const scrubRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<HTMLSpanElement>(null);
   const fallbackRef = useRef<HTMLDivElement>(null);
+  const skyFallbackRef = useRef<HTMLDivElement>(null);
   const readerRef = useRef<HTMLDivElement>(null);
 
-  const [hovered, setHovered] = useState<{ slug: string; side: HoverSide } | null>(null);
+  const [hovered, setHovered] = useState<{
+    slug: string;
+    side: HoverSide;
+    via: HoverVia;
+  } | null>(null);
   const [reader, setReader] = useState<ReaderState>(CLOSED);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | 'all'>('all');
@@ -114,10 +120,12 @@ function Shell({ route }: { route: Route }) {
       hero: heroBlockRef,
       cosmos: cosmosRef,
       layer: layerRef,
+      years: yearsRef,
       scrub: scrubRef,
       marker: markerRef,
       rail: railRef,
       fallback: fallbackRef,
+      skyFallback: skyFallbackRef,
       reader: readerRef,
     }),
     [],
@@ -154,6 +162,28 @@ function Shell({ route }: { route: Route }) {
   );
 
   /**
+   * Memoizado por acervo e idioma: a `Star` é memo, e um objeto novo a cada
+   * render a faria re-renderizar com qualquer hover.
+   */
+  const captions = useMemo(
+    () =>
+      new Map(
+        stars.map((star) => [
+          star.slug,
+          {
+            title: shortTitle(summaryBySlug.get(star.slug)?.title ?? star.slug),
+            date: dateLabel(star.timestamp),
+          },
+        ]),
+      ),
+    [stars, summaryBySlug, dateLabel],
+  );
+  const captionFor = useCallback(
+    (star: PlacedStar) => captions.get(star.slug) ?? { title: star.slug, date: '' },
+    [captions],
+  );
+
+  /**
    * O lado do cartão é decidido uma vez, quando o ponteiro chega.
    *
    * O pan vive fora do React e muda a cada quadro; reavaliar o lado a cada um
@@ -161,7 +191,7 @@ function Shell({ route }: { route: Route }) {
    * some assim que a constelação se move sob o ponteiro.
    */
   const onHover = useCallback(
-    (slug: string | null) => {
+    (slug: string | null, via: HoverVia = 'pointer') => {
       const star = slug === null ? undefined : starBySlug.get(slug);
       if (!star) {
         setHovered(null);
@@ -170,6 +200,7 @@ function Shell({ route }: { route: Route }) {
       setHovered({
         slug: star.slug,
         side: hoverSide(star.x - engine.panRef.current, viewport.width),
+        via,
       });
     },
     [starBySlug, engine.panRef, viewport.width],
@@ -199,6 +230,7 @@ function Shell({ route }: { route: Route }) {
     return {
       slug: item.slug,
       side: hovered.side,
+      via: hovered.via,
       categoryLabel: t.categories[item.category],
       dateLabel: dateLabel(Date.parse(item.publishedAt)),
       title: item.title,
@@ -565,17 +597,20 @@ function Shell({ route }: { route: Route }) {
           reducedMotion={reducedMotion}
           sceneRef={engine.sceneRef}
           fallbackRef={fallbackRef}
+          skyFallbackRef={skyFallbackRef}
         />
         <div className={styles.vignette} aria-hidden="true" />
 
         <Cosmos
           ref={cosmosRef}
           layerRef={layerRef}
+          yearsRef={yearsRef}
           stars={stars}
           viewport={viewport}
           pan={engine.panBucket * 512}
           marginPx={engine.marginPx}
           labelFor={labelFor}
+          captionFor={captionFor}
           hrefFor={hrefFor}
           dimmed={dimmed}
           reducedMotion={reducedMotion}

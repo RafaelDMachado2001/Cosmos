@@ -10,10 +10,12 @@
   border-radius: 50%;
   cursor: pointer;
 
-  /* Fora da tela o navegador pula layout, estilo e pintura, mas o elemento
-     continua no DOM, na ordem de Tab e no Ctrl+F. */
-  content-visibility: auto;
-  contain-intrinsic-size: var(--star-hit) var(--star-hit);
+  /*
+   * Sem content-visibility desde a fase 10: ele aplica contenção de pintura, e
+   * o rótulo, que pende 180px abaixo e para os lados do alvo, saía cortado. A
+   * virtualização por desmontagem (acima de VIRTUALIZE_ABOVE) segue cuidando
+   * de acervos grandes.
+   */
 
   transition: opacity var(--dur-filter) var(--ease);
 
@@ -21,6 +23,14 @@
      aparecerem todas de uma vez. `backwards` é o que as mantém invisíveis
      durante o atraso — sem ele elas piscariam antes da própria animação. */
   animation: starIn 700ms var(--ease) var(--reveal-delay, 0ms) backwards;
+
+  --size: var(--star-core);
+  --ring: var(--star-ring);
+}
+
+.hit[data-featured='true'] {
+  --size: var(--star-core-featured);
+  --ring: var(--star-ring-featured);
 }
 
 @keyframes starIn {
@@ -38,8 +48,8 @@
 
 .core {
   display: block;
-  width: var(--star-core);
-  height: var(--star-core);
+  width: var(--size);
+  height: var(--size);
   border-radius: 50%;
   background: radial-gradient(
     circle at 40% 38%,
@@ -47,45 +57,82 @@
     var(--star-color) 42%,
     transparent 78%
   );
-  box-shadow: 0 0 22px 4px color-mix(in srgb, var(--star-color) 27%, transparent);
+  /* Brilho duplo: 4a e 1c em hex são 29% e 11%. */
+  box-shadow:
+    0 0 42px 8px color-mix(in srgb, var(--star-color) 29%, transparent),
+    0 0 110px 24px color-mix(in srgb, var(--star-color) 11%, transparent);
   transition: all var(--dur-star) var(--ease);
-}
-
-.hit[data-featured='true'] .core {
-  width: var(--star-core-featured);
-  height: var(--star-core-featured);
 }
 
 .ring {
   position: absolute;
-  width: var(--star-ring);
-  height: var(--star-ring);
+  width: var(--ring);
+  height: var(--ring);
   border: 1px solid transparent;
   border-radius: 50%;
   transition: all var(--dur-star) var(--ease);
 }
 
 .hit[data-featured='true'] .ring {
-  width: var(--star-ring-featured);
-  height: var(--star-ring-featured);
   border-color: color-mix(in srgb, var(--star-color) 23%, transparent);
+}
+
+/* Rótulo sempre visível: título curto e data, centrado sob a estrela. */
+.caption {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: var(--star-label-width);
+  margin-top: calc(var(--size) / 2 + var(--star-label-gap));
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition:
+    opacity 360ms ease,
+    transform var(--dur-star) var(--ease);
+}
+
+.captionTitle {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-text-ui);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.35;
+  text-wrap: balance;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.captionDate {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
 }
 
 .hit:hover .core,
 .hit:focus-visible .core {
-  width: calc(var(--star-core) + 7px);
-  height: calc(var(--star-core) + 7px);
-  box-shadow: 0 0 40px 10px color-mix(in srgb, var(--star-color) 50%, transparent);
-}
-
-.hit[data-featured='true']:hover .core,
-.hit[data-featured='true']:focus-visible .core {
-  width: calc(var(--star-core-featured) + 7px);
-  height: calc(var(--star-core-featured) + 7px);
+  width: calc(var(--size) + var(--star-core-hover-growth));
+  height: calc(var(--size) + var(--star-core-hover-growth));
+  box-shadow:
+    0 0 70px 16px color-mix(in srgb, var(--star-color) 50%, transparent),
+    0 0 160px 40px color-mix(in srgb, var(--star-color) 11%, transparent);
 }
 
 .hit:hover .ring,
 .hit:focus-visible .ring {
   border-color: color-mix(in srgb, var(--star-color) 40%, transparent);
   transform: scale(1.25);
+}
+
+/* O painel completo assume: o rótulo some e desce um pouco. */
+.hit:hover .caption,
+.hit:focus-visible .caption {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
 }

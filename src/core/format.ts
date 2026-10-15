@@ -38,3 +38,30 @@ export function monthYearLabel(timestamp: number, locale: Locale): string {
     .join(' ')
     .toUpperCase();
 }
+
+/** `FEV`: o marcador mensal da régua. Mesmas regras de `monthYearLabel`. */
+export function monthLabel(timestamp: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(DATE_LOCALE[locale], { month: 'short', timeZone: 'UTC' })
+    .format(new Date(timestamp))
+    .replace(/\./g, '')
+    .toUpperCase();
+}
+
+/** Acima disto o rótulo da estrela é encurtado. */
+const SHORT_TITLE_MAX = 40;
+
+/**
+ * O título curto que fica sempre visível sob a estrela: até ~40 caracteres,
+ * cortado na última palavra inteira e terminado com reticências. O título
+ * completo está no painel de hover e no `aria-label` da âncora.
+ *
+ * Uma palavra só não é cortada no meio a não ser que não haja espaço depois
+ * da metade do limite — aí o corte seco é melhor que um rótulo de uma palavra.
+ */
+export function shortTitle(title: string, max = SHORT_TITLE_MAX): string {
+  // Dois de folga, como no protótipo: não vale cortar uma palavra por um caractere.
+  if (title.length <= max + 2) return title;
+  const space = title.lastIndexOf(' ', max);
+  const cut = space > max / 2 ? title.slice(0, space) : title.slice(0, max);
+  return `${cut.replace(/[\s,;:—–-]+$/, '')}…`;
+}

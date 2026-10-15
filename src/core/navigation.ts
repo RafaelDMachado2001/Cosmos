@@ -22,13 +22,16 @@ export const INPUT = {
   /** Aplicado ao deltaY da roda antes de tudo. */
   wheelGain: 1.05,
   enterGain: 0.00085,
-  panGain: 1.15,
+  /** Roda sobre o pan. 1.15 no handoff base; 0.62 desde a fase 10. */
+  panGain: 0.62,
   /** Setas e PageUp/PageDown. */
   keyStepPx: 260,
   /** Arraste por toque, no eixo dominante. */
   touchGain: 2.4,
-  /** Arraste com ponteiro sobre a constelação. */
-  dragGain: 1.35,
+  /** Arraste com ponteiro sobre a constelação. 1.35 no handoff base. */
+  dragGain: 1,
+  /** Velocidade que o arraste deixa para a inércia, por px movido. Era 1.15. */
+  inertiaGain: 0.9,
 } as const;
 
 /**
@@ -91,9 +94,14 @@ export function coreOpacity(enter: number): number {
   return 1 - ramp(enter, 0.5, 0.92);
 }
 
-/** A esfera opaca que dá a impressão de interior vazio. */
-export function innerOpacity(enter: number): number {
-  return 0.9 * Math.max(0, 1 - enter / 0.7);
+/**
+ * O brilho interno do núcleo, apagando na faixa `enter` 0→0.7.
+ *
+ * Até a fase 10 era uma esfera opaca a 90%, que lia como um furo; agora é luz
+ * aditiva, e a intensidade inteira é o ponto de partida.
+ */
+export function innerGlow(enter: number): number {
+  return Math.max(0, 1 - enter / 0.7);
 }
 
 /** Escala da esfera interna, encolhendo conforme se atravessa. */
@@ -164,7 +172,7 @@ export function dominantAxisDelta(deltaX: number, deltaY: number): number {
  * É o alvo de clique da estrela (`--star-hit`): colada na borda ela aparece
  * pela metade, e o anel de foco sai da tela junto com ela.
  */
-export const FOCUS_MARGIN_PX = 58;
+export const FOCUS_MARGIN_PX = 88;
 
 /**
  * Se o foco numa estrela precisa levar a câmera junto.

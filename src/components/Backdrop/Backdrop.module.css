@@ -29,3 +29,13 @@
   filter: blur(6px);
   animation: rdmBreathe 7s var(--ease) infinite;
 }
+
+/* O roxo base das nebulosas, rgb(0.40, 0.27, 0.92), parado e bem baixo. */
+.skyFallback {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(60% 45% at 30% 50%, rgba(102, 69, 235, 0.1), transparent 70%),
+    radial-gradient(50% 40% at 75% 45%, rgba(102, 69, 235, 0.07), transparent 70%);
+}

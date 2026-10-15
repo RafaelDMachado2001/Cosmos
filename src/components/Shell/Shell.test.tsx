@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { UserEvent } from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,6 +21,22 @@ function constellationStars(): HTMLAnchorElement[] {
     .filter((link): link is HTMLAnchorElement =>
       (link.getAttribute('aria-label') ?? '').includes(' — '),
     );
+}
+
+/**
+ * O jsdom 25 nao tem `PointerEvent`, e o `fireEvent.pointerDown` cai num
+ * `Event` generico que descarta `pointerType` — justo o que se quer testar.
+ */
+function pointerDown(pointerType: 'mouse' | 'touch'): MouseEvent {
+  const event = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 });
+  return Object.assign(event, { pointerType });
+}
+
+/** Um toque completo: o jsdom nao gera a sequencia de ponteiro sozinho. */
+function tocar(element: HTMLElement): void {
+  fireEvent(element, pointerDown('touch'));
+  fireEvent.pointerUp(window);
+  fireEvent.click(element);
 }
 
 async function entrarNaConstelacao(user: UserEvent): Promise<HTMLAnchorElement> {
@@ -128,6 +144,77 @@ describe('Shell', () => {
     await waitFor(
       () => {
         expect(document.activeElement).toBe(estrela);
+      },
+      { timeout: 4000 },
+    );
+  });
+
+  it('arrastar com o mouse nao seleciona texto, e o clique ainda abre a estrela', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+    const regua = screen.getByRole('slider');
+
+    // `fireEvent` devolve falso quando o padrao foi cancelado.
+    expect(fireEvent(estrela, pointerDown('mouse'))).toBe(false);
+    expect(fireEvent(regua, pointerDown('mouse'))).toBe(false);
+    expect(fireEvent.dragStart(estrela)).toBe(false);
+    // O toque segue nativo: e o padrao dele que distingue toque de rolagem.
+    expect(fireEvent(estrela, pointerDown('touch'))).toBe(true);
+    fireEvent.pointerUp(window);
+
+    await user.click(estrela);
+    expect(await screen.findByRole('dialog', {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  it('no toque, o primeiro toque mostra o painel e o segundo abre a estrela', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+
+    tocar(estrela);
+    expect(await screen.findByText('TOQUE DE NOVO PARA ABRIR')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(window.location.pathname).toBe('/pt');
+
+    tocar(estrela);
+    expect(await screen.findByRole('dialog', {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  it('tocar numa area vazia fecha o painel', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+    tocar(estrela);
+    await screen.findByText('TOQUE DE NOVO PARA ABRIR');
+
+    // A camada da constelacao, fora de qualquer estrela.
+    fireEvent(estrela.parentElement as HTMLElement, pointerDown('touch'));
+    fireEvent.pointerUp(window);
+
+    await waitFor(() => {
+      expect(screen.queryByText('TOQUE DE NOVO PARA ABRIR')).toBeNull();
+    });
+  });
+
+  it('com o mouse, um clique abre direto e o painel diz clique', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+    await user.hover(estrela);
+    expect(await screen.findByText('CLIQUE PARA ABRIR')).toBeTruthy();
+  });
+
+  it('INICIO volta a entrada pelo mesmo caminho da travessia', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+
+    await user.click(screen.getByRole('button', { name: 'INÍCIO' }));
+
+    await waitFor(
+      () => {
+        expect(estrela.closest('[inert]')).not.toBeNull();
       },
       { timeout: 4000 },
     );

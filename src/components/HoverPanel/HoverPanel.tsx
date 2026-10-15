@@ -11,7 +11,11 @@ export interface HoverCard {
   readonly dateLabel: string;
   readonly title: string;
   readonly summary: string;
+  /** Pelo toque o painel pede um segundo toque; pelo mouse, um clique abre. */
+  readonly via: HoverVia;
 }
+
+export type HoverVia = 'pointer' | 'touch';
 
 export interface HoverPanelProps {
   readonly card: HoverCard;
@@ -53,7 +57,7 @@ export function HoverPanel({ card, category, x, yPx }: HoverPanelProps) {
 
       <h2 className={styles.title}>{card.title}</h2>
       <p className={styles.summary}>{card.summary}</p>
-      <p className={styles.hint}>{t.star.openHint}</p>
+      <p className={styles.hint}>{card.via === 'touch' ? t.star.tapHint : t.star.openHint}</p>
     </div>
   );
 }
