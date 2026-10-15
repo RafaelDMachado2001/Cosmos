@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { PUBLICATIONS, REAL_PUBLICATION_SLUG } from './publications';
+import { parseBlocks } from '../core/blocks';
 import { layoutHealth, placeStars } from '../core/timeline';
 import { CATEGORIES, LOCALES } from '../core/types';
 
@@ -52,8 +53,21 @@ describe('PUBLICATIONS', () => {
         const content = publication.content[locale];
         expect(content.title.trim()).not.toBe('');
         expect(content.summary.trim()).not.toBe('');
-        expect(content.body.length).toBeGreaterThan(0);
-        for (const paragraph of content.body) expect(paragraph.trim()).not.toBe('');
+        expect(content.body.trim().length).toBeGreaterThan(0);
+        // Exercita os seis tipos de bloco que a spec da fase 11 exige no
+        // acervo semente — ver DEMO_BODY em publications.ts.
+        expect(parseBlocks(content.body).map((block) => block.type)).toEqual([
+          'paragraph',
+          'heading',
+          'paragraph',
+          'quote',
+          'paragraph',
+          'list',
+          'paragraph',
+          'code',
+          'image',
+          'paragraph',
+        ]);
       }
     }
   });

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 
 import styles from './ReaderView.module.css';
+import { ArticleBody } from '../ArticleBody/ArticleBody';
 import type { Category } from '../../core/types';
 import { useLocale } from '../../i18n/useLocale';
 
@@ -14,7 +15,8 @@ export interface ReaderCard {
   readonly timelineLabel: string;
   readonly title: string;
   readonly summary: string;
-  readonly body: readonly string[];
+  /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
+  readonly body: string;
 }
 
 export interface ReaderViewProps {
@@ -122,11 +124,7 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
           <p className={styles.lede}>{card.summary}</p>
           <div className={styles.filet} aria-hidden="true" />
 
-          {card.body.map((paragraph, index) => (
-            <p key={index} className={styles.paragraph}>
-              {paragraph}
-            </p>
-          ))}
+          <ArticleBody markdown={card.body} />
 
           <footer className={styles.footer}>
             <span className={styles.position}>{card.timelineLabel}</span>

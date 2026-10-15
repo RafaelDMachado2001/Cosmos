@@ -63,12 +63,12 @@ export function makeSyntheticPublications(options: SyntheticOptions): readonly P
         pt: {
           title: `Nota sintética ${index}: ${topicPt}`,
           summary: `Item gerado para teste de carga da constelação, sobre ${topicPt}.`,
-          body: [`Conteúdo sintético número ${index}. Não é publicação real.`],
+          body: `Conteúdo sintético número ${index}. Não é publicação real.`,
         },
         en: {
           title: `Synthetic note ${index}: ${topicEn}`,
           summary: `Generated item for constellation load testing, about ${topicEn}.`,
-          body: [`Synthetic content number ${index}. Not a real publication.`],
+          body: `Synthetic content number ${index}. Not a real publication.`,
         },
       },
     };
