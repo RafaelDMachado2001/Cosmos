@@ -26,6 +26,13 @@ export interface SitemapEntry {
    * publicações que nunca viram o backend (acervo semente, sintéticas).
    */
   readonly updatedAt?: string;
+  /**
+   * Os idiomas que de fato têm tradução — uma publicação pode existir só num
+   * deles (o formulário do painel permite). Sem isto o sitemap gerava uma
+   * `<url>` e um par de `hreflang` reciprocamente para um idioma que nunca
+   * foi pré-renderizado: o buscador e o seletor de idioma caíam num 404.
+   */
+  readonly locales: readonly Locale[];
 }
 
 /** `lastmod` aceita a data sozinha, e é tudo o que se sabe: não há hora de revisão. */
@@ -43,13 +50,26 @@ function lastmod(entry: SitemapEntry): string {
  * Uma `<url>` com as suas alternativas.
  *
  * Cada idioma ganha a sua própria entrada, e todas as entradas listam todos os
- * idiomas — inclusive a si mesmas. É o que a especificação de sitemaps pede: o
- * conjunto tem de ser recíproco, senão o buscador descarta os pares.
+ * idiomas disponíveis — inclusive a si mesmas. É o que a especificação de
+ * sitemaps pede: o conjunto tem de ser recíproco, senão o buscador descarta os
+ * pares. `locales` restringe a quais — uma publicação num só idioma não tem
+ * par para anunciar.
  */
-function urlEntry(origin: string, path: (locale: Locale) => string, locale: Locale, lastmod: string | null): string {
+function urlEntry(
+  origin: string,
+  path: (locale: Locale) => string,
+  locale: Locale,
+  lastmod: string | null,
+  locales: readonly Locale[],
+): string {
+  // x-default aponta para o idioma padrão quando ele existe; senão, para
+  // qualquer um dos que existem — nunca para um idioma ausente.
+  const defaultTarget = locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : locales[0];
   const alternates = [
-    ...LOCALES.map((target) => ({ hreflang: target, href: absolute(origin, path(target)) })),
-    { hreflang: 'x-default', href: absolute(origin, path(DEFAULT_LOCALE)) },
+    ...locales.map((target) => ({ hreflang: target, href: absolute(origin, path(target)) })),
+    ...(defaultTarget === undefined
+      ? []
+      : [{ hreflang: 'x-default', href: absolute(origin, path(defaultTarget)) }]),
   ];
 
   return [
@@ -66,14 +86,15 @@ function urlEntry(origin: string, path: (locale: Locale) => string, locale: Loca
 
 export function sitemapXml(site: MetaSite, entries: readonly SitemapEntry[]): string {
   const urls = [
-    ...LOCALES.map((locale) => urlEntry(site.origin, homePath, locale, null)),
+    ...LOCALES.map((locale) => urlEntry(site.origin, homePath, locale, null, LOCALES)),
     ...entries.flatMap((entry) =>
-      LOCALES.map((locale) =>
+      entry.locales.map((locale) =>
         urlEntry(
           site.origin,
           (target: Locale) => articlePath(target, entry.slug),
           locale,
           lastmod(entry),
+          entry.locales,
         ),
       ),
     ),

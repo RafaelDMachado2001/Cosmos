@@ -15,8 +15,13 @@ export interface ArticlePageProps {
   /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
   readonly body: string;
   readonly homeHref: string;
-  /** O mesmo artigo no outro idioma — o par que o `hreflang` anuncia. */
-  readonly otherLocaleHref: string;
+  /**
+   * O mesmo artigo no outro idioma — o par que o `hreflang` anuncia.
+   *
+   * Nulo quando a publicação existe só neste idioma: o formulário do painel
+   * permite, e sem essa tradução não há página para onde apontar.
+   */
+  readonly otherLocaleHref: string | null;
   /** O acervo inteiro, para que daqui se alcance qualquer outra publicação. */
   readonly index: readonly ArticleLink[];
 }
@@ -53,17 +58,19 @@ export function ArticlePage({
         <a className={styles.brand} href={homeHref}>
           {t.nav.brand}
         </a>
-        <a
-          className={styles.other}
-          href={otherLocaleHref}
-          hrefLang={t.nav.otherLocaleTag}
-          // `hrefLang` descreve o destino; `lang` descreve este texto, que está
-          // escrito na outra língua. Sem ele o leitor de tela pronuncia
-          // "PORTUGUÊS" com a fonética do idioma da página.
-          lang={t.nav.otherLocaleTag}
-        >
-          {t.nav.otherLocale}
-        </a>
+        {otherLocaleHref !== null && (
+          <a
+            className={styles.other}
+            href={otherLocaleHref}
+            hrefLang={t.nav.otherLocaleTag}
+            // `hrefLang` descreve o destino; `lang` descreve este texto, que
+            // está escrito na outra língua. Sem ele o leitor de tela
+            // pronuncia "PORTUGUÊS" com a fonética do idioma da página.
+            lang={t.nav.otherLocaleTag}
+          >
+            {t.nav.otherLocale}
+          </a>
+        )}
       </header>
 
       <article className={styles.article}>

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ARCHIVE_LIMIT, prerenderPages } from './pages';
 import { PUBLICATIONS } from '../data/publications';
 import { LOCALES } from '../core/types';
+import type { PublicationsSource } from '../data/PublicationsSource';
 import { SITE } from '../site';
 import { createStaticSource } from '../data/PublicationsSource';
 
@@ -106,6 +107,38 @@ describe('prerenderPages', () => {
     const articles = pages.filter((page) => page.path.includes('/publicacoes/'));
     expect(articles).toHaveLength(1);
     expect(articles[0]?.path).toContain('so-esta-publicacao');
+  });
+
+  it('publicação só num idioma não expõe link morto para o outro, nem entra no sitemap do outro', async () => {
+    // O painel permite publicar só numa tradução — é o que o adapter HTTP
+    // real devolve (o join por locale simplesmente omite o slug do idioma
+    // sem tradução). `createStaticSource` não modela isso: todo item seu tem
+    // as duas, daí a fonte feita à mão aqui.
+    const soEmPortugues = {
+      slug: 'so-em-portugues',
+      publishedAt: '2026-01-15T12:00:00.000Z',
+      category: 'artigo' as const,
+      title: 'Só em português',
+      summary: 'Resumo.',
+    };
+    const fixture: PublicationsSource = {
+      list: (query) => Promise.resolve(query.locale === 'pt' ? [soEmPortugues] : []),
+      get: (slug, locale) =>
+        Promise.resolve(
+          locale === 'pt' && slug === soEmPortugues.slug
+            ? { ...soEmPortugues, body: 'Paragrafo.' }
+            : null,
+        ),
+    };
+
+    const { pages, sitemap } = await prerenderPages(fixture);
+
+    const ptPage = pages.find((page) => page.path === '/pt/publicacoes/so-em-portugues');
+    expect(ptPage).toBeDefined();
+    expect(ptPage?.body).not.toContain('href="/en/publications/so-em-portugues"');
+    expect(pages.find((page) => page.path === '/en/publications/so-em-portugues')).toBeUndefined();
+    expect(sitemap).toContain('/pt/publicacoes/so-em-portugues');
+    expect(sitemap).not.toContain('/en/publications/so-em-portugues');
   });
 
   it('pede o acervo inteiro: o limite padrao da API derrubaria o build na 101a publicacao', async () => {
