@@ -72,6 +72,11 @@ export function homePath(locale: Locale): string {
   return `/${locale}`;
 }
 
+/** Onde o feed RSS daquele idioma é gravado e servido — um por idioma. */
+export function rssPath(locale: Locale): string {
+  return `/${locale}/rss.xml`;
+}
+
 /** O outro idioma — o par de `hreflang` de qualquer rota tem exatamente dois lados. */
 export function otherLocale(locale: Locale): Locale {
   return LOCALES.find((candidate) => candidate !== locale) ?? locale;

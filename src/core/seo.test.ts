@@ -117,6 +117,11 @@ describe('homeMeta', () => {
       { hreflang: 'x-default', href: 'https://rdmlabs.dev/pt' },
     ]);
   });
+
+  it('anuncia o feed RSS daquele idioma, para autodescoberta', () => {
+    expect(homeMeta(SITE, 'pt', COPY).rssHref).toBe('https://rdmlabs.dev/pt/rss.xml');
+    expect(homeMeta(SITE, 'en', COPY).rssHref).toBe('https://rdmlabs.dev/en/rss.xml');
+  });
 });
 
 describe('articleJsonLd', () => {
@@ -173,6 +178,14 @@ describe('renderHeadTags', () => {
 
   it('leva o Open Graph', () => {
     expect(html).toContain('<meta property="og:type" data-head content="article">');
+  });
+
+  it('artigo não anuncia feed RSS; a home sim', () => {
+    expect(html).not.toContain('application/rss+xml');
+    const home = renderHeadTags(homeMeta(SITE, 'pt', { title: 'T', description: 'D' }), null);
+    expect(home).toContain(
+      '<link rel="alternate" data-head type="application/rss+xml" title="RSS" href="https://rdmlabs.dev/pt/rss.xml">',
+    );
   });
 
   it('escapa aspas e sinais no conteúdo dos atributos', () => {
