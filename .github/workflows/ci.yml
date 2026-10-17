@@ -121,8 +121,12 @@ jobs:
       - run: docker compose --profile backend up -d db
       - run: docker compose --profile backend run --rm --no-deps app composer install --no-interaction --prefer-dist --no-progress
       - run: docker compose --profile backend run --rm --no-deps app php artisan key:generate --force
+      # Migra antes de subir `queue`: o worker consulta a tabela `cache` (o
+      # sinal de restart do Laravel) assim que sobe, e sem isto a migration
+      # ainda não tinha rodado — "relation cache does not exist" na primeira
+      # verificação, e o worker repete a mesma falha depois de cada job.
+      - run: docker compose --profile backend run --rm --no-deps app php artisan migrate --seed --force
       - run: docker compose --profile backend up -d db app queue web
-      - run: docker compose --profile backend exec -T app php artisan migrate --seed --force
       - name: Publicar
         # O mesmo observer que o salvar do Filament dispara; o formulario em si
         # e coberto por AdminPanelTest na suite do backend.
