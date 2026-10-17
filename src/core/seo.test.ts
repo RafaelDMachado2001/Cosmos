@@ -58,6 +58,23 @@ describe('articleMeta', () => {
     ]);
   });
 
+  it('sem tradução no outro idioma, não anuncia um par que não existe', () => {
+    const meta = articleMeta(SITE, 'pt', ARTICLE, ['pt']);
+    expect(meta.alternates).toEqual([
+      { hreflang: 'pt', href: 'https://rdmlabs.dev/pt/publicacoes/code-review-sem-atrito' },
+      { hreflang: 'x-default', href: 'https://rdmlabs.dev/pt/publicacoes/code-review-sem-atrito' },
+    ]);
+    expect(meta.og['og:locale:alternate']).toBe('');
+  });
+
+  it('só em inglês: x-default cai no inglês, não no português ausente', () => {
+    const meta = articleMeta(SITE, 'en', ARTICLE, ['en']);
+    expect(meta.alternates).toEqual([
+      { hreflang: 'en', href: 'https://rdmlabs.dev/en/publications/code-review-sem-atrito' },
+      { hreflang: 'x-default', href: 'https://rdmlabs.dev/en/publications/code-review-sem-atrito' },
+    ]);
+  });
+
   it('o alternate do próprio idioma é o canonical', () => {
     const meta = articleMeta(SITE, 'en', ARTICLE);
     const self = meta.alternates.find((item) => item.hreflang === 'en');

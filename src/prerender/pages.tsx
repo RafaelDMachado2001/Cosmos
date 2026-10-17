@@ -140,13 +140,14 @@ export async function prerenderPages(
         category: detail.category,
       };
 
-      const hasOtherLocale = localesForSlug.get(detail.slug)?.includes(other) ?? false;
+      const availableLocales = localesForSlug.get(detail.slug) ?? [locale];
+      const hasOtherLocale = availableLocales.includes(other);
 
       pages.push({
         path: articlePath(locale, detail.slug),
         lang: LOCALE_TAG[locale],
         head: renderHeadTags(
-          articleMeta(SITE, locale, meta),
+          articleMeta(SITE, locale, meta, availableLocales),
           articleJsonLd(SITE, locale, meta),
         ),
         og: articleOgCard(locale, meta),
