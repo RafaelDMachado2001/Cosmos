@@ -46,6 +46,14 @@ describe('generateSky', () => {
     expect(generateSky([], colorOf)).toEqual({ nebulae: [], galaxies: [] });
   });
 
+  it('uma única publicação já gera céu, sem lançar', () => {
+    const sky = generateSky(placeStars([item('solo', '2024-02-10T12:00:00Z')]), colorOf);
+    expect(sky.nebulae.length).toBeGreaterThan(0);
+    for (const nebula of sky.nebulae) {
+      expect(Number.isFinite(nebula.px)).toBe(true);
+    }
+  });
+
   it('publicar não move o que já estava no céu: só estende a ponta', () => {
     const before = generateSky(placeStars(ACERVO), colorOf);
     const after = generateSky(
