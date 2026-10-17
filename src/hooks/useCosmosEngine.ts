@@ -382,11 +382,20 @@ export function useCosmosEngine(
 
         const scene = sceneRef.current;
         if (scene) {
-          scene.setEnter(enter);
-          scene.setPointer(s.mouseXS, s.mouseYS);
-          scene.setSky(skyRef.current);
-          scene.setAtmosphere(s.panS, atmosphereIntensity(reveal, zoom));
-          scene.render(delta);
+          try {
+            scene.setEnter(enter);
+            scene.setPointer(s.mouseXS, s.mouseYS);
+            scene.setSky(skyRef.current);
+            scene.setAtmosphere(s.panS, atmosphereIntensity(reveal, zoom));
+            scene.render(delta);
+          } catch (error) {
+            // Mesmo tratamento de quando o WebGL nunca existiu (CoreCanvas):
+            // descarta a cena e deixa o fallback em CSS assumir a partir do
+            // próximo quadro, em vez de tentar de novo a cada quadro.
+            console.error('cena 3D falhou durante o render; caindo para o fallback em CSS', error);
+            scene.dispose();
+            sceneRef.current = null;
+          }
         }
 
         const nextPhase = phaseFor(enter);
