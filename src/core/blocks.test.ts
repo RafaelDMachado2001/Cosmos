@@ -174,6 +174,25 @@ describe('parseBlocks', () => {
       });
     });
 
+    it.each(['data:text/html,<script>', 'vbscript:msgbox', 'file:///etc/passwd'])(
+      'protocolo %s também é recusado, não só javascript:',
+      (href) => {
+        const [block] = parseBlocks(`[clique aqui](${href})`);
+        expect(block).toEqual<Block>({
+          type: 'paragraph',
+          children: [text('clique aqui')],
+        });
+      },
+    );
+
+    it('imagem com URL vazia sobra como o alt, não é descartada', () => {
+      const [block] = parseBlocks('![legenda]()');
+      expect(block).toEqual<Block>({
+        type: 'paragraph',
+        children: [text('legenda')],
+      });
+    });
+
     it('imagem embutida no meio de um parágrafo sempre sobra como o alt', () => {
       // A spec trata imagem como bloco, não como marca inline — a sintaxe
       // `![alt](...)` no meio de um parágrafo nunca vira figura, só o alt.
