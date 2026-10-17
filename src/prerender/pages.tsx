@@ -19,7 +19,7 @@ import type { MetaArticle } from '../core/seo';
 import { rssXml } from '../core/rss';
 import { robotsTxt, sitemapXml } from '../core/sitemap';
 import { LOCALES, LOCALE_TAG } from '../core/types';
-import type { Locale } from '../core/types';
+import type { Locale, PublicationSummary } from '../core/types';
 import { createSource } from '../data/source';
 import type { PublicationsSource } from '../data/PublicationsSource';
 import { DICTIONARIES } from '../i18n/dictionaries';
@@ -84,16 +84,27 @@ export async function prerenderPages(
   const listed = new Map<string, { publishedAt: string; updatedAt?: string }>();
   const rss: Partial<Record<Locale, string>> = {};
 
+  // Primeira passada: que idiomas cada slug de fato tem. Uma publicação pode
+  // existir só num deles — o formulário do painel permite — e só se sabe ao
+  // ver as duas listas inteiras, antes de montar qualquer página.
+  const summariesByLocale = {} as Record<Locale, readonly PublicationSummary[]>;
+  const localesForSlug = new Map<string, Locale[]>();
   for (const locale of LOCALES) {
-    const other = otherLocale(locale);
-    const dictionary = DICTIONARIES[locale];
     const summaries = await source.list({ locale, limit: ARCHIVE_LIMIT });
+    summariesByLocale[locale] = summaries;
     for (const summary of summaries) {
+      localesForSlug.set(summary.slug, [...(localesForSlug.get(summary.slug) ?? []), locale]);
       listed.set(summary.slug, {
         publishedAt: summary.publishedAt,
         ...(summary.updatedAt === undefined ? {} : { updatedAt: summary.updatedAt }),
       });
     }
+  }
+
+  for (const locale of LOCALES) {
+    const other = otherLocale(locale);
+    const dictionary = DICTIONARIES[locale];
+    const summaries = summariesByLocale[locale];
     // Do mais novo para o mais antigo, igual à constelação — não há motivo
     // para um leitor de RSS ver o acervo em outra ordem.
     rss[locale] = rssXml(SITE.origin, locale, dictionary.meta, summaries);
@@ -129,6 +140,8 @@ export async function prerenderPages(
         category: detail.category,
       };
 
+      const hasOtherLocale = localesForSlug.get(detail.slug)?.includes(other) ?? false;
+
       pages.push({
         path: articlePath(locale, detail.slug),
         lang: LOCALE_TAG[locale],
@@ -146,7 +159,7 @@ export async function prerenderPages(
             summary={detail.summary}
             body={detail.body}
             homeHref={homePath(locale)}
-            otherLocaleHref={articlePath(other, detail.slug)}
+            otherLocaleHref={hasOtherLocale ? articlePath(other, detail.slug) : null}
             index={index}
           />,
         ),
@@ -191,7 +204,11 @@ export async function prerenderPages(
      */
     sitemap: sitemapXml(
       SITE,
-      [...listed].map(([slug, dates]) => ({ slug, ...dates })),
+      [...listed].map(([slug, dates]) => ({
+        slug,
+        ...dates,
+        locales: localesForSlug.get(slug) ?? [],
+      })),
     ),
     robots: robotsTxt(SITE),
     // Todo LOCALES passa pelo laço acima, então toda chave existe — o cast
