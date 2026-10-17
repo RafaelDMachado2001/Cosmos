@@ -13,7 +13,19 @@ services:
     working_dir: /app
     # npm ci fica no command, não na imagem: o volume nomeado nasce vazio e
     # precisa ser populado dentro do container, não copiado do host.
-    command: sh -c "npm ci --no-audit --no-fund && npm run dev"
+    #
+    # O carimbo evita repetir o `npm ci` em todo restart: sem ele, um
+    # `.env` com env inválido (ver scripts/check-env.ts) faz o `npm run dev`
+    # falhar na hora, o `restart: unless-stopped` reinicia o container em
+    # segundos, e vários `npm ci` concorrentes no mesmo volume nomeado
+    # corrompem o `node_modules` — foi o que aconteceu de fato ao trocar de
+    # branch com um `.env` de outra fase ainda no disco.
+    command: >-
+      sh -c "
+        cmp -s package-lock.json node_modules/.install-stamp 2>/dev/null ||
+          (npm ci --no-audit --no-fund && cp package-lock.json node_modules/.install-stamp) &&
+        npm run dev
+      "
     user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     volumes:
       - .:/app
