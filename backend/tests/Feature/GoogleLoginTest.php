@@ -7,8 +7,10 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use Mockery;
 use Tests\TestCase;
 
 class GoogleLoginTest extends TestCase
@@ -70,6 +72,29 @@ class GoogleLoginTest extends TestCase
 
         $this->assertSame(1, User::count());
         $this->assertTrue(Auth::user()?->is($existing));
+    }
+
+    public function test_email_do_google_com_capitalizacao_diferente_nao_duplica_o_administrador(): void
+    {
+        $existing = User::factory()->create(['email' => config('admin.email')]);
+        $shouting = Str::upper((string) config('admin.email'));
+        Socialite::fake('google', $this->fakeGoogleUser($shouting));
+
+        $this->get(route('auth.google.callback'));
+
+        $this->assertSame(1, User::count());
+        $this->assertTrue(Auth::user()?->is($existing));
+    }
+
+    public function test_callback_sobrevive_a_uma_falha_do_socialite_em_vez_de_500(): void
+    {
+        $driver = Mockery::mock();
+        $driver->shouldReceive('user')->andThrow(new \RuntimeException('timeout'));
+        Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
+
+        $this->get(route('auth.google.callback'))->assertRedirect('/admin/login');
+
+        $this->assertTrue(Auth::guest());
     }
 
     public function test_a_11a_tentativa_de_login_no_mesmo_minuto_recebe_429(): void
