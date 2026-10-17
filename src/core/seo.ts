@@ -12,7 +12,7 @@
 
 import { OG_SIZE, ogImagePath } from './og';
 import type { OgCard } from './og';
-import { articlePath, homePath } from './routing';
+import { articlePath, homePath, rssPath } from './routing';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_TAG, OG_LOCALE } from './types';
 import type { Category, Locale } from './types';
 import { absolute } from './url';
@@ -46,6 +46,13 @@ export interface PageMeta {
   readonly canonical: string;
   readonly alternates: readonly Alternate[];
   readonly og: Readonly<Record<string, string>>;
+  /**
+   * O feed RSS deste idioma, para autodescoberta por agregador/leitor.
+   *
+   * Só na home: é onde a convenção espera o `<link>`, e repetir em toda
+   * página de artigo não acrescenta nada que a home já não anuncie.
+   */
+  readonly rssHref?: string;
 }
 
 export interface ArticleJsonLd {
@@ -186,6 +193,7 @@ export function homeMeta(
       'og:locale:alternate': otherOgLocales(locale),
       ...ogImageTags(site, homeOgCard(site, locale, copy)),
     },
+    rssHref: absolute(site.origin, rssPath(locale)),
   };
 }
 
@@ -259,6 +267,11 @@ export function renderHeadTags(meta: PageMeta, jsonLd: ArticleJsonLd | null): st
       (alternate) =>
         `<link rel="alternate" data-head hreflang="${attr(alternate.hreflang)}" href="${attr(alternate.href)}">`,
     ),
+    ...(meta.rssHref === undefined
+      ? []
+      : [
+          `<link rel="alternate" data-head type="application/rss+xml" title="RSS" href="${attr(meta.rssHref)}">`,
+        ]),
     ...Object.entries(meta.og)
       .filter(([, content]) => content !== '')
       .map(

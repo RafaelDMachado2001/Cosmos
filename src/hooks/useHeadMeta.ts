@@ -59,6 +59,22 @@ function setProperties(entries: Readonly<Record<string, string>>): void {
   }
 }
 
+/** Só a home tem — sai do `<head>` ao navegar para um artigo, sem ficar para trás. */
+function setRssLink(href: string | undefined): void {
+  if (href === undefined) {
+    document.head.querySelector('link[rel="alternate"][type="application/rss+xml"]')?.remove();
+    return;
+  }
+  const element = upsert<HTMLLinkElement>('link[rel="alternate"][type="application/rss+xml"]', () => {
+    const link = document.createElement('link');
+    link.rel = 'alternate';
+    link.type = 'application/rss+xml';
+    link.title = 'RSS';
+    return link;
+  });
+  element.href = href;
+}
+
 function setAlternates(alternates: PageMeta['alternates']): void {
   for (const stale of document.head.querySelectorAll('link[rel="alternate"][hreflang]')) {
     stale.remove();
@@ -104,6 +120,7 @@ export function useHeadMeta(
     setDescription(meta.description);
     setCanonical(meta.canonical);
     setAlternates(meta.alternates);
+    setRssLink(meta.rssHref);
     setProperties(meta.og);
     setJsonLd(jsonLd);
   }, [meta, jsonLd, localeTag]);
