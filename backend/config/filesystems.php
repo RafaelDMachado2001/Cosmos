@@ -50,6 +50,31 @@ return [
             'report' => false,
         ],
 
+        // A mídia do RDM Studio. Em produção, um bucket S3-compatível (o R2 da
+        // Cloudflare) servido por CDN no domínio de MEDIA_URL: o contêiner do
+        // Cloud Run não guarda nada em disco. Em desenvolvimento, sem
+        // credencial nenhuma, é o mesmo diretório que o Nginx serve em /storage/.
+        'media' => env('MEDIA_DISK', 'local') === 's3' ? [
+            'driver' => 's3',
+            'key' => env('MEDIA_S3_KEY'),
+            'secret' => env('MEDIA_S3_SECRET'),
+            // O R2 ignora a região, mas o SDK exige uma.
+            'region' => env('MEDIA_S3_REGION', 'auto'),
+            'bucket' => env('MEDIA_S3_BUCKET'),
+            'endpoint' => env('MEDIA_S3_ENDPOINT'),
+            'url' => rtrim((string) env('MEDIA_URL'), '/'),
+            'use_path_style_endpoint' => true,
+            'throw' => true,
+            'report' => false,
+        ] : [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            'url' => '/storage',
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
