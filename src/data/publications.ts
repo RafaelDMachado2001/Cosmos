@@ -17,20 +17,56 @@ export const REAL_PUBLICATION_SLUG = 'arquitetura-e-orquestracao-de-llms';
 
 /**
  * Corpo de demonstração, igual ao do protótipo. Cada publicação recebe um
- * parágrafo de abertura próprio antes destes, para que a vista de leitura não
- * fique idêntica entre itens enquanto o conteúdo real não chega.
+ * parágrafo de abertura próprio antes deste Markdown, para que a vista de
+ * leitura não fique idêntica entre itens enquanto o conteúdo real não chega.
+ *
+ * Exercita os seis tipos de bloco de `core/blocks.ts` — é o que prova, no
+ * acervo semente, que `ArticleBody` desenha título, citação e lista, não só
+ * parágrafo.
  */
 const DEMO_BODY = {
-  pt: [
-    'Na implementação final o corpo do artigo vem do PostgreSQL em HTML semântico, renderizado no servidor para que os mecanismos de busca leiam o texto completo sem depender da camada 3D.',
-    'A página interna abandona os efeitos da constelação e prioriza leitura: medida de linha entre 60 e 72 caracteres, entrelinha de 1.78 e contraste acima de 4.5:1. A estrela de origem continua indicada no rodapé para que o leitor saiba onde está na linha do tempo.',
-    'Ao fechar, a câmera retorna exatamente ao ponto de onde saiu, sem recarregar a constelação.',
-  ],
-  en: [
-    'In the final build the article body comes from PostgreSQL as semantic HTML, server-rendered so crawlers read the full text without depending on the 3D layer.',
-    'The article view drops the constellation effects and prioritises reading: 60 to 72 character measure, 1.78 line height, contrast above 4.5:1. The origin star stays noted in the footer so the reader keeps their place on the timeline.',
-    'On close, the camera returns to the exact point it left from, with no constellation reload.',
-  ],
+  pt: `## Como este texto chega até aqui
+
+Na implementação final o corpo do artigo vem do PostgreSQL como um texto em Markdown, interpretado uma vez em TypeScript — nunca em HTML — para que os mecanismos de busca leiam o texto completo sem depender da camada 3D.
+
+> A estrela de origem continua indicada no rodapé para que o leitor saiba onde está na linha do tempo.
+
+A página interna abandona os efeitos da constelação e prioriza leitura:
+
+- Medida de linha entre 60 e 72 caracteres
+- Entrelinha de 1.78
+- Contraste acima de 4.5:1
+
+O parser do corpo é só isto, em TypeScript puro:
+
+\`\`\`ts
+const blocos = parseBlocks(corpoEmMarkdown);
+\`\`\`
+
+![a constelação, vista de cima, com as estrelas posicionadas por data](https://example.com/constelacao.png "Vista aérea do acervo")
+
+Ao fechar, a câmera retorna exatamente ao ponto de onde saiu, sem recarregar a constelação.`,
+  en: `## How this text gets here
+
+In the final build the article body comes from PostgreSQL as a Markdown text, interpreted once in TypeScript — never as HTML — so crawlers read the full text without depending on the 3D layer.
+
+> The origin star stays noted in the footer so the reader keeps their place on the timeline.
+
+The article view drops the constellation effects and prioritises reading:
+
+- 60 to 72 character measure
+- 1.78 line height
+- Contrast above 4.5:1
+
+The body parser is just this, in plain TypeScript:
+
+\`\`\`ts
+const blocks = parseBlocks(markdownBody);
+\`\`\`
+
+![the constellation, seen from above, stars placed by date](https://example.com/constelacao.png "Aerial view of the archive")
+
+On close, the camera returns to the exact point it left from, with no constellation reload.`,
 } as const;
 
 interface SeedInput {
@@ -52,12 +88,12 @@ function seed(input: SeedInput): Publication {
       pt: {
         title: input.pt.title,
         summary: input.pt.summary,
-        body: [input.pt.opening, ...DEMO_BODY.pt],
+        body: `${input.pt.opening}\n\n${DEMO_BODY.pt}`,
       },
       en: {
         title: input.en.title,
         summary: input.en.summary,
-        body: [input.en.opening, ...DEMO_BODY.en],
+        body: `${input.en.opening}\n\n${DEMO_BODY.en}`,
       },
     },
   };

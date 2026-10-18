@@ -1,4 +1,5 @@
 import styles from './ArticlePage.module.css';
+import { ArticleBody } from '../ArticleBody/ArticleBody';
 import { useLocale } from '../../i18n/useLocale';
 
 export interface ArticleLink {
@@ -11,7 +12,8 @@ export interface ArticlePageProps {
   readonly dateLabel: string;
   readonly title: string;
   readonly summary: string;
-  readonly body: readonly string[];
+  /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
+  readonly body: string;
   readonly homeHref: string;
   /** O mesmo artigo no outro idioma — o par que o `hreflang` anuncia. */
   readonly otherLocaleHref: string;
@@ -73,11 +75,7 @@ export function ArticlePage({
         <p className={styles.lede}>{summary}</p>
         <div className={styles.filet} aria-hidden="true" />
 
-        {body.map((paragraph, position) => (
-          <p key={position} className={styles.paragraph}>
-            {paragraph}
-          </p>
-        ))}
+        <ArticleBody markdown={body} />
 
         <footer className={styles.footer}>
           <a className={styles.back} href={homeHref}>

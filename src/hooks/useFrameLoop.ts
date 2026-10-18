@@ -28,7 +28,15 @@ export function useFrameLoop(onFrame: (deltaSeconds: number) => void, active = t
       // produziria um salto enorme numa única interpolação.
       const delta = Math.min((now - previous) / 1000, MAX_FRAME_DELTA_S);
       previous = now;
-      callbackRef.current(delta);
+      try {
+        callbackRef.current(delta);
+      } catch (error) {
+        // Sem isto, uma excecao em QUALQUER ponto do quadro (3D, DOM, o que
+        // for) cancelava o proprio requestAnimationFrame seguinte e travava
+        // a aplicacao inteira pra sempre — enter, pan e fase, nao so o
+        // visual. Aconteceu de fato: Chromium headless sem GPU no CI.
+        console.error('quadro falhou; continuando no próximo em vez de travar', error);
+      }
       handle = requestAnimationFrame(tick);
     };
 

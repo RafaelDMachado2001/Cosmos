@@ -21,7 +21,8 @@ export interface ListQuery {
 
 /** A publicação completa, já resolvida num idioma. */
 export interface PublicationDetail extends PublicationSummary {
-  readonly body: readonly string[];
+  /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
+  readonly body: string;
 }
 
 export interface PublicationsSource {
@@ -98,10 +99,8 @@ export function createStaticSource(publications: readonly Publication[]): Public
 /**
  * A publicação como o Laravel a devolve.
  *
- * `published_at` em snake_case e o corpo já em parágrafos: dividir o texto é
- * trabalho do servidor, que é quem sabe em que formato o guardou. A
- * constelação sempre falou em parágrafos, e não vai passar a falar em markdown
- * por causa de onde o dado passou a morar.
+ * `published_at` em snake_case. O corpo vem como a string de Markdown crua —
+ * dividir em blocos é trabalho de `core/blocks.ts`, uma vez, não do servidor.
  */
 interface ApiPublication {
   readonly slug: string;
@@ -113,7 +112,7 @@ interface ApiPublication {
 }
 
 interface ApiPublicationDetail extends ApiPublication {
-  readonly body: readonly string[];
+  readonly body: string;
 }
 
 function fromApi(row: ApiPublication): PublicationSummary {

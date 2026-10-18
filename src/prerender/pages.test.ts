@@ -86,8 +86,8 @@ describe('prerenderPages', () => {
         category: 'artigo',
         publishedAt: '2026-01-15T12:00:00.000Z',
         content: {
-          pt: { title: 'So esta', summary: 'Resumo.', body: ['Paragrafo.'] },
-          en: { title: 'Only this', summary: 'Summary.', body: ['Paragraph.'] },
+          pt: { title: 'So esta', summary: 'Resumo.', body: 'Paragrafo.' },
+          en: { title: 'Only this', summary: 'Summary.', body: 'Paragraph.' },
         },
       },
     ]);

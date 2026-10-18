@@ -203,24 +203,23 @@ class PublicationApiTest extends TestCase
         $this->getJson('/api/publications?before=nao-e-data')->assertStatus(422);
     }
 
-    public function test_a_publicacao_traz_o_corpo_em_paragrafos(): void
+    public function test_a_publicacao_traz_o_corpo_como_markdown_cru(): void
     {
         $data = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')
             ->assertOk()
             ->json('data');
 
-        $this->assertIsArray($data['body']);
-        $this->assertGreaterThan(1, count($data['body']));
-        foreach ($data['body'] as $paragraph) {
-            $this->assertNotSame('', trim($paragraph));
-            $this->assertStringNotContainsString("\n\n", $paragraph);
-        }
+        // Dividir em blocos e trabalho de core/blocks.ts, no cliente — o
+        // servidor so guarda e devolve a string. Ver a spec da fase 11.
+        $this->assertIsString($data['body']);
+        $this->assertNotSame('', trim($data['body']));
+        $this->assertStringContainsString("\n\n", $data['body']);
     }
 
     public function test_a_publicacao_respeita_o_idioma(): void
     {
-        $pt = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')->json('data.body.0');
-        $en = $this->getJson('/api/publications/code-review-sem-atrito?locale=en')->json('data.body.0');
+        $pt = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')->json('data.body');
+        $en = $this->getJson('/api/publications/code-review-sem-atrito?locale=en')->json('data.body');
 
         $this->assertNotSame($pt, $en);
     }
