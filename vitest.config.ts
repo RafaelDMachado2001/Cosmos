@@ -19,7 +19,11 @@ export default defineConfig({
     // string, sem DOM. Nada aqui precisa de navegador.
     environment: 'node',
     // Os componentes sao a excecao: precisam de DOM, e so eles pagam por ele.
-    environmentMatchGlobs: [['src/components/**', 'jsdom']],
+    // `src/admin/` e o RDM Studio — componentes também, pela mesma razão.
+    environmentMatchGlobs: [
+      ['src/components/**', 'jsdom'],
+      ['src/admin/**', 'jsdom'],
+    ],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     // O Vitest esvazia todo CSS importado, inclusive com `?raw`. O cartao de
     // Open Graph le as cores deste arquivo como texto, e o teste precisa delas.

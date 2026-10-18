@@ -1,0 +1,56 @@
+/**
+ * O reset do RDM Studio, não o do site público.
+ *
+ * `styles/reset.css` fixa `html,body{overflow:hidden}` porque a cosmos é
+ * inteira `position:fixed`; aqui é um painel de formulário comum, que
+ * precisa rolar de verdade. Por isso um reset próprio, pequeno, em vez de
+ * importar aquele.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+ol,
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PublicationAdminController;
+use App\Http\Controllers\Admin\RdmStudioController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\FallbackController;
@@ -25,9 +26,28 @@ Route::middleware('throttle:10,1')->group(function (): void {
 });
 
 /*
- * A API do RDM Studio. `web` já é o grupo padrão deste arquivo; `auth` é o
- * guard `web` padrão, o mesmo que `GoogleAuthController` autentica.
+ * O middleware `auth` padrão do Laravel redireciona para `route('login')`
+ * quando a requisição não espera JSON — e sem esta rota ele lançava
+ * `RouteNotFoundException` em vez de redirecionar. O Filament tem a própria
+ * tela (`GoogleLogin`, em `/admin/login` — já ocupado, por isso o caminho
+ * diferente aqui) para o guard dele; isto só existe para as rotas que usam
+ * o middleware `auth` genérico (`/admin/studio`, `/admin/api/*`).
+ *
+ * Precisa do prefixo `/admin/`: `docker/web/default.conf` só repassa ao
+ * PHP-FPM os caminhos que casam `^/(api|admin|livewire)(/|$)` — um `/login`
+ * sem prefixo cai no `location /` do site público (raiz `/srv/site`) e nunca
+ * alcança o Laravel, por mais que a rota exista (visto direto no PHPUnit,
+ * que não passa pelo Nginx, e só por isso não pegou isto antes).
  */
+Route::get('/admin/login-gateway', fn () => redirect()->route('auth.google.redirect'))->name('login');
+
+/*
+ * O RDM Studio: a casca HTML e a API JSON que ela chama. `web` já é o grupo
+ * padrão deste arquivo; `auth` é o guard `web` padrão, o mesmo que
+ * `GoogleAuthController` autentica.
+ */
+Route::middleware('auth')->get('/admin/studio', [RdmStudioController::class, 'show'])->name('rdm-studio');
+
 Route::middleware('auth')->prefix('admin/api')->group(function (): void {
     Route::get('/publications', [PublicationAdminController::class, 'index']);
     Route::post('/publications', [PublicationAdminController::class, 'store']);

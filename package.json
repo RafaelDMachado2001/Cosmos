@@ -10,6 +10,7 @@
     "build": "tsc -b && vite build",
     "check:env": "vite-node scripts/check-env.ts",
     "postbuild": "vite build --config vite.prerender.config.ts && node dist-ssr/prerender.js",
+    "build:admin": "vite build --config vite.admin.config.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -50,7 +50,8 @@ export type Block =
  * (`#...`). Uma URL fora desta lista nunca é descartada — o texto do link ou
  * o `alt` da imagem permanece, só perde o elemento clicável/carregável.
  */
-function safeUrl(url: string): string | null {
+/** Exportada para `core/draftValidation.ts` — a mesma regra, não uma cópia. */
+export function safeUrl(url: string): string | null {
   const trimmed = url.trim();
   if (trimmed === '') return null;
   if (trimmed.startsWith('/') || trimmed.startsWith('#')) return trimmed;

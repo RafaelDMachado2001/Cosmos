@@ -134,6 +134,16 @@ jobs:
           sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-test/; s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=ci-admin-test/' .env
           cp backend/.env.example backend/.env
           sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-test/' backend/.env
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: RDM Studio (bundle do painel)
+        # `web` serve backend/public/ por bind mount (docker-compose.yml) — sem
+        # este build, /admin/studio sobe mas admin.js/admin.css dão 404.
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build:admin
       - run: docker compose --profile backend build app queue web
       - run: docker compose --profile backend up -d db
       - run: docker compose --profile backend run --rm --no-deps app composer install --no-interaction --prefer-dist --no-progress
@@ -144,6 +154,12 @@ jobs:
       # verificação, e o worker repete a mesma falha depois de cada job.
       - run: docker compose --profile backend run --rm --no-deps app php artisan migrate --seed --force
       - run: docker compose --profile backend up -d db app queue web
+      - name: RDM Studio responde (casca exige login; os assets, não)
+        run: |
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/admin/rdm-studio/admin.js && break; sleep 2; done
+          status_js="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/rdm-studio/admin.js)"
+          status_studio="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/studio)"
+          [ "$status_js" = 200 ] && [ "$status_studio" = 302 ]
       - name: Publicar
         # O mesmo observer que o salvar do Filament dispara; o formulario em si
         # e coberto por AdminPanelTest na suite do backend.
