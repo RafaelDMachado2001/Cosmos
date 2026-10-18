@@ -133,7 +133,12 @@ interface ApiPublicationDetail extends ApiPublication {
   readonly body: string;
   readonly seo_title: string | null;
   readonly seo_description: string | null;
-  readonly locales: readonly string[];
+  /**
+   * Opcional no tipo de propósito: o site e a API têm deploys separados, e o
+   * build da Vercel pode ler uma API um deploy atrás. Campo novo nunca derruba
+   * o build — ausente, vale o padrão de antes (os dois idiomas).
+   */
+  readonly locales?: readonly string[];
 }
 
 function fromApi(row: ApiPublication): PublicationSummary {
@@ -250,7 +255,7 @@ export function createHttpSource(
       return {
         ...fromApi(payload.data),
         body: payload.data.body,
-        locales: payload.data.locales.filter(isLocale),
+        locales: payload.data.locales?.filter(isLocale) ?? LOCALES,
         ...(payload.data.seo_title === null ? {} : { seoTitle: payload.data.seo_title }),
         ...(payload.data.seo_description === null
           ? {}

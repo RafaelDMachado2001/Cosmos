@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
-use App\Jobs\RegenerateSite;
 use App\Models\Publication;
+use App\Support\SiteRebuild;
 
 /**
  * Publicar pelo painel tem de chegar ao disco.
@@ -18,11 +18,11 @@ class PublicationObserver
 {
     public function saved(Publication $publication): void
     {
-        RegenerateSite::dispatch();
+        SiteRebuild::request();
     }
 
     public function deleted(Publication $publication): void
     {
-        RegenerateSite::dispatch();
+        SiteRebuild::request();
     }
 }
