@@ -40,11 +40,12 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
 
 3. **Aplicar em duas passadas.** O Cloud Run recusa uma revisão que lê um
    segredo sem versão, então primeiro só os recipientes dos segredos, depois os
-   valores (passo 4), e só então o resto:
+   valores (passo 4), e só então o resto. O bucket R2 entra na primeira: o
+   token de acesso à mídia é emitido para um bucket que já existe.
 
    ```sh
    terraform init -backend-config=state.gcs.tfbackend
-   terraform apply -target=google_secret_manager_secret.external
+   terraform apply -target=google_secret_manager_secret.external -target=cloudflare_r2_bucket.media
    # passo 4: gravar os valores
    terraform apply
    ```
