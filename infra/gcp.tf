@@ -69,12 +69,13 @@ resource "google_artifact_registry_repository" "images" {
   format        = "DOCKER"
   location      = var.region
 
-  # Só as dez últimas: cada merge na main empurra uma.
+  # Só as três últimas: cada merge na main empurra uma, e 0,5 GB é o que o
+  # Artifact Registry dá de graça. Três ainda cobrem um rollback.
   cleanup_policies {
-    id     = "manter-dez"
+    id     = "manter-tres"
     action = "KEEP"
     most_recent_versions {
-      keep_count = 10
+      keep_count = 3
     }
   }
 
@@ -273,7 +274,12 @@ resource "google_cloud_run_v2_job" "migrate" {
 resource "google_cloud_scheduler_job" "tick" {
   name      = "cosmos-tick"
   region    = var.region
-  schedule  = "* * * * *"
+  # A cada 15 minutos, não a cada minuto: todo tick acorda o Neon, que só
+  # suspende depois de 5 minutos parado. De minuto em minuto o banco nunca
+  # dormiria e estouraria as horas de computação do plano gratuito. O preço:
+  # uma publicação agendada sai em até 15 minutos, e o último rebuild de uma
+  # rajada de edições também (o salvar comum dispara na hora).
+  schedule  = "*/15 * * * *"
   time_zone = "America/Sao_Paulo"
 
   # Pela borda, como qualquer requisição: o Worker repassa, o Laravel valida

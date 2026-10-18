@@ -51,7 +51,7 @@ flowchart LR
     edge -- images --> media
     studio -- deploy hook --> edge
     edge -. build reads content .-> api
-    cron -- every minute --> studio
+    cron -- every 15 minutes --> studio
 ```
 
 The system is split in two along the line that matters most, **who is
@@ -120,9 +120,14 @@ named by UUID and never rewritten, so they are cached forever.
 
 ### Scheduler (Cloud Scheduler)
 
-A managed cron that calls the backend once a minute. It publishes scheduled
-posts and flushes pending site rebuilds. No worker process is kept alive just
-to watch the clock.
+A managed cron that calls the backend every 15 minutes. It publishes
+scheduled posts and flushes pending site rebuilds. No worker process is kept
+alive just to watch the clock.
+
+Why not every minute: each tick wakes the database, and Neon only suspends
+after five idle minutes. A one-minute tick would keep it awake around the
+clock and exhaust the free compute hours. Fifteen minutes is the trade:
+a scheduled post goes out up to fifteen minutes late.
 
 ## Key flows
 
@@ -156,12 +161,12 @@ exactly one block of the same type and content, and a test suite proves it
 case by case.
 
 Rebuilds are **debounced**. Each save marks the site dirty; a deploy hook fires
-at most once a minute, and the scheduler sends the trailing one. Ten quick
-edits cost one build, not ten.
+at most once a minute, and the scheduler's next tick sends the trailing one.
+Ten quick edits cost one build, not ten.
 
 ### Scheduled publishing
 
-`scheduled` is a status, not only a future date. Every minute, the scheduler
+`scheduled` is a status, not only a future date. On each tick, the scheduler
 moves due posts to `published`, which marks the site dirty like any other
 save. The command compares counts instead of time windows, so a paused
 scheduler catches up instead of skipping posts.
@@ -321,8 +326,11 @@ one, so shared links and the reader's memory of the sky stay valid.
   - A full, non-virtualized index of the archive exists for screen readers.
   - Keyboard focus moves the camera.
   - The content works without JavaScript.
-- **Cost:** idle costs approach zero. Every component is billed per use or sits
-  in a free tier at this scale.
+- **Cost:** about US$ 0.30 a month at this scale, all of it Secret Manager.
+  Every other component is billed per use and sits in a free tier: the
+  Vercel Hobby plan, Cloudflare (DNS, the Worker, R2), Cloud Run scaling to
+  zero, one Cloud Scheduler job, Neon's free plan, and three images in
+  Artifact Registry.
 
 ## Delivery
 
