@@ -9,11 +9,13 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Cabeçalhos anti-clickjacking em toda resposta que passa pelo Laravel.
+ * Cabeçalhos de segurança em toda resposta que passa pelo Laravel.
  *
- * O painel não tem nenhum outro contra isto — o botão único de login por
- * Google é exatamente o tipo de ação que um iframe invisível tenta sequestrar.
- * O site público não precisa: é servido pelo Nginx direto do disco, sem
+ * O painel não tem nenhum outro contra clickjacking — o botão único de login
+ * por Google é exatamente o tipo de ação que um iframe invisível tenta
+ * sequestrar. A CSP aqui é só `frame-ancestors`: o Filament e o Livewire
+ * dependem de script inline. O site público recebe a política inteira do
+ * Nginx (docker/web/security-headers.conf), que serve as páginas do disco sem
  * passar por aqui.
  */
 class SecurityHeaders
@@ -24,6 +26,8 @@ class SecurityHeaders
 
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Content-Security-Policy', "frame-ancestors 'none'");
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         return $response;
     }

@@ -65,3 +65,27 @@ test.describe('sem JavaScript', () => {
     await expect(page.locator('#prerender a[href^="/pt/publicacoes/"]').first()).toBeVisible();
   });
 });
+
+test('a CSP do Nginx não bloqueia nada do próprio site', async ({ page }) => {
+  test.setTimeout(60_000);
+  const violations: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /Content Security Policy/i.test(message.text())) {
+      violations.push(message.text());
+    }
+  });
+
+  const response = await page.goto('/pt');
+  expect(response?.headers()['content-security-policy']).toContain("script-src 'self'");
+
+  // A travessia monta o WebGL, as fontes e a constelação; abrir uma estrela,
+  // a vista de leitura com o corpo do artigo.
+  const star = await enterCosmos(page);
+  await star.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+
+  await page.goto('/en/publications/code-review-sem-atrito');
+  await expect(page.getByRole('dialog')).toBeVisible();
+
+  expect(violations).toEqual([]);
+});
