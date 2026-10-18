@@ -11,8 +11,9 @@ use Illuminate\Support\Str;
  * O `@handle` público de um membro: minúsculo, `[a-z0-9_]`, de 3 a 30.
  *
  * Nasce do nome (ou do e-mail, se o nome não render nada) e, quando já
- * existe, ganha sufixo numérico: `ana`, `ana2`, `ana3`. Contas apagadas
- * contam — o handle de quem saiu não passa a apontar para outra pessoa.
+ * existe, ganha sufixo numérico: `ana`, `ana2`, `ana3`. Contas desativadas
+ * contam. A exceção é a conta apagada a pedido do dono (DeleteMember): o
+ * handle é dado pessoal, vira aleatório e o antigo fica livre.
  */
 final class Handle
 {
