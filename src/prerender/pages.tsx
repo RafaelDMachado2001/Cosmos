@@ -8,6 +8,7 @@ import { articlePath, homePath, otherLocale } from '../core/routing';
 import type { OgCard } from '../core/og';
 import {
   articleJsonLd,
+  homeJsonLd,
   articleMeta,
   articleOgCard,
   homeMeta,
@@ -121,7 +122,7 @@ export async function prerenderPages(
     pages.push({
       path: homePath(locale),
       lang: LOCALE_TAG[locale],
-      head: renderHeadTags(homeMeta(SITE, locale, dictionary.meta), null),
+      head: renderHeadTags(homeMeta(SITE, locale, dictionary.meta), homeJsonLd(SITE, locale, dictionary.meta)),
       og: homeOgCard(SITE, locale, dictionary.meta),
       body: markup(
         locale,
@@ -140,6 +141,7 @@ export async function prerenderPages(
         title: detail.title,
         summary: detail.summary,
         publishedAt: detail.publishedAt,
+        ...(detail.updatedAt === undefined ? {} : { updatedAt: detail.updatedAt }),
         categoryLabel: dictionary.categories[detail.category],
         category: detail.category,
         ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),

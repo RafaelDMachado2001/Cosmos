@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import type { ArticleJsonLd, PageMeta } from '../core/seo';
+import type { JsonLd, PageMeta } from '../core/seo';
 
 /**
  * Marca as tags que esta camada governa.
@@ -89,7 +89,7 @@ function setAlternates(alternates: PageMeta['alternates']): void {
   }
 }
 
-function setJsonLd(data: ArticleJsonLd | null): void {
+function setJsonLd(data: JsonLd | null): void {
   const existing = document.head.querySelector('script[type="application/ld+json"]');
   if (data === null) {
     existing?.remove();
@@ -111,7 +111,7 @@ function setJsonLd(data: ArticleJsonLd | null): void {
  */
 export function useHeadMeta(
   meta: PageMeta,
-  jsonLd: ArticleJsonLd | null,
+  jsonLd: JsonLd | null,
   localeTag: string,
 ): void {
   useEffect(() => {
