@@ -1,0 +1,66 @@
+name: Deploy
+
+# Depois que o CI passa na main: a imagem de produção vai para o Artifact
+# Registry, as migrações rodam num job do Cloud Run e só então o serviço troca
+# de revisão. Se a migração falha, a revisão anterior continua servindo.
+#
+# O site estático não passa por aqui: a Vercel publica da main sozinha, e o
+# backend publica antes por ser quem o build dela lê.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: produção
+    # Só CI verde de push na main, e só depois de a infra existir (infra/README).
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      vars.GCP_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    # Aprovação manual configurável em Settings → Environments → production.
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      IMAGE: ${{ vars.GCP_IMAGE_REPOSITORY }}:${{ github.event.workflow_run.head_sha }}
+      REGION: ${{ vars.GCP_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # Sem chave JSON: o token OIDC do workflow vira credencial curta do Google.
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Imagem
+        run: |
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -f docker/production/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Migrações
+        run: |
+          gcloud run jobs update cosmos-migrate --region "$REGION" --image "$IMAGE" --quiet
+          gcloud run jobs execute cosmos-migrate --region "$REGION" --wait
+
+      - name: Revisão nova
+        run: |
+          gcloud run deploy cosmos-api --region "$REGION" --image "$IMAGE" \
+            --revision-suffix "${SHA:0:7}" --quiet
+          gcloud run services describe cosmos-api --region "$REGION" \
+            --format 'value(status.latestReadyRevisionName)'
