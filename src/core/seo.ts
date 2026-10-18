@@ -30,6 +30,8 @@ export interface MetaArticle {
   readonly summary: string;
   /** ISO 8601, como vem do acervo. */
   readonly publishedAt: string;
+  /** A última edição, quando há — vira o `dateModified` do JSON-LD. */
+  readonly updatedAt?: string;
   readonly categoryLabel: string;
   /** Pinta o acento do cartão de Open Graph. */
   readonly category: Category;
@@ -72,8 +74,29 @@ export interface ArticleJsonLd {
   readonly articleSection: string;
   readonly url: string;
   readonly mainEntityOfPage: { readonly '@type': string; readonly '@id': string };
+  readonly image: string;
+  readonly dateModified: string;
   readonly author: { readonly '@type': string; readonly name: string };
+  readonly publisher: JsonLdPublisher;
 }
+
+interface JsonLdPublisher {
+  readonly '@type': string;
+  readonly name: string;
+  readonly url: string;
+}
+
+export interface WebSiteJsonLd {
+  readonly '@context': string;
+  readonly '@type': string;
+  readonly name: string;
+  readonly description: string;
+  readonly url: string;
+  readonly inLanguage: string;
+  readonly publisher: JsonLdPublisher;
+}
+
+export type JsonLd = ArticleJsonLd | WebSiteJsonLd;
 
 /**
  * Os idiomas disponíveis mais o `x-default`.
@@ -229,7 +252,33 @@ export function articleJsonLd(
     articleSection: article.categoryLabel,
     url,
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    // O mesmo cartão do og:image: o Google pede imagem para o resultado
+    // enriquecido de artigo, e o cartão já existe para cada um.
+    image: absolute(site.origin, ogImagePath(articleOgCard(locale, article))),
+    dateModified: article.updatedAt ?? article.publishedAt,
     author: { '@type': 'Person', name: site.authorName },
+    publisher: publisher(site),
+  };
+}
+
+function publisher(site: MetaSite): JsonLdPublisher {
+  return { '@type': 'Organization', name: site.siteName, url: absolute(site.origin, '/') };
+}
+
+/** A home se apresenta como o site: o nome que o Google mostra acima do resultado. */
+export function homeJsonLd(
+  site: MetaSite,
+  locale: Locale,
+  copy: { readonly title: string; readonly description: string },
+): WebSiteJsonLd {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: site.siteName,
+    description: copy.description,
+    url: absolute(site.origin, homePath(locale)),
+    inLanguage: LOCALE_TAG[locale],
+    publisher: publisher(site),
   };
 }
 
@@ -263,11 +312,11 @@ function text(value: string): string {
  * grafo viraria marcação executável. Escapar o `<` resolve sem alterar o valor:
  * `\u003c` é o mesmo caractere para qualquer leitor de JSON.
  */
-function jsonLdText(data: ArticleJsonLd): string {
+function jsonLdText(data: JsonLd): string {
   return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
-export function renderHeadTags(meta: PageMeta, jsonLd: ArticleJsonLd | null): string {
+export function renderHeadTags(meta: PageMeta, jsonLd: JsonLd | null): string {
   const lines = [
     `<title>${text(meta.title)}</title>`,
     `<meta name="description" data-head content="${attr(meta.description)}">`,

@@ -34,7 +34,7 @@ import {
 import type { HoverSide, ReaderState } from './core/reader';
 import { articlePath, closeTarget, homePath, parseRoute } from './core/routing';
 import type { Route } from './core/routing';
-import { articleJsonLd, articleMeta, homeMeta } from './core/seo';
+import { articleJsonLd, articleMeta, homeJsonLd, homeMeta } from './core/seo';
 import type { MetaArticle } from './core/seo';
 import { placeStars } from './core/timeline';
 import type { PlacedStar } from './core/timeline';
@@ -474,6 +474,7 @@ function Shell({ route }: { route: Route }) {
       title: detail.title,
       summary: detail.summary,
       publishedAt: detail.publishedAt,
+      ...(detail.updatedAt === undefined ? {} : { updatedAt: detail.updatedAt }),
       categoryLabel: t.categories[detail.category],
       category: detail.category,
       ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),
@@ -496,8 +497,11 @@ function Shell({ route }: { route: Route }) {
   );
 
   const jsonLd = useMemo(
-    () => (metaArticle === null ? null : articleJsonLd(SITE, locale, metaArticle)),
-    [metaArticle, locale],
+    () =>
+      metaArticle === null
+        ? homeJsonLd(SITE, locale, t.meta)
+        : articleJsonLd(SITE, locale, metaArticle),
+    [metaArticle, locale, t.meta],
   );
 
   useHeadMeta(pageMeta, jsonLd, t.meta.localeTag);

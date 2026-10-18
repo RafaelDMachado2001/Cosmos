@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ogImagePath } from './og';
 import {
   articleJsonLd,
+  homeJsonLd,
   articleMeta,
   articleOgCard,
   homeMeta,
@@ -178,6 +179,33 @@ describe('articleJsonLd', () => {
 
   it('sobrevive a JSON.stringify sem escapar do <script>', () => {
     expect(() => JSON.stringify(json)).not.toThrow();
+  });
+
+  it('leva a imagem do cartão, a mesma do og:image', () => {
+    const og = articleMeta(SITE, 'pt', ARTICLE).og['og:image'];
+    expect(json.image).toBe(og);
+    expect(json.image).toMatch(/^https:\/\/rdmlabs\.dev\/og\/.+\.png$/);
+  });
+
+  it('dateModified é a última edição, ou a publicação quando nunca houve', () => {
+    expect(json.dateModified).toBe('2025-09-09T00:00:00.000Z');
+    const edited = articleJsonLd(SITE, 'pt', { ...ARTICLE, updatedAt: '2025-10-01T10:00:00.000Z' });
+    expect(edited.dateModified).toBe('2025-10-01T10:00:00.000Z');
+  });
+
+  it('declara quem publica', () => {
+    expect(json.publisher).toEqual({ '@type': 'Organization', name: SITE.siteName, url: 'https://rdmlabs.dev/' });
+  });
+});
+
+describe('homeJsonLd', () => {
+  it('a home é o WebSite, no idioma da versão', () => {
+    const json = homeJsonLd(SITE, 'en', { title: 'T', description: 'D' });
+    expect(json['@type']).toBe('WebSite');
+    expect(json.name).toBe(SITE.siteName);
+    expect(json.url).toBe('https://rdmlabs.dev/en');
+    expect(json.inLanguage).toBe('en');
+    expect(json.description).toBe('D');
   });
 });
 
