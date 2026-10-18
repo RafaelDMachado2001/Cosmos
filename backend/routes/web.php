@@ -8,10 +8,6 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\FallbackController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 /*
  * Login do painel por Google — fora do middleware de autenticação do
  * Filament de propósito, são o caminho de entrada. `throttle:10,1` nas duas:
