@@ -188,17 +188,26 @@ não pode ir junto (ver "Two hosts, one app" no documento de arquitetura).
 
 # Etapa 2: identidade do leitor
 
+> **Estado:** o backend está feito (PR da fase 17). Ficam para depois do handoff de interface
+> (D4): a interface de login no site, a página de privacidade com o link no rodapé, o
+> `form-action` da CSP (o login é um link, não um formulário, até o handoff dizer outra coisa) e
+> o e2e com sessão de leitor. O `e2e:member-session` já existe.
+>
+> Duas mudanças em relação ao plano: o registro de atividades virou um módulo próprio
+> (`Activity`), que escuta os eventos do `Identity`, e o export usa o contrato
+> `PersonalDataSource` para juntar o que cada módulo guarda sem que o `Identity` os importe.
+
 ### Tarefa 2.1: módulos no backend
 
-- [ ] Estrutura `app/Modules/{Content,Identity}`. O que existe hoje vai para `Content`, movendo
+- [x] Estrutura `app/Modules/{Content,Identity}`. O que existe hoje vai para `Content`, movendo
   sem mudar comportamento: a suíte inteira tem de passar sem nenhum teste alterado além dos
   `use`.
-- [ ] Regra checada no CI pelo PHPStan (ou pelo Deptrac): `Identity` não importa nada de
+- [x] Regra checada no CI pelo PHPStan (ou pelo Deptrac): `Identity` não importa nada de
   `Content`, e o contrário também. A conversa é por eventos.
 
 ### Tarefa 2.2: contas de leitor
 
-- [ ] Tabelas:
+- [x] Tabelas:
 
   | Tabela | Colunas |
   |---|---|
@@ -207,23 +216,23 @@ não pode ir junto (ver "Two hosts, one app" no documento de arquitetura).
 
   Diferente do admin, aqui o vínculo é pelo id do provedor, não pelo e-mail: são milhares de
   contas e e-mail muda.
-- [ ] Guard `member` (driver `session`, provider `members`). O guard `web` do admin não muda e
+- [x] Guard `member` (driver `session`, provider `members`). O guard `web` do admin não muda e
   nunca enxerga um `Member`.
-- [ ] **Testes:**
+- [x] **Testes:**
   - uma sessão de admin não autentica no guard `member`, e o contrário também;
   - `handle` duplicado recebe sufixo numérico.
 
 ### Tarefa 2.3: login social
 
-- [ ] Socialite com Google e GitHub (D3) em `api.rdmlabs.com.br/auth/{provider}/redirect` e
+- [x] Socialite com Google e GitHub (D3) em `api.rdmlabs.com.br/auth/{provider}/redirect` e
   `/callback`, com `throttle:10,1` como no admin.
-- [ ] Recusar e-mail não verificado. No GitHub, buscar o e-mail primário verificado pela API de
+- [x] Recusar e-mail não verificado. No GitHub, buscar o e-mail primário verificado pela API de
   e-mails quando o perfil o esconde.
-- [ ] Ligação entre provedores conforme D5.
-- [ ] Depois do callback, `session()->regenerate()` e redirecionar para a URL de onde a pessoa
+- [x] Ligação entre provedores conforme D5.
+- [x] Depois do callback, `session()->regenerate()` e redirecionar para a URL de onde a pessoa
   veio. A URL de retorno é validada: só caminhos do próprio site, nunca outro host
   (redirecionamento aberto).
-- [ ] **Testes:**
+- [x] **Testes:**
   - primeiro login cria conta e identidade;
   - segundo login reaproveita;
   - e-mail não verificado é recusado;
@@ -231,10 +240,10 @@ não pode ir junto (ver "Two hosts, one app" no documento de arquitetura).
 
 ### Tarefa 2.4: API autenticada (Sanctum SPA)
 
-- [ ] `laravel/sanctum` com `stateful` igual ao host do site.
-- [ ] CORS com `supports_credentials` e origem exata do site nas rotas `/api/me*` e `/auth/*`.
+- [x] `laravel/sanctum` com `stateful` igual ao host do site.
+- [x] CORS com `supports_credentials` e origem exata do site nas rotas `/api/me*` e `/auth/*`.
   O `GET` público continua aberto como hoje.
-- [ ] Rotas:
+- [x] Rotas:
 
   | Rota | Função |
   |---|---|
@@ -242,14 +251,14 @@ não pode ir junto (ver "Two hosts, one app" no documento de arquitetura).
   | `PATCH /api/me` | Nome, handle e idioma |
   | `POST /auth/logout` | Encerra a sessão |
   | `DELETE /api/me` | Anonimiza e apaga (tarefa 2.7) |
-- [ ] **Testes:**
+- [x] **Testes:**
   - CSRF exigido no `PATCH`;
   - origem de outro site recusada pelo CORS;
   - `/api/me` sem sessão devolve 204, não 401, para o site não poluir o console.
 
 ### Tarefa 2.5: registro de atividades
 
-- [ ] Tabela `activities`, append-only:
+- [x] Tabela `activities`, append-only:
 
   | Coluna | Exemplo |
   |---|---|
@@ -262,18 +271,18 @@ não pode ir junto (ver "Two hosts, one app" no documento de arquitetura).
 
   Sem `updated_at`. O modelo não expõe `update`, e a migração cria um gatilho no Postgres que
   recusa `UPDATE` e `DELETE` (exceto a anonimização da tarefa 2.7).
-- [ ] O evento de domínio `MemberRegistered` grava a primeira atividade.
-- [ ] Não registrar login nem leitura: só ações de domínio. É menos dado pessoal e não muda
+- [x] O evento de domínio `MemberRegistered` grava a primeira atividade.
+- [x] Não registrar login nem leitura: só ações de domínio. É menos dado pessoal e não muda
   nada para a gamificação.
-- [ ] **Testes:**
+- [x] **Testes:**
   - o cadastro gera exatamente uma atividade;
   - `UPDATE` direto no banco falha.
 
 ### Tarefa 2.6: o site com sessão
 
-- [ ] `src/core/`: tipos e estados de sessão (`anonymous`, `member`, `loading`), puros e
+- [x] `src/core/`: tipos e estados de sessão (`anonymous`, `member`, `loading`), puros e
   testados.
-- [ ] Adaptador `createMemberSource`, como o `PublicationsSource`, com `credentials: 'include'`
+- [x] Adaptador `createMemberSource`, como o `PublicationsSource`, com `credentials: 'include'`
   e o cabeçalho `X-XSRF-TOKEN`.
 - [ ] Interface conforme o handoff (D4), montada só no cliente. O HTML pré-renderizado
   continua anônimo e igual para todos, senão o CDN não serve.
@@ -286,24 +295,24 @@ não pode ir junto (ver "Two hosts, one app" no documento de arquitetura).
 
 ### Tarefa 2.7: o mínimo de LGPD que nasce junto
 
-- [ ] `DELETE /api/me`:
+- [x] `DELETE /api/me`:
   - apaga as identidades;
   - anonimiza o `member`: nome "Conta removida", handle aleatório, e-mail e avatar nulos;
   - mantém as atividades sem dado pessoal, para os números agregados não mudarem.
-- [ ] `GET /api/me/export`: o JSON com perfil e atividades.
+- [x] `GET /api/me/export`: o JSON com perfil e atividades.
 - [ ] Página de privacidade estática nos dois idiomas, gerada pelo prerender, com link no rodapé.
   O texto jurídico é seu; o plano só reserva o lugar.
-- [ ] Nenhum cookie além do de sessão e do CSRF, os dois essenciais, então não há banner de
+- [x] Nenhum cookie além do de sessão e do CSRF, os dois essenciais, então não há banner de
   consentimento. Analytics, quando vier, pede consentimento.
-- [ ] **Testes:**
+- [x] **Testes:**
   - depois do `DELETE`, nenhuma coluna do membro tem o e-mail antigo;
   - o export tem as atividades.
 
 ### Tarefa 2.8: fechamento
 
-- [ ] Atualizar o `docs/architecture.md`: Identity sai de "planned".
-- [ ] Atualizar o `CLAUDE.md` com as decisões da fase.
-- [ ] Roteiro de teste manual no PR: login com Google e GitHub, editar perfil, sair, apagar a
+- [x] Atualizar o `docs/architecture.md`: Identity sai de "planned".
+- [x] Atualizar o `CLAUDE.md` com as decisões da fase.
+- [x] Roteiro de teste manual no PR: login com Google e GitHub, editar perfil, sair, apagar a
   conta.
 
 ---
