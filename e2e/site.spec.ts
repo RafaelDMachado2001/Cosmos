@@ -50,6 +50,19 @@ test('o segmento do outro idioma nao vira segunda URL do mesmo artigo', async ({
   expect(response?.status()).toBe(404);
 });
 
+test('barra final e index.html explícito redirecionam para o endereço canônico', async ({ request }) => {
+  for (const [from, to] of [
+    ['/pt/', '/pt'],
+    ['/en/index.html', '/en'],
+    ['/pt/publicacoes/code-review-sem-atrito/', '/pt/publicacoes/code-review-sem-atrito'],
+    ['/index.html', '/'],
+  ] as const) {
+    const response = await request.get(from, { maxRedirects: 0 });
+    expect(response.status(), from).toBe(301);
+    expect(response.headers()['location'], from).toBe(to);
+  }
+});
+
 test.describe('sem JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
