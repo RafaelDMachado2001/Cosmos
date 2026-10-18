@@ -13,7 +13,19 @@ services:
     working_dir: /app
     # npm ci fica no command, não na imagem: o volume nomeado nasce vazio e
     # precisa ser populado dentro do container, não copiado do host.
-    command: sh -c "npm ci --no-audit --no-fund && npm run dev"
+    #
+    # O carimbo evita repetir o `npm ci` em todo restart: sem ele, um
+    # `.env` com env inválido (ver scripts/check-env.ts) faz o `npm run dev`
+    # falhar na hora, o `restart: unless-stopped` reinicia o container em
+    # segundos, e vários `npm ci` concorrentes no mesmo volume nomeado
+    # corrompem o `node_modules` — foi o que aconteceu de fato ao trocar de
+    # branch com um `.env` de outra fase ainda no disco.
+    command: >-
+      sh -c "
+        cmp -s package-lock.json node_modules/.install-stamp 2>/dev/null ||
+          (npm ci --no-audit --no-fund && cp package-lock.json node_modules/.install-stamp) &&
+        npm run dev
+      "
     user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     volumes:
       - .:/app
@@ -81,6 +93,11 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - ADMIN_NAME=${ADMIN_NAME:-RDM Labs}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@rdmlabs.dev}
+      # Isenta o prerender (que chega por `queue`, abaixo) do throttle
+      # público — ver AppServiceProvider e RegenerateSite. Não é credencial
+      # de operador: o mesmo valor em todo deploy já basta, o ponto é
+      # distinguir o próprio job do tráfego público, não um segredo por site.
+      - PRERENDER_INTERNAL_TOKEN=${PRERENDER_INTERNAL_TOKEN:-rdm-cosmos-prerender-7f3a9c2e}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
@@ -120,6 +137,7 @@ services:
       # rede do compose a API atende pelo nome do servico.
       - PRERENDER_API_URL=http://web
       - SITE_DIR=/srv/site
+      - PRERENDER_INTERNAL_TOKEN=${PRERENDER_INTERNAL_TOKEN:-rdm-cosmos-prerender-7f3a9c2e}
       - TZ=${TIMEZONE:-America/Sao_Paulo}
     depends_on:
       db:
