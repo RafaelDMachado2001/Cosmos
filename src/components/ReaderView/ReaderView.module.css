@@ -13,6 +13,9 @@
   opacity: 0;
   transform: scale(1.06);
   will-change: opacity, transform;
+  /* Reverte a nave do palco (App.module.css): ler texto com um cursor que
+     não é de texto atrapalha mais do que ambienta. */
+  cursor: auto;
 }
 
 /* --- Coluna da estrela ---------------------------------------------------
