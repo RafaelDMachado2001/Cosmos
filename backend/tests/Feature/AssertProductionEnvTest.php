@@ -27,6 +27,7 @@ class AssertProductionEnvTest extends TestCase
             'scheduler.service_account' => 'scheduler@x.iam.gserviceaccount.com',
             'hosts.admin' => 'admin.rdmlabs.com.br',
             'hosts.api' => 'api.rdmlabs.com.br',
+            'hosts.edge_secret' => 's3gredo',
         ]);
     }
 

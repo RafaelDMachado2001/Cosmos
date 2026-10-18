@@ -24,7 +24,7 @@ export default defineConfig({
       ['src/components/**', 'jsdom'],
       ['src/admin/**', 'jsdom'],
     ],
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'infra/**/*.test.ts'],
     // O Vitest esvazia todo CSS importado, inclusive com `?raw`. O cartao de
     // Open Graph le as cores deste arquivo como texto, e o teste precisa delas.
     css: { include: [/src\/styles\/tokens\.css/] },

@@ -13,4 +13,6 @@ return [
     'admin' => env('ADMIN_HOST'),
     // A API pública (e, na etapa 2, a sessão do leitor, no domínio do site).
     'api' => env('API_HOST'),
+    // O segredo que o Worker da Cloudflare manda em X-Edge-Secret (VerifyEdge).
+    'edge_secret' => env('EDGE_SHARED_SECRET'),
 ];

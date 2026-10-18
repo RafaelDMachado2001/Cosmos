@@ -154,6 +154,7 @@ jobs:
           SCHEDULER_SERVICE_ACCOUNT=scheduler@ci.iam.gserviceaccount.com
           ADMIN_HOST=admin.rdmlabs.test
           API_HOST=api.rdmlabs.test
+          EDGE_SHARED_SECRET=ci-edge
           EOF
           sed -i 's/^ *//' prod.env
       - name: Configuração incompleta não sobe
@@ -164,13 +165,16 @@ jobs:
         run: |
           docker run -d --name app --network prod -p 8080:8080 --env-file prod.env rdm-production
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/up && break; sleep 2; done
-          code() { curl -s -o /dev/null -w '%{http_code}' -H "Host: $1" "http://localhost:8080$2"; }
+          # Como o Worker entrega: o host original em X-Forwarded-Host, com o segredo.
+          code() { curl -s -o /dev/null -w '%{http_code}' -H "X-Forwarded-Host: $1" -H 'X-Edge-Secret: ci-edge' "http://localhost:8080$2"; }
+          # Sem o segredo, nem a API responde.
+          [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/publications)" = 404 ]
           [ "$(code api.rdmlabs.test /api/publications)" = 200 ]
           [ "$(code admin.rdmlabs.test /admin/login)" = 200 ]
           [ "$(code api.rdmlabs.test /admin/login)" = 404 ]
           [ "$(code admin.rdmlabs.test /api/publications)" = 404 ]
           [ "$(code admin.rdmlabs.test /admin/rdm-studio/admin.js)" = 200 ]
-          ! curl -sI -H 'Host: api.rdmlabs.test' http://localhost:8080/api/publications | grep -qi '^server:'
+          ! curl -sI -H 'X-Forwarded-Host: api.rdmlabs.test' -H 'X-Edge-Secret: ci-edge' http://localhost:8080/api/publications | grep -qi '^server:'
       - if: failure()
         run: docker logs app || true
 

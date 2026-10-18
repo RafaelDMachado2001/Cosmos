@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HostBoundary;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\VerifyEdge;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,8 +20,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // 'api' e quem o define, em AppServiceProvider::boot().
         $middleware->throttleApi();
         $middleware->append(SecurityHeaders::class);
-        // Antes do StartSession: decide o cookie de sessão pelo host.
-        $middleware->prepend(HostBoundary::class);
+        // Em produção, a borda é o Worker da Cloudflare: o host original chega
+        // em X-Forwarded-Host. Confiar em qualquer proxy é seguro só porque
+        // VerifyEdge recusa, antes, o que não veio do Worker.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PROTO,
+        );
+        $middleware->prepend(VerifyEdge::class);
+        // Global, depois do TrustProxies (getHost já lê o host da borda) e antes
+        // do StartSession, que mora no grupo `web`: decide o cookie pelo host.
+        $middleware->append(HostBoundary::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
