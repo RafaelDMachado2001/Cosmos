@@ -320,6 +320,14 @@ class PublicationAdminApiTest extends TestCase
         $this->assertSame(1, Media::count());
     }
 
+    public function test_url_da_midia_e_raiz_relativa(): void
+    {
+        // Sem Storage::fake, que ignora o 'url' do disco. Com o APP_URL, a
+        // imagem publicada apontava para o host do backend, não o do site — o
+        // Nginx serve /storage/ no mesmo host das páginas.
+        $this->assertSame('/storage/media/a.webp', Storage::disk('public')->url('media/a.webp'));
+    }
+
     public function test_upload_recusa_arquivo_que_nao_e_imagem(): void
     {
         $file = UploadedFile::fake()->create('arquivo.txt', 10, 'text/plain');

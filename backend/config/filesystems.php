@@ -41,7 +41,10 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim((string) env('APP_URL', 'http://localhost'), '/').'/storage',
+            // Raiz-relativa: o Nginx serve /storage/ do mesmo host que o site, e a
+            // URL vai parar no Markdown publicado. Com o APP_URL, a imagem
+            // apontava para o endereço do backend (:8000 em dev), não o do site.
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

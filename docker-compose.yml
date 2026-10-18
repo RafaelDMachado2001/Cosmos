@@ -58,6 +58,8 @@ services:
       # Só os assets que o Filament publica. O PHP em si roda no serviço `app`;
       # daqui o Nginx apenas serve os arquivos estáticos do painel.
       - ./backend/public:/var/www/public:ro
+      # A mídia do RDM Studio, que o Nginx serve em /storage/.
+      - ./backend/storage/app/public:/var/www/storage/app/public:ro
       - site:/srv/site
     networks:
       - rdm-network
