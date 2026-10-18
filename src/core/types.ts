@@ -47,6 +47,12 @@ export interface PublicationInput {
    * semente, sintéticas) — `publishedAt` vale como a única data conhecida.
    */
   readonly updatedAt?: string;
+  /**
+   * Default `true`. `false` é o `indexable` do RDM Studio: sai do sitemap e
+   * o `<head>` ganha `noindex` — a publicação continua no ar, só não entra
+   * no índice de busca.
+   */
+  readonly indexable?: boolean;
 }
 
 /** Medidas de tela de que o posicionamento precisa. */

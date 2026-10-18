@@ -1,0 +1,143 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 28px;
+  overflow-y: auto;
+  min-height: 0;
+  border-right: 1px solid var(--color-border);
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tab,
+.tabActive {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.tabActive {
+  background: var(--color-accent-active);
+  color: var(--color-accent-hover);
+  border-color: var(--color-border-accent-strong);
+}
+
+.copyButton {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+
+.copyButton:hover {
+  color: var(--color-accent-soft);
+}
+
+.titleInput {
+  font-size: 22px;
+  font-weight: 500;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-title);
+}
+
+.subtitleInput {
+  font-size: 14px;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-lede);
+  resize: vertical;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wordCount {
+  font-size: 12px;
+  color: var(--color-text-faint);
+  margin-right: auto;
+}
+
+.toolbarButton {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-text-ui);
+}
+
+.toolbarButton:hover {
+  border-color: var(--color-border-accent);
+  color: var(--color-accent-soft);
+}
+
+.importPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.importTextarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.preview {
+  padding: 16px;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elev);
+}
+
+.references {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.sectionTitle {
+  font-size: 13px;
+  color: var(--color-text-ui);
+  margin: 0;
+}
+
+.referenceRow {
+  display: flex;
+  gap: 8px;
+}
+
+.referenceInput {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-menu);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.referenceRow button {
+  color: var(--color-text-faint);
+}

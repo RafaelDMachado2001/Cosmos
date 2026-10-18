@@ -33,6 +33,8 @@ export interface SitemapEntry {
    * foi pré-renderizado: o buscador e o seletor de idioma caíam num 404.
    */
   readonly locales: readonly Locale[];
+  /** `false` tira a publicação do sitemap sem tirá-la do ar. Default `true`. */
+  readonly indexable?: boolean;
 }
 
 /** `lastmod` aceita a data sozinha, e é tudo o que se sabe: não há hora de revisão. */
@@ -87,17 +89,19 @@ function urlEntry(
 export function sitemapXml(site: MetaSite, entries: readonly SitemapEntry[]): string {
   const urls = [
     ...LOCALES.map((locale) => urlEntry(site.origin, homePath, locale, null, LOCALES)),
-    ...entries.flatMap((entry) =>
-      entry.locales.map((locale) =>
-        urlEntry(
-          site.origin,
-          (target: Locale) => articlePath(target, entry.slug),
-          locale,
-          lastmod(entry),
-          entry.locales,
+    ...entries
+      .filter((entry) => entry.indexable !== false)
+      .flatMap((entry) =>
+        entry.locales.map((locale) =>
+          urlEntry(
+            site.origin,
+            (target: Locale) => articlePath(target, entry.slug),
+            locale,
+            lastmod(entry),
+            entry.locales,
+          ),
         ),
       ),
-    ),
   ];
 
   return [

@@ -1,0 +1,58 @@
+.wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-wash);
+  color: var(--color-accent-soft);
+  font-size: 12px;
+}
+
+.chip:hover {
+  background: var(--color-accent-active);
+}
+
+.input {
+  padding: 6px 10px;
+  border-radius: var(--radius-menu);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-menu);
+  box-shadow: var(--shadow-panel);
+}
+
+.suggestions button {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--color-text-ui);
+}
+
+.suggestions button:hover {
+  background: var(--color-accent-wash);
+}

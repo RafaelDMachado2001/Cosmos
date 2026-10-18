@@ -475,6 +475,9 @@ function Shell({ route }: { route: Route }) {
       publishedAt: detail.publishedAt,
       categoryLabel: t.categories[detail.category],
       category: detail.category,
+      ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),
+      ...(detail.seoDescription === undefined ? {} : { seoDescription: detail.seoDescription }),
+      ...(detail.indexable === undefined ? {} : { indexable: detail.indexable }),
     };
   }, [reader.phase, reader.slug, article, t]);
 

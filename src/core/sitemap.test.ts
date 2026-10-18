@@ -107,6 +107,23 @@ describe('sitemapXml', () => {
       'rdmlabs.dev//',
     );
   });
+
+  it('indexable: false tira a publicação do sitemap sem tirar as outras', () => {
+    const comUmaNaoIndexavel = sitemapXml(SITE, [
+      ...PUBLICATIONS,
+      { slug: 'nao-indexavel', publishedAt: '2026-03-01T00:00:00.000Z', locales: LOCALES, indexable: false },
+    ]);
+    expect(comUmaNaoIndexavel).not.toContain('nao-indexavel');
+    // Só as duas raízes mais as duas publicações indexáveis — a terceira não conta.
+    expect(comUmaNaoIndexavel.match(/<url>/g)?.length).toBe(PUBLICATIONS.length * 2 + 2);
+  });
+
+  it('indexable ausente ou true continua no sitemap — comportamento de sempre', () => {
+    const explicitaTrue = sitemapXml(SITE, [
+      { slug: 'explicita-true', publishedAt: '2026-03-01T00:00:00.000Z', locales: LOCALES, indexable: true },
+    ]);
+    expect(explicitaTrue).toContain('explicita-true');
+  });
 });
 
 describe('robotsTxt', () => {

@@ -71,6 +71,40 @@ class PublishScheduledTest extends TestCase
         Queue::assertNotPushed(RegenerateSite::class);
     }
 
+    public function test_transiciona_agendada_para_publicada_quando_a_data_chega(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'agendada-que-chegou',
+            'category' => 'artigo',
+            'published_at' => now()->subMinute(),
+            'featured' => false,
+            'status' => Publication::STATUS_SCHEDULED,
+        ]);
+
+        $queue = Queue::fake();
+        $queue->releaseUniqueJobLocks();
+
+        $this->artisan('publications:publish-scheduled')->assertSuccessful();
+
+        $this->assertSame(Publication::STATUS_PUBLISHED, $publication->refresh()->status);
+        Queue::assertPushed(RegenerateSite::class);
+    }
+
+    public function test_nao_transiciona_agendada_cuja_data_ainda_nao_chegou(): void
+    {
+        $publication = Publication::create([
+            'slug' => 'agendada-para-depois',
+            'category' => 'artigo',
+            'published_at' => now()->addDay(),
+            'featured' => false,
+            'status' => Publication::STATUS_SCHEDULED,
+        ]);
+
+        $this->artisan('publications:publish-scheduled')->assertSuccessful();
+
+        $this->assertSame(Publication::STATUS_SCHEDULED, $publication->refresh()->status);
+    }
+
     public function test_sobrevive_a_uma_pausa_contando_pelo_total_nao_pela_janela(): void
     {
         // Duas publicações cruzam enquanto o scheduler, por hipótese, não

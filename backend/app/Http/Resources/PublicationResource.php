@@ -26,6 +26,7 @@ class PublicationResource extends JsonResource
             'published_at' => $this->resource->published_at->toIso8601ZuluString('millisecond'),
             'updated_at' => $this->updatedAt()->toIso8601ZuluString('millisecond'),
             'featured' => (bool) $this->resource->featured,
+            'indexable' => (bool) $this->resource->indexable,
             'title' => $this->resource->title,
             'summary' => $this->resource->summary,
         ];

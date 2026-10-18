@@ -2,10 +2,16 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 /**
- * O build do passo de prerender.
+ * O build dos módulos que rodam em Node, não no navegador.
  *
- * Separado do `vite.config.ts` porque o alvo é outro: aqui sai um módulo de
- * Node que grava arquivos, não um bundle de navegador. O que os dois precisam
+ * Dois entry points desde a fase do RDM Studio: o prerender (grava arquivo) e
+ * `draft-blocks-cli` (ponte para `core/draftBlocks.ts`, chamado por `Process`
+ * do Laravel). Os dois saem em `dist-ssr/`, a mesma pasta que
+ * `docker/php/Dockerfile` copia para a imagem final — nenhum dos dois tem
+ * acesso ao código-fonte lá, só a este diretório já compilado e ao
+ * `node_modules`.
+ *
+ * Separado do `vite.config.ts` porque o alvo é outro. O que os dois precisam
  * ter idêntico está repetido de propósito — `generateScopedName` acima de tudo:
  * se os nomes de classe divergirem, o HTML gravado no disco sai sem estilo.
  */
@@ -36,7 +42,7 @@ export default defineConfig(({ mode }) => {
       modules: { generateScopedName: '[name]_[local]_[hash:base64:5]' },
     },
     build: {
-      ssr: 'src/prerender/main.ts',
+      ssr: true,
       outDir: 'dist-ssr',
       // Só este diretório: apagar o dist aqui destruiria o build de cliente
       // que acabou de rodar e de onde o prerender lê o template.
@@ -47,7 +53,11 @@ export default defineConfig(({ mode }) => {
       cssCodeSplit: false,
       target: 'node20',
       rollupOptions: {
-        output: { entryFileNames: 'prerender.js' },
+        input: {
+          prerender: 'src/prerender/main.ts',
+          'draft-blocks-cli': 'scripts/draft-blocks-cli.ts',
+        },
+        output: { entryFileNames: '[name].js' },
       },
     },
   };
