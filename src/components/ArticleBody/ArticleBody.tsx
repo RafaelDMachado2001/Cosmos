@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import styles from './ArticleBody.module.css';
 import { parseBlocks } from '../../core/blocks';
 import type { Block, InlineNode } from '../../core/blocks';
+import { highlight } from '../../core/highlight';
+import type { CodeToken } from '../../core/highlight';
 
 export interface ArticleBodyProps {
   /** O corpo cru, como o banco guarda — Markdown do subconjunto de `core/blocks.ts`. */
@@ -34,6 +36,25 @@ function renderInline(nodes: readonly InlineNode[], key: string): ReactNode {
         );
     }
   });
+}
+
+const TOKEN_CLASS: Record<Exclude<CodeToken['kind'], 'plain'>, string | undefined> = {
+  keyword: styles.tokenKeyword,
+  string: styles.tokenString,
+  number: styles.tokenNumber,
+  comment: styles.tokenComment,
+};
+
+function renderCode(code: string, language: string | null, key: string): ReactNode {
+  return highlight(code, language).map((token, index) =>
+    token.kind === 'plain' ? (
+      token.text
+    ) : (
+      <span key={`${key}-${String(index)}`} className={TOKEN_CLASS[token.kind]}>
+        {token.text}
+      </span>
+    ),
+  );
 }
 
 function renderBlock(block: Block, key: string): ReactNode {
@@ -73,7 +94,7 @@ function renderBlock(block: Block, key: string): ReactNode {
       return (
         <pre key={key} className={styles.code}>
           {block.language !== null && <span className={styles.codeLang}>{block.language}</span>}
-          <code className={styles.codeText}>{block.code}</code>
+          <code className={styles.codeText}>{renderCode(block.code, block.language, key)}</code>
         </pre>
       );
     case 'image':
