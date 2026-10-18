@@ -115,6 +115,65 @@ jobs:
           path: test-results/
           retention-days: 7
 
+  producao:
+    name: imagem de produção
+    runs-on: ubuntu-latest
+    # A imagem que vai para o Cloud Run, contra um Postgres de verdade: sobe só
+    # com a configuração de produção completa, e responde em cada host o que
+    # é dele.
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f docker/production/Dockerfile -t rdm-production .
+      - name: Postgres
+        run: |
+          docker network create prod
+          docker run -d --name db --network prod -e POSTGRES_DB=rdm -e POSTGRES_USER=rdm -e POSTGRES_PASSWORD=ci-test postgres:16-alpine
+          for _ in $(seq 1 30); do docker exec db pg_isready -U rdm -d rdm && exit 0; sleep 2; done
+          exit 1
+      - name: Ambiente de produção com valores de teste
+        run: |
+          cat > prod.env <<EOF
+          APP_KEY=base64:$(openssl rand -base64 32)
+          APP_URL=https://admin.rdmlabs.test
+          DB_CONNECTION=pgsql
+          DB_HOST=db
+          DB_DATABASE=rdm
+          DB_USERNAME=rdm
+          DB_PASSWORD=ci-test
+          SESSION_DRIVER=database
+          CACHE_STORE=database
+          SESSION_SECURE_COOKIE=true
+          SESSION_DOMAIN=.rdmlabs.test
+          MEDIA_DISK=s3
+          MEDIA_S3_BUCKET=ci
+          MEDIA_S3_ENDPOINT=https://ci.r2.cloudflarestorage.com
+          MEDIA_URL=https://media.rdmlabs.test
+          SITE_REBUILD_DRIVER=vercel
+          VERCEL_DEPLOY_HOOK_URL=https://api.vercel.com/v1/integrations/deploy/ci
+          SCHEDULER_OIDC_AUDIENCE=https://api.rdmlabs.test/api/internal/tick
+          SCHEDULER_SERVICE_ACCOUNT=scheduler@ci.iam.gserviceaccount.com
+          ADMIN_HOST=admin.rdmlabs.test
+          API_HOST=api.rdmlabs.test
+          EOF
+          sed -i 's/^ *//' prod.env
+      - name: Configuração incompleta não sobe
+        run: |
+          ! docker run --rm --network prod -e APP_KEY=base64:$(openssl rand -base64 32) rdm-production php artisan about
+      - run: docker run --rm --network prod --env-file prod.env rdm-production php artisan migrate --force
+      - name: Cada host responde o que é dele
+        run: |
+          docker run -d --name app --network prod -p 8080:8080 --env-file prod.env rdm-production
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/up && break; sleep 2; done
+          code() { curl -s -o /dev/null -w '%{http_code}' -H "Host: $1" "http://localhost:8080$2"; }
+          [ "$(code api.rdmlabs.test /api/publications)" = 200 ]
+          [ "$(code admin.rdmlabs.test /admin/login)" = 200 ]
+          [ "$(code api.rdmlabs.test /admin/login)" = 404 ]
+          [ "$(code admin.rdmlabs.test /api/publications)" = 404 ]
+          [ "$(code admin.rdmlabs.test /admin/rdm-studio/admin.js)" = 200 ]
+          ! curl -sI -H 'Host: api.rdmlabs.test' http://localhost:8080/api/publications | grep -qi '^server:'
+      - if: failure()
+        run: docker logs app || true
+
   integracao:
     name: integração
     runs-on: ubuntu-latest
