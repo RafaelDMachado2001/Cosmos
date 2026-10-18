@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\HostBoundary;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // 'api' e quem o define, em AppServiceProvider::boot().
         $middleware->throttleApi();
         $middleware->append(SecurityHeaders::class);
+        // Antes do StartSession: decide o cookie de sessão pelo host.
+        $middleware->prepend(HostBoundary::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
