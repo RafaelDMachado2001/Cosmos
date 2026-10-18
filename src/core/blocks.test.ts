@@ -98,12 +98,12 @@ describe('parseBlocks', () => {
   });
 
   it('imagem isolada numa linha', () => {
-    expect(parseBlocks('![um gráfico](https://exemplo.com/a.png "legenda")')).toEqual<
+    expect(parseBlocks('![um gráfico](https://example.com/a.png "legenda")')).toEqual<
       readonly Block[]
     >([
       {
         type: 'image',
-        src: 'https://exemplo.com/a.png',
+        src: 'https://example.com/a.png',
         alt: 'um gráfico',
         caption: 'legenda',
       },
@@ -142,12 +142,12 @@ describe('parseBlocks', () => {
     });
 
     it('link com protocolo aceito', () => {
-      const [block] = parseBlocks('Veja [este artigo](https://exemplo.com/a).');
+      const [block] = parseBlocks('Veja [este artigo](https://example.com/a).');
       expect(block).toEqual<Block>({
         type: 'paragraph',
         children: [
           text('Veja '),
-          { type: 'link', href: 'https://exemplo.com/a', children: [text('este artigo')] },
+          { type: 'link', href: 'https://example.com/a', children: [text('este artigo')] },
           text('.'),
         ],
       });
@@ -171,6 +171,25 @@ describe('parseBlocks', () => {
       expect(block).toEqual<Block>({
         type: 'paragraph',
         children: [text('clique aqui')],
+      });
+    });
+
+    it.each(['data:text/html,<script>', 'vbscript:msgbox', 'file:///etc/passwd'])(
+      'protocolo %s também é recusado, não só javascript:',
+      (href) => {
+        const [block] = parseBlocks(`[clique aqui](${href})`);
+        expect(block).toEqual<Block>({
+          type: 'paragraph',
+          children: [text('clique aqui')],
+        });
+      },
+    );
+
+    it('imagem com URL vazia sobra como o alt, não é descartada', () => {
+      const [block] = parseBlocks('![legenda]()');
+      expect(block).toEqual<Block>({
+        type: 'paragraph',
+        children: [text('legenda')],
       });
     });
 
@@ -208,7 +227,7 @@ describe('parseBlocks', () => {
       "console.log('oi');",
       '```',
       '',
-      '![diagrama](https://exemplo.com/d.png "Figura 1")',
+      '![diagrama](https://example.com/d.png "Figura 1")',
     ].join('\n');
 
     const blocks = parseBlocks(markdown);
