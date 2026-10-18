@@ -103,15 +103,22 @@ class PublicationController extends Controller
                 'publications.slug',
                 'publications.category',
                 'publications.published_at',
+                'publications.updated_at',
                 'publications.featured',
                 'translation.title',
                 'translation.summary',
+                'translation.updated_at as translation_updated_at',
             ])
             ->join('publication_translations as translation', function ($join) use ($locale): void {
                 $join->on('translation.publication_id', '=', 'publications.id')
                     ->where('translation.locale', '=', $locale);
             })
-            ->where('publications.status', Publication::STATUS_PUBLISHED);
+            ->where('publications.status', Publication::STATUS_PUBLISHED)
+            // Sem isto, "Publicado" com data futura aparecia na hora. A
+            // publicacao agendada so vira elegivel quando a data chega — ver
+            // o comando `publications:publish-scheduled`, que e quem nota a
+            // mudanca e manda regenerar o site.
+            ->where('publications.published_at', '<=', now());
     }
 
     /**

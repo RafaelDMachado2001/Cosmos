@@ -12,7 +12,7 @@
 
 import { OG_SIZE, ogImagePath } from './og';
 import type { OgCard } from './og';
-import { articlePath, homePath } from './routing';
+import { articlePath, homePath, rssPath } from './routing';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_TAG, OG_LOCALE } from './types';
 import type { Category, Locale } from './types';
 import { absolute } from './url';
@@ -46,6 +46,13 @@ export interface PageMeta {
   readonly canonical: string;
   readonly alternates: readonly Alternate[];
   readonly og: Readonly<Record<string, string>>;
+  /**
+   * O feed RSS deste idioma, para autodescoberta por agregador/leitor.
+   *
+   * Só na home: é onde a convenção espera o `<link>`, e repetir em toda
+   * página de artigo não acrescenta nada que a home já não anuncie.
+   */
+  readonly rssHref?: string;
 }
 
 export interface ArticleJsonLd {
@@ -62,21 +69,34 @@ export interface ArticleJsonLd {
 }
 
 /**
- * Os dois idiomas mais o `x-default`.
+ * Os idiomas disponíveis mais o `x-default`.
  *
- * O `x-default` é obrigatório quando não há uma versão neutra: sem ele o
- * buscador escolhe sozinho qual servir a quem não pede nenhum dos dois.
+ * `locales` default para os dois — a home sempre tem ambos. Um artigo pode
+ * existir só num idioma (o painel permite); sem restringir aqui, o
+ * `<head>` anunciava um par para uma página que o prerender nunca gravou.
+ *
+ * `x-default` é obrigatório quando não há uma versão neutra: sem ele o
+ * buscador escolhe sozinho qual servir a quem não pede nenhum dos dois. Cai
+ * no idioma padrão quando ele existe, senão no único disponível.
  */
-function alternatesFor(origin: string, path: (locale: Locale) => string): readonly Alternate[] {
+function alternatesFor(
+  origin: string,
+  path: (locale: Locale) => string,
+  locales: readonly Locale[] = LOCALES,
+): readonly Alternate[] {
+  const defaultTarget = locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : locales[0];
   return [
-    ...LOCALES.map((locale) => ({ hreflang: locale, href: absolute(origin, path(locale)) })),
-    { hreflang: 'x-default', href: absolute(origin, path(DEFAULT_LOCALE)) },
+    ...locales.map((locale) => ({ hreflang: locale, href: absolute(origin, path(locale)) })),
+    ...(defaultTarget === undefined
+      ? []
+      : [{ hreflang: 'x-default', href: absolute(origin, path(defaultTarget)) }]),
   ];
 }
 
-/** O idioma que não é este — o Open Graph lista os alternativos um a um. */
-function otherOgLocales(locale: Locale): string {
-  return LOCALES.filter((candidate) => candidate !== locale)
+/** Os idiomas disponíveis que não são este — o Open Graph lista um a um. */
+function otherOgLocales(locale: Locale, locales: readonly Locale[] = LOCALES): string {
+  return locales
+    .filter((candidate) => candidate !== locale)
     .map((candidate) => OG_LOCALE[candidate])
     .join(',');
 }
@@ -118,6 +138,13 @@ export function articleMeta(
   site: MetaSite,
   locale: Locale,
   article: MetaArticle,
+  /**
+   * Os idiomas que de fato têm tradução deste artigo. Default para os dois
+   * porque o cliente (`App.tsx`) ainda não sabe dizer — o contrato da API
+   * não expõe essa informação fora da lista, só o prerender, que já tem as
+   * duas listas completas antes de montar qualquer página.
+   */
+  locales: readonly Locale[] = LOCALES,
 ): PageMeta {
   const path = (target: Locale): string => articlePath(target, article.slug);
   const canonical = absolute(site.origin, path(locale));
@@ -128,7 +155,7 @@ export function articleMeta(
     title: `${article.title} · ${site.siteName}`,
     description: article.summary,
     canonical,
-    alternates: alternatesFor(site.origin, path),
+    alternates: alternatesFor(site.origin, path, locales),
     og: {
       'og:type': 'article',
       'og:url': canonical,
@@ -136,7 +163,7 @@ export function articleMeta(
       'og:description': article.summary,
       'og:site_name': site.siteName,
       'og:locale': OG_LOCALE[locale],
-      'og:locale:alternate': otherOgLocales(locale),
+      'og:locale:alternate': otherOgLocales(locale, locales),
       'article:published_time': article.publishedAt,
       'article:section': article.categoryLabel,
       ...ogImageTags(site, articleOgCard(locale, article)),
@@ -166,6 +193,7 @@ export function homeMeta(
       'og:locale:alternate': otherOgLocales(locale),
       ...ogImageTags(site, homeOgCard(site, locale, copy)),
     },
+    rssHref: absolute(site.origin, rssPath(locale)),
   };
 }
 
@@ -239,6 +267,11 @@ export function renderHeadTags(meta: PageMeta, jsonLd: ArticleJsonLd | null): st
       (alternate) =>
         `<link rel="alternate" data-head hreflang="${attr(alternate.hreflang)}" href="${attr(alternate.href)}">`,
     ),
+    ...(meta.rssHref === undefined
+      ? []
+      : [
+          `<link rel="alternate" data-head type="application/rss+xml" title="RSS" href="${attr(meta.rssHref)}">`,
+        ]),
     ...Object.entries(meta.og)
       .filter(([, content]) => content !== '')
       .map(

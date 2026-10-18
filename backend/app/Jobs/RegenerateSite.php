@@ -67,6 +67,7 @@ class RegenerateSite implements ShouldBeUnique, ShouldQueue
                 'TEMPLATE_DIR' => config('publishing.template_dir'),
                 'PRERENDER_API_URL' => config('publishing.api_url'),
                 'VITE_SITE_URL' => config('app.url'),
+                'PRERENDER_INTERNAL_TOKEN' => config('publishing.internal_token'),
             ],
             null,
             self::PROCESS_TIMEOUT,

@@ -38,6 +38,7 @@ function toSummary(publication: Publication, locale: Locale): PublicationSummary
     publishedAt: publication.publishedAt,
     category: publication.category,
     ...(publication.featured === undefined ? {} : { featured: publication.featured }),
+    ...(publication.updatedAt === undefined ? {} : { updatedAt: publication.updatedAt }),
     title: content.title,
     summary: content.summary,
   };
@@ -106,6 +107,7 @@ interface ApiPublication {
   readonly slug: string;
   readonly category: Category;
   readonly published_at: string;
+  readonly updated_at: string;
   readonly featured: boolean;
   readonly title: string;
   readonly summary: string;
@@ -119,6 +121,7 @@ function fromApi(row: ApiPublication): PublicationSummary {
   return {
     slug: row.slug,
     publishedAt: row.published_at,
+    updatedAt: row.updated_at,
     category: row.category,
     featured: row.featured,
     title: row.title,
@@ -149,6 +152,16 @@ export interface HttpSourceOptions {
    * quem chama passa um aviso de console e a constelacao segue.
    */
   readonly onTruncated?: (meta: { count: number; limit: number }) => void;
+  /**
+   * Identifica o prerender para a API, que o isenta do throttle público.
+   *
+   * Uma regeração completa já soma dezenas de chamadas (duas listas mais uma
+   * por publicação por idioma) e cresce com o acervo — mais rápido do que
+   * qualquer limite pensado para um cliente público aguentaria. Nunca vem do
+   * navegador: só `src/prerender/main.ts`, que roda em Node, lê o processo e
+   * passa aqui.
+   */
+  readonly internalToken?: string | null;
 }
 
 export function createHttpSource(
@@ -157,6 +170,10 @@ export function createHttpSource(
   options: HttpSourceOptions = {},
 ): PublicationsSource {
   const root = `${baseUrl.replace(/\/+$/, '')}/api/publications`;
+  const headers: Record<string, string> =
+    options.internalToken === undefined || options.internalToken === null
+      ? {}
+      : { 'X-Internal-Token': options.internalToken };
 
   /**
    * Um erro de rede precisa chegar como erro.
@@ -166,7 +183,7 @@ export function createHttpSource(
    * uma busca que a pessoa não fez. Ver `src/core/collection.ts`.
    */
   async function json<T>(url: string): Promise<T> {
-    const response = await fetchImpl(url);
+    const response = await fetchImpl(url, { headers });
     if (!response.ok) throw new Error(`${url} respondeu ${String(response.status)}`);
     return (await response.json()) as T;
   }
@@ -203,7 +220,7 @@ export function createHttpSource(
 
     async get(slug, locale) {
       const url = `${root}/${encodeURIComponent(slug)}?locale=${locale}`;
-      const response = await fetchImpl(url);
+      const response = await fetchImpl(url, { headers });
       // 404 é ausência — o slug não existe — e quem chama decide o que fazer.
       // Qualquer outro status é falha, e não pode virar "publicação sem texto".
       if (response.status === 404) return null;

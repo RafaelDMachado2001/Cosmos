@@ -11,7 +11,11 @@ async function enterCosmos(page: Page): Promise<Locator> {
   const star = stars(page).first();
   // Clicavel so depois da travessia: antes disso a constelacao e `inert`.
   await expect(star).toBeVisible();
-  await expect(page.locator('[inert] a[aria-label*=" — "]')).toHaveCount(0);
+  // O padrao de 5s do Playwright e menor que o proprio orcamento de quadro
+  // que essa transicao amortecida pode levar no Chromium headless sem GPU
+  // do GitHub Actions — o teste falhava aqui mesmo com a transicao correta,
+  // so mais lenta do que o limite padrao da asserção aguenta.
+  await expect(page.locator('[inert] a[aria-label*=" — "]')).toHaveCount(0, { timeout: 30_000 });
   return star;
 }
 
@@ -30,7 +34,10 @@ test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async (
 
   await page.goBack();
   await expect(page).toHaveURL(/\/pt$/);
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // Mesmo motivo do inert acima: o fechamento tambem e uma transicao
+  // amortecida, e o mesmo hardware lento ja fez essa asserção estourar o
+  // padrao de 5s em pelo menos uma execução real do CI.
+  await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30_000 });
 });
 
 test('um slug que nao existe responde 404 de verdade', async ({ page }) => {
