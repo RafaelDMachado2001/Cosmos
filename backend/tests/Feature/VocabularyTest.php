@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Publication;
-use App\Models\PublicationTranslation;
+use App\Modules\Content\Models\Publication;
+use App\Modules\Content\Models\PublicationTranslation;
 use Tests\TestCase;
 
 /**

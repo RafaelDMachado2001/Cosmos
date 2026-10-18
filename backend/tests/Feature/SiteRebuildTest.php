@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Jobs\RegenerateSite;
-use App\Models\Publication;
-use App\Support\SiteRebuild;
+use App\Modules\Content\Jobs\RegenerateSite;
+use App\Modules\Content\Models\Publication;
+use App\Modules\Content\Support\SiteRebuild;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;

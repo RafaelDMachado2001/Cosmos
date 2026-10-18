@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\PublicationController;
-use App\Http\Controllers\Internal\TickController;
 use App\Http\Middleware\VerifyGoogleOidc;
+use App\Modules\Content\Http\Controllers\Api\PublicationController;
+use App\Modules\Content\Http\Controllers\Internal\TickController;
 use Illuminate\Support\Facades\Route;
 
 /**
