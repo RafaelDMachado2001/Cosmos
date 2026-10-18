@@ -60,7 +60,8 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
    | `database-url` | A connection string do Neon (endpoint com pooler, `sslmode=require`) |
    | `media-s3-key`, `media-s3-secret` | Um token de API do R2 com leitura e escrita só neste bucket |
    | `vercel-deploy-hook` | Vercel → Settings → Git → Deploy Hooks, na branch `main` |
-   | `google-client-id`, `google-client-secret` | O cliente OAuth do login do painel. Callback: `https://admin.rdmlabs.com.br/admin/login/google/callback` |
+   | `google-client-id`, `google-client-secret` | O cliente OAuth do Google, o mesmo para o painel e para os leitores. Duas URIs de redirecionamento autorizadas: `https://admin.rdmlabs.com.br/admin/login/google/callback` e `https://api.rdmlabs.com.br/auth/google/callback` |
+   | `github-client-id`, `github-client-secret` | Um OAuth App do GitHub (Settings → Developer settings), só para os leitores. Callback: `https://api.rdmlabs.com.br/auth/github/callback` |
    | `prerender-internal-token` | O mesmo valor de `PRERENDER_INTERNAL_TOKEN` no projeto da Vercel |
 
 5. **Variáveis do repositório no GitHub** (Settings → Secrets and variables →

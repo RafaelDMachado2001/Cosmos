@@ -173,6 +173,7 @@ jobs:
           ADMIN_HOST=admin.rdmlabs.test
           API_HOST=api.rdmlabs.test
           EDGE_SHARED_SECRET=ci-edge
+          SITE_URL=https://cosmos.rdmlabs.test
           EOF
           sed -i 's/^ *//' prod.env
       - name: Configuração incompleta não sobe

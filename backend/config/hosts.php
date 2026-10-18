@@ -13,6 +13,9 @@ return [
     'admin' => env('ADMIN_HOST'),
     // A API pública (e, na etapa 2, a sessão do leitor, no domínio do site).
     'api' => env('API_HOST'),
+    // O site estático (Vercel), para onde o login do leitor devolve. Vazio,
+    // o mesmo host (docker compose).
+    'site' => env('SITE_URL'),
     // O segredo que o Worker da Cloudflare manda em X-Edge-Secret (VerifyEdge).
     'edge_secret' => env('EDGE_SHARED_SECRET'),
 ];

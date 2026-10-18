@@ -6,6 +6,7 @@ use App\Modules\Content\Http\Controllers\Admin\PublicationAdminController;
 use App\Modules\Content\Http\Controllers\Admin\RdmStudioController;
 use App\Modules\Content\Http\Controllers\Admin\TagController;
 use App\Modules\Content\Http\Controllers\FallbackController;
+use App\Modules\Identity\Http\Controllers\MemberAuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,6 +20,14 @@ Route::middleware('throttle:10,1')->group(function (): void {
         ->name('auth.google.redirect');
     Route::get('/admin/login/google/callback', [GoogleAuthController::class, 'callback'])
         ->name('auth.google.callback');
+});
+
+/*
+ * Login do leitor (guard `member`), no host da API. Mesmo throttle do painel.
+ */
+Route::middleware('throttle:10,1')->prefix('auth/{provider}')->whereIn('provider', ['google', 'github'])->group(function (): void {
+    Route::get('/redirect', [MemberAuthController::class, 'redirect'])->name('member.auth.redirect');
+    Route::get('/callback', [MemberAuthController::class, 'callback'])->name('member.auth.callback');
 });
 
 /*
