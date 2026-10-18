@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Session\SessionManager;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -35,20 +36,31 @@ class HostBoundary
         $host = $request->getHost();
 
         if ($host === $admin && $request->is('admin', 'admin/*', 'livewire*', 'filament/*')) {
-            config([
-                'session.cookie' => 'rdm_admin',
-                'session.domain' => null,
-            ]);
+            $this->session(['session.cookie' => 'rdm_admin', 'session.domain' => null]);
 
             return $next($request);
         }
 
-        if ($host === $api && $request->is('api/*')) {
-            config(['session.cookie' => 'rdm_session']);
+        if ($host === $api && $request->is('api/*', 'auth/*')) {
+            $this->session(['session.cookie' => 'rdm_session']);
 
             return $next($request);
         }
 
         abort(404);
+    }
+
+    /**
+     * O nome do cookie é lido quando o driver da sessão é criado, e o
+     * gerenciador guarda o driver. Num processo que atende mais de uma
+     * requisição (worker do FrankenPHP, Octane, a suíte de testes), o driver
+     * da requisição anterior manteria o cookie do outro host.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    private function session(array $config): void
+    {
+        config($config);
+        app(SessionManager::class)->forgetDrivers();
     }
 }
