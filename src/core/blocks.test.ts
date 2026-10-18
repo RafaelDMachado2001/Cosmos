@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseBlocks } from './blocks';
+import { inlineToMarkdown, parseBlocks } from './blocks';
 import type { Block, InlineNode } from './blocks';
 
 const text = (value: string): InlineNode => ({ type: 'text', text: value });
@@ -240,5 +240,66 @@ describe('parseBlocks', () => {
       'code',
       'image',
     ]);
+  });
+});
+
+describe('inlineToMarkdown', () => {
+  /** Dá a volta: markdown -> parseBlocks -> children do parágrafo -> markdown. */
+  function roundTrip(markdown: string): string {
+    const [block] = parseBlocks(markdown);
+    if (block?.type !== 'paragraph') throw new Error('esperava um parágrafo');
+    return inlineToMarkdown(block.children);
+  }
+
+  it('texto simples, sem marcação', () => {
+    expect(roundTrip('Texto comum.')).toBe('Texto comum.');
+  });
+
+  it('negrito, itálico e código inline', () => {
+    expect(roundTrip('Um **negrito**, um *itálico* e um `código`.')).toBe(
+      'Um **negrito**, um *itálico* e um `código`.',
+    );
+  });
+
+  it('link com href preservado', () => {
+    expect(roundTrip('Veja [este artigo](https://example.com/a).')).toBe(
+      'Veja [este artigo](https://example.com/a).',
+    );
+  });
+
+  it('negrito dentro de link, aninhado', () => {
+    expect(roundTrip('[**forte**](/pt)')).toBe('[**forte**](/pt)');
+  });
+});
+
+describe('escape e cercas', () => {
+  it('barra invertida escapa pontuação, como no CommonMark', () => {
+    expect(parseBlocks('\\*não\\* é itálico, \\## nem título')).toEqual<readonly Block[]>([
+      { type: 'paragraph', children: [text('*não* é itálico, ## nem título')] },
+    ]);
+  });
+
+  it('barra antes de letra e dentro de código fica literal', () => {
+    expect(parseBlocks('C:\\Users e `a\\*b`')).toEqual<readonly Block[]>([
+      { type: 'paragraph', children: [text('C:\\Users e '), { type: 'code', text: 'a\\*b' }] },
+    ]);
+  });
+
+  it('cerca maior contém uma menor; fechamento com linguagem não fecha', () => {
+    expect(parseBlocks('````md\n```ts\nx\n```\n````\n\nDepois.')).toEqual<readonly Block[]>([
+      { type: 'code', code: '```ts\nx\n```', language: 'md' },
+      { type: 'paragraph', children: [text('Depois.')] },
+    ]);
+  });
+
+  it('alt e legenda de imagem aceitam escape', () => {
+    expect(parseBlocks('![a \\] b](/x.png "diz \\"oi\\"")')).toEqual<readonly Block[]>([
+      { type: 'image', src: '/x.png', alt: 'a ] b', caption: 'diz "oi"' },
+    ]);
+  });
+
+  it('inlineToMarkdown escapa de novo só o texto que viria de um escape', () => {
+    expect(inlineToMarkdown([text('5 * 3 = 15')])).toBe('5 * 3 = 15');
+    expect(inlineToMarkdown([text('*literal*')])).toBe('\\*literal\\*');
   });
 });

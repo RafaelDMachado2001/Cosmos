@@ -53,6 +53,12 @@ function prepare(): Promise<readonly Font[]> {
   return ready;
 }
 
+/** O centro da estrela e os diâmetros, nas proporções da prévia do protótipo (15% e 70%). */
+const STAR_X = 960;
+const STAR_Y = 270;
+const STAR = 180;
+const AURA = 840;
+
 /** Um elemento, não um componente: satori o lê uma vez, sem React montando nada. */
 function cardElement(card: OgCard) {
   const accent = token(card.category === undefined ? 'color-accent' : `color-cat-${card.category}`);
@@ -64,6 +70,7 @@ function cardElement(card: OgCard) {
   return (
     <div
       style={{
+        position: 'relative',
         width: '100%',
         height: '100%',
         display: 'flex',
@@ -71,10 +78,35 @@ function cardElement(card: OgCard) {
         justifyContent: 'space-between',
         padding: '72px 80px',
         backgroundColor: token('color-bg'),
-        backgroundImage: `radial-gradient(circle at 85% 20%, ${token('color-accent-wash')}, transparent 55%)`,
         fontFamily: 'Roboto',
       }}
     >
+      {/* A estrela da categoria, como a prévia do RDM Studio a desenha: aura,
+          e um núcleo que vai do branco à cor e some na borda. Atrás de tudo, à
+          direita, onde o título (limitado em largura) não chega. */}
+      <div
+        style={{
+          position: 'absolute',
+          left: STAR_X - AURA / 2,
+          top: STAR_Y - AURA / 2,
+          width: AURA,
+          height: AURA,
+          borderRadius: 999,
+          backgroundImage: `radial-gradient(circle, ${accent}33 0%, ${accent}0d 40%, transparent 70%)`,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: STAR_X - STAR / 2,
+          top: STAR_Y - STAR / 2,
+          width: STAR,
+          height: STAR,
+          borderRadius: 999,
+          backgroundImage: `radial-gradient(circle at 40% 36%, #ffffff 0%, ${accent} 44%, ${accent}00 78%)`,
+          boxShadow: `0 0 80px 16px ${accent}55`,
+        }}
+      />
       <div
         style={{
           display: 'flex',
@@ -87,13 +119,13 @@ function cardElement(card: OgCard) {
           color: token('color-text-ui'),
         }}
       >
-        <div style={{ width: 16, height: 16, borderRadius: 999, backgroundColor: accent }} />
         {card.kicker}
       </div>
 
       <div
         style={{
           display: 'flex',
+          maxWidth: 760,
           fontSize: titleSize,
           fontWeight: 300,
           lineHeight: 1.12,

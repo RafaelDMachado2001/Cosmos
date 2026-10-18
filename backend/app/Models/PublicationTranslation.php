@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $title
  * @property string $summary
  * @property string $body
+ * @property string|null $seo_title
+ * @property string|null $seo_description
  * @property-read Publication $publication
  */
 class PublicationTranslation extends Model
@@ -29,7 +31,7 @@ class PublicationTranslation extends Model
         return config('publications.locales');
     }
 
-    protected $fillable = ['publication_id', 'locale', 'title', 'summary', 'body'];
+    protected $fillable = ['publication_id', 'locale', 'title', 'summary', 'body', 'seo_title', 'seo_description'];
 
     /**
      * Coluna gerada pelo Postgres. Listá-la aqui impede o Eloquent de tentar
@@ -37,7 +39,6 @@ class PublicationTranslation extends Model
      */
     protected $guarded = ['search_vector'];
 
-    /** @return BelongsTo<Publication, $this> */
     /** @return BelongsTo<Publication, $this> */
     public function publication(): BelongsTo
     {

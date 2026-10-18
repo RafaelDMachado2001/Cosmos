@@ -50,12 +50,29 @@ jobs:
       DB_DATABASE: rdm_labs_test
       DB_USERNAME: rdm
       DB_PASSWORD: ci-test
+      # DraftBlocksCli chama "node dist-ssr/draft-blocks-cli.js" com este cwd;
+      # em produção é /srv/render (ver docker/php/Dockerfile), aqui é a raiz
+      # do checkout, onde o passo "Node (dist-ssr do RDM Studio)" abaixo builda.
+      RENDER_DIR: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Node (dist-ssr do RDM Studio)
+        working-directory: .
+        # Só o bundle de SSR, sem rodar o prerender (postbuild) — os testes do
+        # backend só precisam de dist-ssr/draft-blocks-cli.js existir.
+        run: |
+          npm ci --no-audit --no-fund
+          npx vite build --config vite.prerender.config.ts
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_pgsql, intl, zip
+          # gd e exif: o que spatie/image pede para o upload de mídia do RDM
+          # Studio (redimensionar e gravar WebP).
+          extensions: pdo_pgsql, intl, zip, gd, exif
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env && php artisan key:generate
@@ -117,6 +134,16 @@ jobs:
           sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-test/; s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=ci-admin-test/' .env
           cp backend/.env.example backend/.env
           sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=ci-test/' backend/.env
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: RDM Studio (bundle do painel)
+        # `web` serve backend/public/ por bind mount (docker-compose.yml) — sem
+        # este build, /admin/studio sobe mas admin.js/admin.css dão 404.
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build:admin
       - run: docker compose --profile backend build app queue web
       - run: docker compose --profile backend up -d db
       - run: docker compose --profile backend run --rm --no-deps app composer install --no-interaction --prefer-dist --no-progress
@@ -127,6 +154,12 @@ jobs:
       # verificação, e o worker repete a mesma falha depois de cada job.
       - run: docker compose --profile backend run --rm --no-deps app php artisan migrate --seed --force
       - run: docker compose --profile backend up -d db app queue web
+      - name: RDM Studio responde (casca exige login; os assets, não)
+        run: |
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/admin/rdm-studio/admin.js && break; sleep 2; done
+          status_js="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/rdm-studio/admin.js)"
+          status_studio="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/studio)"
+          [ "$status_js" = 200 ] && [ "$status_studio" = 302 ]
       - name: Publicar
         # O mesmo observer que o salvar do Filament dispara; o formulario em si
         # e coberto por AdminPanelTest na suite do backend.
@@ -164,5 +197,14 @@ jobs:
           done
           docker compose --profile backend logs queue
           exit 1
+      - run: npx playwright install --with-deps chromium
+      - name: RDM Studio de ponta a ponta (publicar -> ver -> despublicar)
+        # O login do painel é só por Google; e2e:admin-session grava a sessão
+        # do admin direto no banco e imprime o cookie (recusa fora de local/testing).
+        run: |
+          export E2E_ADMIN_COOKIE="$(docker compose --profile backend exec -T app php artisan e2e:admin-session)"
+          npx playwright test e2e/studio.spec.ts
+        env:
+          E2E_BASE_URL: http://localhost:8080
       - if: failure()
         run: docker compose --profile backend logs

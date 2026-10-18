@@ -79,6 +79,28 @@
   white-space: pre;
 }
 
+/*
+ * Syntax highlighting com os tons do sistema: o roxo marca a estrutura
+ * (palavra-chave), o lavanda claro o texto literal, o branco os números; as
+ * cores de categoria ficam de fora, são sinal de navegação. Comentário no
+ * cinza mais escuro que a revisão de acessibilidade ainda aceita.
+ */
+.tokenKeyword {
+  color: var(--color-accent-soft);
+}
+
+.tokenString {
+  color: var(--color-accent-hover);
+}
+
+.tokenNumber {
+  color: var(--color-text-primary);
+}
+
+.tokenComment {
+  color: var(--color-text-faint);
+}
+
 .figure {
   margin: 0 0 30px;
 }

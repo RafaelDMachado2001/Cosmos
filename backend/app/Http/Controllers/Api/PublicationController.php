@@ -76,7 +76,7 @@ class PublicationController extends Controller
         $input = $this->validated($request, []);
 
         $publication = $this->published($input['locale'])
-            ->addSelect('translation.body')
+            ->addSelect(['translation.body', 'translation.seo_title', 'translation.seo_description'])
             ->where('publications.slug', $slug)
             ->first();
 
@@ -105,6 +105,7 @@ class PublicationController extends Controller
                 'publications.published_at',
                 'publications.updated_at',
                 'publications.featured',
+                'publications.indexable',
                 'translation.title',
                 'translation.summary',
                 'translation.updated_at as translation_updated_at',

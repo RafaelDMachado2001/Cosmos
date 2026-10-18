@@ -81,7 +81,10 @@ export async function prerenderPages(
 ): Promise<PrerenderOutput> {
   const pages: PrerenderedPage[] = [];
   /** O acervo como a fonte o devolve — é ele que o sitemap lista. */
-  const listed = new Map<string, { publishedAt: string; updatedAt?: string }>();
+  const listed = new Map<
+    string,
+    { publishedAt: string; updatedAt?: string; indexable?: boolean }
+  >();
   const rss: Partial<Record<Locale, string>> = {};
 
   // Primeira passada: que idiomas cada slug de fato tem. Uma publicação pode
@@ -97,6 +100,7 @@ export async function prerenderPages(
       listed.set(summary.slug, {
         publishedAt: summary.publishedAt,
         ...(summary.updatedAt === undefined ? {} : { updatedAt: summary.updatedAt }),
+        ...(summary.indexable === undefined ? {} : { indexable: summary.indexable }),
       });
     }
   }
@@ -138,6 +142,9 @@ export async function prerenderPages(
         publishedAt: detail.publishedAt,
         categoryLabel: dictionary.categories[detail.category],
         category: detail.category,
+        ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),
+        ...(detail.seoDescription === undefined ? {} : { seoDescription: detail.seoDescription }),
+        ...(detail.indexable === undefined ? {} : { indexable: detail.indexable }),
       };
 
       const availableLocales = localesForSlug.get(detail.slug) ?? [locale];
@@ -205,9 +212,9 @@ export async function prerenderPages(
      */
     sitemap: sitemapXml(
       SITE,
-      [...listed].map(([slug, dates]) => ({
+      [...listed].map(([slug, entry]) => ({
         slug,
-        ...dates,
+        ...entry,
         locales: localesForSlug.get(slug) ?? [],
       })),
     ),

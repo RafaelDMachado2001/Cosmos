@@ -27,6 +27,27 @@ class PublishScheduled extends Command
 
     public function handle(): int
     {
+        /*
+         * A transição explícita que o RDM Studio pede: `publish()` marca
+         * `scheduled` quando `published_at` ainda está no futuro, e é aqui
+         * que ela cruza para `published`. Um `update()` por publicação, não
+         * um update em massa — é o que dispara `PublicationObserver` e
+         * regenera o site; um update em massa não passa pelos eventos do
+         * Eloquent, e nada mais chamaria `RegenerateSite` neste instante.
+         */
+        $transitioned = Publication::query()
+            ->where('status', Publication::STATUS_SCHEDULED)
+            ->where('published_at', '<=', now())
+            ->get();
+
+        foreach ($transitioned as $publication) {
+            $publication->update(['status' => Publication::STATUS_PUBLISHED]);
+        }
+
+        if ($transitioned->isNotEmpty()) {
+            $this->info("{$transitioned->count()} publicação(ões) agendada(s) passaram a publicada(s)");
+        }
+
         $eligible = Publication::query()
             ->where('status', Publication::STATUS_PUBLISHED)
             ->where('published_at', '<=', now())

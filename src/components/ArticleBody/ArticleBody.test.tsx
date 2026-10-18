@@ -44,12 +44,28 @@ describe('ArticleBody', () => {
   });
 
   it('bloco de código sai como pre > code, com a linguagem anotada', () => {
-    render(<ArticleBody markdown={'```ts\nconst x = 1;\n```'} />);
+    const { container } = render(<ArticleBody markdown={'```ts\nconst x = 1;\n```'} />);
 
-    const code = screen.getByText('const x = 1;');
-    expect(code.tagName).toBe('CODE');
-    expect(code.closest('pre')).not.toBeNull();
+    const code = container.querySelector('pre > code');
+    expect(code?.textContent).toBe('const x = 1;');
     expect(screen.getByText('ts')).not.toBeNull();
+  });
+
+  it('bloco de código com linguagem conhecida ganha highlighting, sem alterar o texto', () => {
+    const { container } = render(
+      <ArticleBody markdown={'```ts\n// soma\nconst x = "um" + 1;\n```'} />,
+    );
+
+    expect(container.querySelector('pre > code')?.textContent).toBe('// soma\nconst x = "um" + 1;');
+    expect(screen.getByText('const').tagName).toBe('SPAN');
+    expect(screen.getByText('"um"').tagName).toBe('SPAN');
+    expect(screen.getByText('// soma').tagName).toBe('SPAN');
+  });
+
+  it('linguagem desconhecida sai sem nenhum span', () => {
+    const { container } = render(<ArticleBody markdown={'```cobol\nMOVE 1 TO X.\n```'} />);
+
+    expect(container.querySelector('pre > code span')).toBeNull();
   });
 
   it('imagem sai como figure > img, com legenda em figcaption', () => {

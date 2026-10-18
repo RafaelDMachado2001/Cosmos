@@ -23,6 +23,13 @@ export interface ListQuery {
 export interface PublicationDetail extends PublicationSummary {
   /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
   readonly body: string;
+  /**
+   * Override de `<title>`/`og:title` e da meta description, com fallback
+   * para `title`/`summary` quando ausente. Só a API conhece — o acervo
+   * semente nunca define nenhum dos dois.
+   */
+  readonly seoTitle?: string;
+  readonly seoDescription?: string;
 }
 
 export interface PublicationsSource {
@@ -39,6 +46,7 @@ function toSummary(publication: Publication, locale: Locale): PublicationSummary
     category: publication.category,
     ...(publication.featured === undefined ? {} : { featured: publication.featured }),
     ...(publication.updatedAt === undefined ? {} : { updatedAt: publication.updatedAt }),
+    ...(publication.indexable === undefined ? {} : { indexable: publication.indexable }),
     title: content.title,
     summary: content.summary,
   };
@@ -109,12 +117,15 @@ interface ApiPublication {
   readonly published_at: string;
   readonly updated_at: string;
   readonly featured: boolean;
+  readonly indexable: boolean;
   readonly title: string;
   readonly summary: string;
 }
 
 interface ApiPublicationDetail extends ApiPublication {
   readonly body: string;
+  readonly seo_title: string | null;
+  readonly seo_description: string | null;
 }
 
 function fromApi(row: ApiPublication): PublicationSummary {
@@ -124,6 +135,7 @@ function fromApi(row: ApiPublication): PublicationSummary {
     updatedAt: row.updated_at,
     category: row.category,
     featured: row.featured,
+    indexable: row.indexable,
     title: row.title,
     summary: row.summary,
   };
@@ -227,7 +239,14 @@ export function createHttpSource(
       if (!response.ok) throw new Error(`${url} respondeu ${String(response.status)}`);
 
       const payload = (await response.json()) as { data: ApiPublicationDetail };
-      return { ...fromApi(payload.data), body: payload.data.body };
+      return {
+        ...fromApi(payload.data),
+        body: payload.data.body,
+        ...(payload.data.seo_title === null ? {} : { seoTitle: payload.data.seo_title }),
+        ...(payload.data.seo_description === null
+          ? {}
+          : { seoDescription: payload.data.seo_description }),
+      };
     },
   };
 }
