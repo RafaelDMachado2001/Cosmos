@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import { metaKeyAttribute } from '../core/seo';
 import type { JsonLd, PageMeta } from '../core/seo';
 
 /**
@@ -46,13 +47,13 @@ function setCanonical(href: string): void {
  * `article:published_time` descrevendo um texto que já não está na página.
  */
 function setProperties(entries: Readonly<Record<string, string>>): void {
-  for (const stale of document.head.querySelectorAll(`meta[${OWNED}][property]`)) {
+  for (const stale of document.head.querySelectorAll(`meta[${OWNED}][property], meta[${OWNED}][name^="twitter:"]`)) {
     stale.remove();
   }
   for (const [property, content] of Object.entries(entries)) {
     if (content === '') continue;
     const meta = document.createElement('meta');
-    meta.setAttribute('property', property);
+    meta.setAttribute(metaKeyAttribute(property), property);
     meta.setAttribute(OWNED, '');
     meta.content = content;
     document.head.appendChild(meta);
