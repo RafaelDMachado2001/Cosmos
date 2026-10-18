@@ -25,14 +25,14 @@ class MeController extends Controller
      * Sem sessão, 204 e não 401: todo visitante anônimo do site pergunta, e
      * um 401 por página encheria o console de erro que não é erro.
      */
-    public function show(Request $request): MemberResource|Response
+    public function show(Request $request): JsonResponse|Response
     {
         $member = $request->user('sanctum');
 
-        return $member instanceof Member ? new MemberResource($member) : response()->noContent();
+        return $member instanceof Member ? $this->profile($member) : response()->noContent();
     }
 
-    public function update(Request $request): MemberResource
+    public function update(Request $request): JsonResponse
     {
         /** @var Member $member */
         $member = $request->user('sanctum');
@@ -49,7 +49,7 @@ class MeController extends Controller
 
         $member->update($data);
 
-        return new MemberResource($member);
+        return $this->profile($member);
     }
 
     /**
@@ -102,5 +102,15 @@ class MeController extends Controller
         $request->session()->regenerateToken();
 
         return response()->noContent();
+    }
+
+    /**
+     * O JsonResource responde 201 quando o modelo acabou de ser criado no
+     * mesmo processo — o primeiro GET depois do login, num worker que atende
+     * as duas requisições. Ler o perfil nunca é criar.
+     */
+    private function profile(Member $member): JsonResponse
+    {
+        return (new MemberResource($member))->response()->setStatusCode(200);
     }
 }
