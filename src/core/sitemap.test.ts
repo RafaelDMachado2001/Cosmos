@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { robotsTxt, sitemapXml } from './sitemap';
 import type { MetaSite } from './seo';
+import { LOCALES } from './types';
 
 const SITE: MetaSite = {
   origin: 'https://rdmlabs.dev',
@@ -10,8 +11,12 @@ const SITE: MetaSite = {
 };
 
 const PUBLICATIONS = [
-  { slug: 'code-review-sem-atrito', publishedAt: '2025-09-12T12:00:00.000Z' },
-  { slug: 'shaders-glsl-para-interfaces', publishedAt: '2026-01-20T12:00:00.000Z' },
+  { slug: 'code-review-sem-atrito', publishedAt: '2025-09-12T12:00:00.000Z', locales: LOCALES },
+  {
+    slug: 'shaders-glsl-para-interfaces',
+    publishedAt: '2026-01-20T12:00:00.000Z',
+    locales: LOCALES,
+  },
 ];
 
 describe('sitemapXml', () => {
@@ -34,6 +39,56 @@ describe('sitemapXml', () => {
 
   it('data de publicação como lastmod, só o dia', () => {
     expect(xml).toContain('<lastmod>2025-09-12</lastmod>');
+  });
+
+  it('usa updatedAt como lastmod quando é mais recente que a publicação', () => {
+    const editada = sitemapXml(SITE, [
+      {
+        slug: 'editado-depois',
+        publishedAt: '2025-09-12T12:00:00.000Z',
+        updatedAt: '2026-02-01T08:00:00.000Z',
+        locales: LOCALES,
+      },
+    ]);
+    expect(editada).toContain('<lastmod>2026-02-01</lastmod>');
+    expect(editada).not.toContain('<lastmod>2025-09-12</lastmod>');
+  });
+
+  it('ignora updatedAt mais antigo que a publicação', () => {
+    const semEdicao = sitemapXml(SITE, [
+      {
+        slug: 'sem-edicao',
+        publishedAt: '2025-09-12T12:00:00.000Z',
+        updatedAt: '2025-09-12T12:00:00.000Z',
+        locales: LOCALES,
+      },
+    ]);
+    expect(semEdicao).toContain('<lastmod>2025-09-12</lastmod>');
+  });
+
+  it('publicação num só idioma não gera url nem alternate para o outro', () => {
+    const soPt = sitemapXml(SITE, [
+      { slug: 'so-em-portugues', publishedAt: '2025-09-12T12:00:00.000Z', locales: ['pt'] },
+    ]);
+    expect(soPt).toContain('<loc>https://rdmlabs.dev/pt/publicacoes/so-em-portugues</loc>');
+    expect(soPt).not.toContain('publications/so-em-portugues');
+    expect(soPt).not.toContain('hreflang="en" href="https://rdmlabs.dev/en/publications/so-em-portugues"');
+    // x-default cai no único idioma que existe, não no padrão ausente.
+    expect(soPt).toContain(
+      '<xhtml:link rel="alternate" hreflang="x-default" href="https://rdmlabs.dev/pt/publicacoes/so-em-portugues"/>',
+    );
+    // As duas raízes (pt/en) mais a única url do artigo — não duas.
+    expect(soPt.match(/<url>/g)?.length).toBe(3);
+  });
+
+  it('publicação só em inglês usa inglês como x-default', () => {
+    const soEn = sitemapXml(SITE, [
+      { slug: 'english-only', publishedAt: '2025-09-12T12:00:00.000Z', locales: ['en'] },
+    ]);
+    expect(soEn).toContain(
+      '<xhtml:link rel="alternate" hreflang="x-default" href="https://rdmlabs.dev/en/publications/english-only"/>',
+    );
+    expect(soEn).not.toContain('/pt/publicacoes/english-only');
   });
 
   it('cada url aponta para as versões no outro idioma', () => {

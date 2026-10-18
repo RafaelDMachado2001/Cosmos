@@ -41,6 +41,12 @@ export interface PublicationInput {
   readonly publishedAt: string;
   readonly category: Category;
   readonly featured?: boolean;
+  /**
+   * ISO 8601. Maior que `publishedAt` quando o texto foi editado depois de
+   * publicado; ausente nas publicações que nunca viram o backend (acervo
+   * semente, sintéticas) — `publishedAt` vale como a única data conhecida.
+   */
+  readonly updatedAt?: string;
 }
 
 /** Medidas de tela de que o posicionamento precisa. */

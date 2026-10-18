@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Publication;
+use Carbon\Carbon;
 use Database\Seeders\PublicationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -59,7 +60,7 @@ class PublicationApiTest extends TestCase
 
         $this->assertArrayNotHasKey('body', $first);
         $this->assertSame(
-            ['slug', 'category', 'published_at', 'featured', 'title', 'summary'],
+            ['slug', 'category', 'published_at', 'updated_at', 'featured', 'title', 'summary'],
             array_keys($first)
         );
     }
@@ -203,6 +204,43 @@ class PublicationApiTest extends TestCase
         $this->getJson('/api/publications?before=nao-e-data')->assertStatus(422);
     }
 
+    public function test_a_61a_requisicao_no_mesmo_minuto_recebe_429(): void
+    {
+        // O limiter 'api' e por IP, e o cliente de teste usa sempre o mesmo —
+        // e exatamente o que se quer provar aqui.
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/api/publications?locale=pt')->assertOk();
+        }
+
+        $this->getJson('/api/publications?locale=pt')->assertStatus(429);
+    }
+
+    public function test_o_token_interno_do_prerender_isenta_do_throttle(): void
+    {
+        config(['publishing.internal_token' => 'segredo-do-teste']);
+
+        for ($i = 0; $i < 65; $i++) {
+            $this->withHeader('X-Internal-Token', 'segredo-do-teste')
+                ->getJson('/api/publications?locale=pt')
+                ->assertOk();
+        }
+    }
+
+    public function test_token_interno_errado_nao_isenta_do_throttle(): void
+    {
+        config(['publishing.internal_token' => 'segredo-do-teste']);
+
+        for ($i = 0; $i < 60; $i++) {
+            $this->withHeader('X-Internal-Token', 'token-errado')
+                ->getJson('/api/publications?locale=pt')
+                ->assertOk();
+        }
+
+        $this->withHeader('X-Internal-Token', 'token-errado')
+            ->getJson('/api/publications?locale=pt')
+            ->assertStatus(429);
+    }
+
     public function test_a_publicacao_traz_o_corpo_como_markdown_cru(): void
     {
         $data = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')
@@ -227,6 +265,59 @@ class PublicationApiTest extends TestCase
     public function test_slug_desconhecido_e_404(): void
     {
         $this->getJson('/api/publications/nao-existe-de-jeito-nenhum')->assertNotFound();
+    }
+
+    public function test_publicacao_agendada_nao_aparece_antes_da_data(): void
+    {
+        $this->publish(
+            'agendada-para-o-futuro',
+            'artigo',
+            now()->addDay()->toIso8601String(),
+            ['Futuro', 'Resumo', 'Corpo'],
+            ['Future', 'Summary', 'Body'],
+        );
+
+        $this->getJson('/api/publications/agendada-para-o-futuro')->assertNotFound();
+        $slugs = collect($this->getJson('/api/publications')->json('data'))->pluck('slug');
+        $this->assertFalse($slugs->contains('agendada-para-o-futuro'));
+    }
+
+    public function test_publicacao_agendada_aparece_quando_a_data_chega(): void
+    {
+        $this->publish(
+            'agendada-ja-passou',
+            'artigo',
+            now()->subMinute()->toIso8601String(),
+            ['Chegou', 'Resumo', 'Corpo'],
+            ['Arrived', 'Summary', 'Body'],
+        );
+
+        $this->getJson('/api/publications/agendada-ja-passou')->assertOk();
+    }
+
+    public function test_updated_at_reflete_a_edicao_da_traducao(): void
+    {
+        $publication = $this->publish(
+            'editada-depois-de-publicada',
+            'artigo',
+            '2026-01-01T00:00:00.000Z',
+            ['Original', 'Resumo', 'Corpo'],
+            ['Original', 'Summary', 'Body'],
+        );
+
+        $antes = $this->getJson('/api/publications/editada-depois-de-publicada?locale=pt')
+            ->json('data.updated_at');
+
+        // So a traducao muda — "editar so a traducao tambem regenera" na fase
+        // 9 — e e exatamente o caso que a publicacao, sozinha, nao capturaria.
+        $this->travel(1)->minute();
+        $publication->translations()->where('locale', 'pt')->first()->update(['title' => 'Revisado']);
+
+        $depois = $this->getJson('/api/publications/editada-depois-de-publicada?locale=pt')
+            ->json('data.updated_at');
+
+        $this->assertNotSame($antes, $depois);
+        $this->assertTrue(Carbon::parse($depois)->greaterThan(Carbon::parse($antes)));
     }
 
     public function test_a_data_atravessa_o_banco_sem_deslocar(): void

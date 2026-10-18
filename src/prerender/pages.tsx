@@ -16,9 +16,10 @@ import {
   renderHeadTags,
 } from '../core/seo';
 import type { MetaArticle } from '../core/seo';
+import { rssXml } from '../core/rss';
 import { robotsTxt, sitemapXml } from '../core/sitemap';
 import { LOCALES, LOCALE_TAG } from '../core/types';
-import type { Locale } from '../core/types';
+import type { Locale, PublicationSummary } from '../core/types';
 import { createSource } from '../data/source';
 import type { PublicationsSource } from '../data/PublicationsSource';
 import { DICTIONARIES } from '../i18n/dictionaries';
@@ -51,6 +52,8 @@ export interface PrerenderOutput {
   readonly notFound: PrerenderedPage;
   readonly sitemap: string;
   readonly robots: string;
+  /** Um feed RSS 2.0 por idioma, só com o que aquele idioma publicou. */
+  readonly rss: Record<Locale, string>;
 }
 
 /**
@@ -78,13 +81,33 @@ export async function prerenderPages(
 ): Promise<PrerenderOutput> {
   const pages: PrerenderedPage[] = [];
   /** O acervo como a fonte o devolve — é ele que o sitemap lista. */
-  const listed = new Map<string, string>();
+  const listed = new Map<string, { publishedAt: string; updatedAt?: string }>();
+  const rss: Partial<Record<Locale, string>> = {};
+
+  // Primeira passada: que idiomas cada slug de fato tem. Uma publicação pode
+  // existir só num deles — o formulário do painel permite — e só se sabe ao
+  // ver as duas listas inteiras, antes de montar qualquer página.
+  const summariesByLocale = {} as Record<Locale, readonly PublicationSummary[]>;
+  const localesForSlug = new Map<string, Locale[]>();
+  for (const locale of LOCALES) {
+    const summaries = await source.list({ locale, limit: ARCHIVE_LIMIT });
+    summariesByLocale[locale] = summaries;
+    for (const summary of summaries) {
+      localesForSlug.set(summary.slug, [...(localesForSlug.get(summary.slug) ?? []), locale]);
+      listed.set(summary.slug, {
+        publishedAt: summary.publishedAt,
+        ...(summary.updatedAt === undefined ? {} : { updatedAt: summary.updatedAt }),
+      });
+    }
+  }
 
   for (const locale of LOCALES) {
     const other = otherLocale(locale);
     const dictionary = DICTIONARIES[locale];
-    const summaries = await source.list({ locale, limit: ARCHIVE_LIMIT });
-    for (const summary of summaries) listed.set(summary.slug, summary.publishedAt);
+    const summaries = summariesByLocale[locale];
+    // Do mais novo para o mais antigo, igual à constelação — não há motivo
+    // para um leitor de RSS ver o acervo em outra ordem.
+    rss[locale] = rssXml(SITE.origin, locale, dictionary.meta, summaries);
 
     const index: readonly ArticleLink[] = summaries.map((summary) => ({
       href: articlePath(locale, summary.slug),
@@ -117,11 +140,14 @@ export async function prerenderPages(
         category: detail.category,
       };
 
+      const availableLocales = localesForSlug.get(detail.slug) ?? [locale];
+      const hasOtherLocale = availableLocales.includes(other);
+
       pages.push({
         path: articlePath(locale, detail.slug),
         lang: LOCALE_TAG[locale],
         head: renderHeadTags(
-          articleMeta(SITE, locale, meta),
+          articleMeta(SITE, locale, meta, availableLocales),
           articleJsonLd(SITE, locale, meta),
         ),
         og: articleOgCard(locale, meta),
@@ -134,7 +160,7 @@ export async function prerenderPages(
             summary={detail.summary}
             body={detail.body}
             homeHref={homePath(locale)}
-            otherLocaleHref={articlePath(other, detail.slug)}
+            otherLocaleHref={hasOtherLocale ? articlePath(other, detail.slug) : null}
             index={index}
           />,
         ),
@@ -179,8 +205,15 @@ export async function prerenderPages(
      */
     sitemap: sitemapXml(
       SITE,
-      [...listed].map(([slug, publishedAt]) => ({ slug, publishedAt })),
+      [...listed].map(([slug, dates]) => ({
+        slug,
+        ...dates,
+        locales: localesForSlug.get(slug) ?? [],
+      })),
     ),
     robots: robotsTxt(SITE),
+    // Todo LOCALES passa pelo laço acima, então toda chave existe — o cast
+    // é só o que o TypeScript não infere de um objeto montado por atribuição.
+    rss: rss as Record<Locale, string>,
   };
 }

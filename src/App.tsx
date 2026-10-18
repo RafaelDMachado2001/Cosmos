@@ -482,6 +482,10 @@ function Shell({ route }: { route: Route }) {
     () =>
       metaArticle === null
         ? homeMeta(SITE, locale, t.meta)
+        // Sem o terceiro argumento: o cliente não sabe se a tradução do
+        // outro idioma existe (a API não expõe isso fora da lista), então
+        // assume os dois. O prerender, que tem as duas listas completas,
+        // passa o conjunto real — é lá que o hreflang importa de verdade.
         : articleMeta(SITE, locale, metaArticle),
     [metaArticle, locale, t.meta],
   );
