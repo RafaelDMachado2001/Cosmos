@@ -16,6 +16,11 @@ async function enterCosmos(page: Page): Promise<Locator> {
 }
 
 test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async ({ page }) => {
+  // O unico teste que atravessa entrar + abrir + fechar: tres transicoes
+  // amortecidas em sequencia. O timeout padrao de 30s e justo o bastante no
+  // hardware do GitHub Actions para sobrar tempo zero de folga.
+  test.setTimeout(60_000);
+
   await page.goto('/pt');
   const star = await enterCosmos(page);
 
