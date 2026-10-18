@@ -81,4 +81,12 @@ class FallbackTest extends TestCase
 
         $this->get('/pt/publications/cruzado')->assertNotFound();
     }
+
+    public function test_a_raiz_do_laravel_nao_responde(): void
+    {
+        // A home é o site estático. Pelo Nginx, /index.php chegava aqui e
+        // mostrava a página de boas-vindas do framework com 200: uma URL a
+        // mais para o buscador e um cartão de visita da stack.
+        $this->get('/')->assertNotFound();
+    }
 }

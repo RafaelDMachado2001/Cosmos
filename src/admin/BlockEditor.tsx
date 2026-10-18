@@ -3,7 +3,11 @@ import { useState } from 'react';
 import { validateDraftBlock } from '../core/draftValidation';
 import type { DraftBlock } from '../core/draftBlocks';
 import styles from './BlockEditor.module.css';
-import { api } from './api';
+import { PayloadTooLargeError, ValidationError, api } from './api';
+
+/** O `max:20480` do MediaController (KB). */
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+const UPLOAD_TOO_LARGE = 'Imagem grande demais: o máximo é 20 MB.';
 
 export interface BlockEditorProps {
   readonly blocks: readonly DraftBlock[];
@@ -217,12 +221,29 @@ function ImageFields({
   readonly onChange: (block: DraftBlock) => void;
 }): React.JSX.Element {
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   async function handleFile(file: File): Promise<void> {
+    // O mesmo teto do MediaController; checado aqui para não subir 30 MB só
+    // para ouvir um 413.
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadError(UPLOAD_TOO_LARGE);
+      return;
+    }
+
     setUploading(true);
+    setUploadError(null);
     try {
       const media = await api.uploadMedia(file, block.alt);
       onChange({ ...block, url: media.url, mediaId: media.id });
+    } catch (error) {
+      setUploadError(
+        error instanceof ValidationError
+          ? error.message
+          : error instanceof PayloadTooLargeError
+            ? UPLOAD_TOO_LARGE
+            : 'Não foi possível enviar a imagem.',
+      );
     } finally {
       setUploading(false);
     }
@@ -247,6 +268,11 @@ function ImageFields({
         }}
       />
       {uploading && <span className={styles.uploading}>Enviando…</span>}
+      {uploadError !== null && (
+        <p role="alert" className={styles.error}>
+          {uploadError}
+        </p>
+      )}
       <input
         type="text"
         placeholder="Texto alternativo"

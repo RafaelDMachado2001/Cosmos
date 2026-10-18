@@ -34,6 +34,7 @@ ARG UID=1000
 ARG GID=1000
 
 COPY docker/web/default.conf /etc/nginx/conf.d/default.conf
+COPY docker/web/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build --chown=${UID}:${GID} /app/dist /opt/site
 COPY docker/web/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \

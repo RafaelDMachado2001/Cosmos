@@ -9,6 +9,7 @@
 
 import { matches } from '../core/filter';
 import type { Category, Locale, Publication, PublicationSummary } from '../core/types';
+import { LOCALES, isLocale } from '../core/types';
 
 export interface ListQuery {
   readonly locale: Locale;
@@ -30,6 +31,11 @@ export interface PublicationDetail extends PublicationSummary {
    */
   readonly seoTitle?: string;
   readonly seoDescription?: string;
+  /**
+   * Os idiomas em que este artigo existe — o hreflang e o
+   * `og:locale:alternate` só podem apontar para estes.
+   */
+  readonly locales: readonly Locale[];
 }
 
 export interface PublicationsSource {
@@ -96,6 +102,7 @@ export function createStaticSource(publications: readonly Publication[]): Public
       return Promise.resolve({
         ...toSummary(publication, locale),
         body: publication.content[locale].body,
+        locales: LOCALES,
       });
     },
   };
@@ -126,6 +133,7 @@ interface ApiPublicationDetail extends ApiPublication {
   readonly body: string;
   readonly seo_title: string | null;
   readonly seo_description: string | null;
+  readonly locales: readonly string[];
 }
 
 function fromApi(row: ApiPublication): PublicationSummary {
@@ -242,6 +250,7 @@ export function createHttpSource(
       return {
         ...fromApi(payload.data),
         body: payload.data.body,
+        locales: payload.data.locales.filter(isLocale),
         ...(payload.data.seo_title === null ? {} : { seoTitle: payload.data.seo_title }),
         ...(payload.data.seo_description === null
           ? {}

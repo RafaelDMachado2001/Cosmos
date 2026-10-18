@@ -220,23 +220,31 @@ describe('createHttpSource — a lista', () => {
 
 describe('createHttpSource — a publicação', () => {
   it('pede o slug e o idioma', async () => {
-    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: 'um' } } });
+    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, locales: ['pt', 'en'], body: 'um' } } });
     await createHttpSource('https://x.dev', impl).get('code-review-sem-atrito', 'pt');
     expect(calls[0]).toBe('https://x.dev/api/publications/code-review-sem-atrito?locale=pt');
   });
 
   it('escapa o slug no caminho', async () => {
-    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: '' } } });
+    const { calls, impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, locales: ['pt', 'en'], body: '' } } });
     await createHttpSource('https://x.dev', impl).get('a/b?c', 'pt');
     expect(calls[0]).toContain('/api/publications/a%2Fb%3Fc?locale=pt');
   });
 
   it('entrega o corpo como a string de Markdown crua, sem dividir', async () => {
     const { impl } = stubFetch({
-      body: { data: { ...SUMMARY_ROW, body: 'primeiro\n\nsegundo' } },
+      body: { data: { ...SUMMARY_ROW, locales: ['pt', 'en'], body: 'primeiro\n\nsegundo' } },
     });
     const detail = await createHttpSource('https://x.dev', impl).get('x', 'pt');
     expect(detail?.body).toBe('primeiro\n\nsegundo');
+  });
+
+  it('traz os idiomas em que o artigo existe, para o hreflang', async () => {
+    const { impl } = stubFetch({
+      body: { data: { ...SUMMARY_ROW, locales: ['pt', 'xx'], body: '' } },
+    });
+    const detail = await createHttpSource('https://x.dev', impl).get('x', 'pt');
+    expect(detail?.locales).toEqual(['pt']);
   });
 
   it('404 é ausência, não erro', async () => {
@@ -281,7 +289,7 @@ describe('createHttpSource — isenção de throttle do prerender', () => {
 
   it('com token, manda o mesmo valor no cabeçalho na publicação', async () => {
     const { headerValues, impl } = stubFetchWithHeaders({
-      body: { data: { ...SUMMARY_ROW, body: 'x' } },
+      body: { data: { ...SUMMARY_ROW, locales: ['pt', 'en'], body: 'x' } },
     });
     const source = createHttpSource('https://x.dev', impl, { internalToken: 'segredo-123' });
 
@@ -323,8 +331,8 @@ function apiFetch(): typeof fetch {
     if (detail?.[1] !== undefined) {
       const found = await backing.get(decodeURIComponent(detail[1]), locale);
       if (found === null) return reply(404, { message: 'Not Found' });
-      const { body, ...summary } = found;
-      return reply(200, { data: { ...toRow(summary), body } });
+      const { body, locales, ...summary } = found;
+      return reply(200, { data: { ...toRow(summary), body, locales } });
     }
 
     const limit = url.searchParams.get('limit');

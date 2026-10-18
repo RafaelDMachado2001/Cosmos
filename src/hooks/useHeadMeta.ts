@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
-import type { ArticleJsonLd, PageMeta } from '../core/seo';
+import { metaKeyAttribute } from '../core/seo';
+import type { JsonLd, PageMeta } from '../core/seo';
 
 /**
  * Marca as tags que esta camada governa.
@@ -46,13 +47,13 @@ function setCanonical(href: string): void {
  * `article:published_time` descrevendo um texto que já não está na página.
  */
 function setProperties(entries: Readonly<Record<string, string>>): void {
-  for (const stale of document.head.querySelectorAll(`meta[${OWNED}][property]`)) {
+  for (const stale of document.head.querySelectorAll(`meta[${OWNED}][property], meta[${OWNED}][name^="twitter:"]`)) {
     stale.remove();
   }
   for (const [property, content] of Object.entries(entries)) {
     if (content === '') continue;
     const meta = document.createElement('meta');
-    meta.setAttribute('property', property);
+    meta.setAttribute(metaKeyAttribute(property), property);
     meta.setAttribute(OWNED, '');
     meta.content = content;
     document.head.appendChild(meta);
@@ -89,7 +90,7 @@ function setAlternates(alternates: PageMeta['alternates']): void {
   }
 }
 
-function setJsonLd(data: ArticleJsonLd | null): void {
+function setJsonLd(data: JsonLd | null): void {
   const existing = document.head.querySelector('script[type="application/ld+json"]');
   if (data === null) {
     existing?.remove();
@@ -111,7 +112,7 @@ function setJsonLd(data: ArticleJsonLd | null): void {
  */
 export function useHeadMeta(
   meta: PageMeta,
-  jsonLd: ArticleJsonLd | null,
+  jsonLd: JsonLd | null,
   localeTag: string,
 ): void {
   useEffect(() => {
