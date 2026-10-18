@@ -43,7 +43,11 @@ export function validateDraftBlock(block: DraftBlock): string | null {
     case 'quote':
       return block.text.trim() === '' ? 'Texto vazio.' : null;
     case 'code':
-      return block.text.trim() === '' ? 'Código vazio.' : null;
+      if (block.text.trim() === '') return 'Código vazio.';
+      // A linguagem vai na cerca de abertura; com espaço ou crase, a cerca
+      // deixa de ser cerca e o bloco inteiro seria lido como parágrafo.
+      if (block.lang !== null && /[\s`]/.test(block.lang.trim())) return 'Linguagem sem espaços nem crases.';
+      return null;
     case 'list':
       if (block.items.length === 0) return 'Lista sem itens.';
       return block.items.some((item) => item.trim() === '') ? 'Item de lista vazio.' : null;

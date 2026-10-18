@@ -76,6 +76,12 @@ describe('validateDraftBlock', () => {
     ).not.toBeNull();
   });
 
+  it('linguagem de código com espaço ou crase é inválida', () => {
+    expect(validateDraftBlock({ id: 'b0', type: 'code', lang: 'c sharp', text: 'x' })).not.toBeNull();
+    expect(validateDraftBlock({ id: 'b0', type: 'code', lang: 'ts`', text: 'x' })).not.toBeNull();
+    expect(validateDraftBlock({ id: 'b0', type: 'code', lang: ' ts ', text: 'x' })).toBeNull();
+  });
+
   it('imagem válida', () => {
     expect(
       validateDraftBlock({

@@ -167,6 +167,19 @@ class PublicationAdminApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
     }
 
+    public function test_autosave_recusa_linguagem_de_codigo_com_espaco(): void
+    {
+        $publication = $this->publicationWithDrafts();
+
+        $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+            'drafts' => [
+                'pt' => ['blocks' => [
+                    ['id' => 'b0', 'type' => 'code', 'lang' => 'c sharp', 'text' => 'x'],
+                ]],
+            ],
+        ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
+    }
+
     public function test_autosave_sincroniza_tags_e_substitui_referencias(): void
     {
         $publication = $this->publicationWithDrafts();

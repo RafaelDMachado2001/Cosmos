@@ -63,15 +63,28 @@ export function safeUrl(url: string): string | null {
 // Inline
 // ---------------------------------------------------------------------------
 
-const IMAGE_RE = /^!\[([^\]]*)\]\(([^)"]*)(?:\s+"([^"]*)")?\)$/;
+/**
+ * Alt e legenda aceitam escape com barra invertida (`\]`, `\"`): é como
+ * `core/draftBlocks.ts` grava um alt com colchete ou uma legenda com aspas
+ * sem que a linha deixe de ser uma imagem.
+ */
+const IMAGE_RE = /^!\[((?:\\.|[^\]\\])*)\]\(([^)"]*)(?:\s+"((?:\\.|[^"\\])*)")?\)$/;
+
+/** Pontuação ASCII: o que uma barra invertida escapa, como no CommonMark. */
+const ESCAPABLE_RE = /\\([!-/:-@[-`{-~])/g;
+
+export function unescapeMarkdown(value: string): string {
+  return value.replace(ESCAPABLE_RE, '$1');
+}
 
 /**
- * Um token por vez, na ordem de precedência que impede sobreposição: código
- * primeiro (protege o conteúdo de qualquer outra marcação), depois link,
+ * Um token por vez, na ordem de precedência que impede sobreposição: escape
+ * (`\*` é um asterisco, nunca marcação), código (protege o conteúdo de
+ * qualquer outra marcação — dentro dele a barra é literal), depois link,
  * depois negrito, depois itálico.
  */
 const INLINE_TOKEN_RE =
-  /`(?<code>[^`]+)`|!\[(?<imageAlt>[^\]]*)\]\([^)]*\)|\[(?<linkText>[^\]]*)\]\((?<linkHref>[^)"]*)(?:\s+"[^"]*")?\)|\*\*(?<strong>[^*]+)\*\*|\*(?<em1>[^*]+)\*|_(?<em2>[^_]+)_/g;
+  /\\(?<escaped>[!-/:-@[-`{-~])|`(?<code>[^`]+)`|!\[(?<imageAlt>[^\]]*)\]\([^)]*\)|\[(?<linkText>[^\]]*)\]\((?<linkHref>[^)"]*)(?:\s+"[^"]*")?\)|\*\*(?<strong>[^*]+)\*\*|\*(?<em1>[^*]+)\*|_(?<em2>[^_]+)_/g;
 
 function parseInline(raw: string): readonly InlineNode[] {
   const nodes: InlineNode[] = [];
@@ -93,7 +106,9 @@ function parseInline(raw: string): readonly InlineNode[] {
 
     const groups = match.groups ?? {};
 
-    if (groups.code !== undefined) {
+    if (groups.escaped !== undefined) {
+      pushText(groups.escaped);
+    } else if (groups.code !== undefined) {
       nodes.push({ type: 'code', text: groups.code });
     } else if (groups.imageAlt !== undefined) {
       // A spec trata imagem como bloco, nunca como marca inline: no meio de
@@ -125,15 +140,22 @@ function parseInline(raw: string): readonly InlineNode[] {
  * Studio (ver `core/draftBlocks.ts`) — nunca no caminho de leitura, que já
  * tem a árvore e nunca precisa do texto de volta.
  *
- * Sem escapar nada: um nó de texto é exatamente o que `parseInline` não
- * reconheceu como marcação, então devolvê-lo cru reproduz o original.
+ * Um nó de texto volta cru quando `parseInline` o leria de volta igual — o
+ * caso comum, para que o editor não se encha de barras. Só quando ele veio de
+ * um escape (`\*` virou `*`) a marcação é escapada de novo.
  */
+function escapeText(value: string): string {
+  const [first, ...rest] = parseInline(value);
+  const same = first === undefined || (rest.length === 0 && first.type === 'text' && first.text === value);
+  return same ? value : value.replace(/[\\`*_[\]!]/g, '\\$&');
+}
+
 export function inlineToMarkdown(nodes: readonly InlineNode[]): string {
   return nodes
     .map((node) => {
       switch (node.type) {
         case 'text':
-          return node.text;
+          return escapeText(node.text);
         case 'code':
           return `\`${node.text}\``;
         case 'strong':
@@ -153,7 +175,14 @@ export function inlineToMarkdown(nodes: readonly InlineNode[]): string {
 
 const HEADING_RE = /^(#{2,3})\s+(.*)$/;
 const QUOTE_RE = /^>\s?(.*)$/;
-const CODE_FENCE_RE = /^```\s*([^\s]*)\s*$/;
+/**
+ * Cerca de três crases ou mais; a de fechamento precisa ter ao menos tantas
+ * quanto a de abertura e nenhuma linguagem, como no CommonMark. É o que deixa
+ * um bloco de código conter ```` ``` ```` — `core/draftBlocks.ts` abre com uma
+ * cerca maior que qualquer uma de dentro.
+ */
+const CODE_FENCE_RE = /^(`{3,})\s*([^\s`]*)\s*$/;
+const CLOSING_FENCE_RE = /^(`{3,})\s*$/;
 const UNORDERED_ITEM_RE = /^[-*]\s+(.*)$/;
 const ORDERED_ITEM_RE = /^\d+\.\s+(.*)$/;
 
@@ -176,10 +205,13 @@ export function parseBlocks(markdown: string): readonly Block[] {
 
     const fence = CODE_FENCE_RE.exec(line);
     if (fence !== null) {
-      const language = fence[1] === '' || fence[1] === undefined ? null : fence[1];
+      const fenceLength = fence[1]?.length ?? 3;
+      const language = fence[2] === '' || fence[2] === undefined ? null : fence[2];
+      const isClosing = (candidate: string): boolean =>
+        (CLOSING_FENCE_RE.exec(candidate)?.[1]?.length ?? 0) >= fenceLength;
       const codeLines: string[] = [];
       index += 1;
-      while (index < lines.length && !CODE_FENCE_RE.test(lines[index] ?? '')) {
+      while (index < lines.length && !isClosing(lines[index] ?? '')) {
         codeLines.push(lines[index] ?? '');
         index += 1;
       }
@@ -203,8 +235,8 @@ export function parseBlocks(markdown: string): readonly Block[] {
         blocks.push({
           type: 'image',
           src,
-          alt: soloImage[1] ?? '',
-          caption: soloImage[3] === undefined || soloImage[3] === '' ? null : soloImage[3],
+          alt: unescapeMarkdown(soloImage[1] ?? ''),
+          caption: soloImage[3] === undefined || soloImage[3] === '' ? null : unescapeMarkdown(soloImage[3]),
         });
         index += 1;
         continue;

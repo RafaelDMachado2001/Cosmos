@@ -78,6 +78,13 @@ export function usePublicationEditor(
   const [slugTouched, setSlugTouched] = useState(!isPlaceholderSlug(publication.slug));
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * O salvamento que o timer ainda vai disparar, e o que já está no ar.
+   * Publicar copia o rascunho *do servidor*; sem esperar estes dois, quem
+   * clicava em publicar até 400ms depois de editar via no ar a versão anterior.
+   */
+  const pendingSave = useRef<(() => Promise<boolean>) | null>(null);
+  const inFlightSave = useRef<Promise<boolean> | null>(null);
   // Primeira renderização depois de selecionar: não autosalva o que acabou
   // de chegar do servidor, só o que a pessoa edita a partir daqui.
   const skipNext = useRef(true);
@@ -105,7 +112,8 @@ export function usePublicationEditor(
     }
 
     if (timer.current !== null) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
+
+    const save = (): Promise<boolean> => {
       setStatus('saving');
 
       const draftPatches: Partial<Record<Locale, DraftPatch>> = {};
@@ -131,13 +139,26 @@ export function usePublicationEditor(
         drafts: draftPatches,
       };
 
-      api
+      const request = api
         .update(publication.id, patch)
         .then((updated) => {
           setStatus('saved');
           onUpdated(updated);
+          return true;
         })
-        .catch(() => setStatus('error'));
+        .catch(() => {
+          setStatus('error');
+          return false;
+        });
+      inFlightSave.current = request;
+      return request;
+    };
+
+    pendingSave.current = save;
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      pendingSave.current = null;
+      void save();
     }, AUTOSAVE_DELAY_MS);
 
     return () => {
@@ -148,7 +169,20 @@ export function usePublicationEditor(
 
   const currentDraft = useMemo(() => drafts[locale], [drafts, locale]);
 
+  /** Manda já o que o timer ainda ia mandar, e espera o que estiver no ar. */
+  async function flushSave(): Promise<void> {
+    if (timer.current !== null) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    const save = pendingSave.current;
+    pendingSave.current = null;
+    const ok = await (save !== null ? save() : (inFlightSave.current ?? Promise.resolve(true)));
+    if (!ok) throw new Error('O rascunho não foi salvo; publicar agora levaria a versão anterior.');
+  }
+
   async function publish(): Promise<AdminPublication> {
+    await flushSave();
     const updated = await api.publish(publication.id);
     onUpdated(updated);
     return updated;

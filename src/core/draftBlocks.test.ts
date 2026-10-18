@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { parseBlocks } from './blocks';
+import type { Block } from './blocks';
 import { blocksToDraftBlocks, draftBlocksToMarkdown } from './draftBlocks';
 import type { DraftBlock } from './draftBlocks';
 
@@ -115,5 +117,121 @@ describe('draftBlocksToMarkdown', () => {
     ].join('\n\n');
 
     expect(draftBlocksToMarkdown(blocksToDraftBlocks(original))).toBe(original);
+  });
+});
+
+/**
+ * O que o autor vê no editor tem de ser o que o leitor vê: cada bloco, depois
+ * de virar Markdown e ser lido de volta por `parseBlocks` (o mesmo caminho da
+ * página pública), continua sendo um bloco só, do mesmo tipo e com o mesmo
+ * conteúdo. Cada caso aqui quebrava antes: o texto do autor era lido como
+ * sintaxe de outro bloco.
+ */
+describe('fidelidade: rascunho -> Markdown -> leitura', () => {
+  const read = (blocks: readonly DraftBlock[]): readonly Block[] =>
+    parseBlocks(draftBlocksToMarkdown(blocks));
+  const paragraph = (value: string): Block => ({ type: 'paragraph', children: [{ type: 'text', text: value }] });
+
+  it.each([
+    ['1984. Foi o ano.', 'número seguido de ponto não vira lista numerada'],
+    ['- não é lista', 'hífen no começo não vira lista'],
+    ['* nem isto', 'asterisco no começo não vira lista'],
+    ['## não é título', 'cerquilha no começo não vira intertítulo'],
+    ['> não é citação', 'sinal de maior no começo não vira citação'],
+    ['```não é código', 'crase tripla no começo não abre bloco de código'],
+  ])('parágrafo "%s": %s', (value) => {
+    expect(read([{ id: 'b0', type: 'p', text: value }])).toEqual([paragraph(value)]);
+  });
+
+  it('parágrafo com linha em branco continua um parágrafo só', () => {
+    expect(read([{ id: 'b0', type: 'p', text: 'Primeira.\n\nSegunda.' }])).toEqual([
+      paragraph('Primeira. Segunda.'),
+    ]);
+  });
+
+  it('linha de parágrafo que parece outro bloco não o divide', () => {
+    expect(
+      read([
+        { id: 'b0', type: 'p', text: 'Antes\n- item\n```\n## x' },
+        { id: 'b1', type: 'h2', text: 'Depois' },
+      ]),
+    ).toEqual<readonly Block[]>([
+      paragraph('Antes - item ``` ## x'),
+      { type: 'heading', level: 2, children: [{ type: 'text', text: 'Depois' }] },
+    ]);
+  });
+
+  it('intertítulo com quebra de linha continua um intertítulo', () => {
+    expect(read([{ id: 'b0', type: 'h2', text: 'Título\nquebrado' }])).toEqual<readonly Block[]>([
+      { type: 'heading', level: 2, children: [{ type: 'text', text: 'Título quebrado' }] },
+    ]);
+  });
+
+  it('item de lista com quebra de linha continua um item', () => {
+    expect(
+      read([{ id: 'b0', type: 'list', ordered: false, items: ['um\n- dois', 'três'] }]),
+    ).toEqual<readonly Block[]>([
+      {
+        type: 'list',
+        ordered: false,
+        items: [[{ type: 'text', text: 'um - dois' }], [{ type: 'text', text: 'três' }]],
+      },
+    ]);
+  });
+
+  it('código que contém cercas não fecha antes da hora nem engole o bloco seguinte', () => {
+    const code = 'Exemplo:\n```ts\nconst x = 1;\n```\n````\nfim';
+    expect(
+      read([
+        { id: 'b0', type: 'code', lang: 'md', text: code },
+        { id: 'b1', type: 'p', text: 'Depois.' },
+      ]),
+    ).toEqual<readonly Block[]>([{ type: 'code', code, language: 'md' }, paragraph('Depois.')]);
+  });
+
+  it('imagem com colchete no alt, parêntese na URL e aspas na legenda', () => {
+    expect(
+      read([
+        {
+          id: 'b0',
+          type: 'img',
+          url: 'https://example.com/wiki/Nebulosa_(astronomia) a.png',
+          mediaId: null,
+          alt: 'a [grande] nebulosa',
+          caption: 'Foto "real" \\o/',
+        },
+      ]),
+    ).toEqual<readonly Block[]>([
+      {
+        type: 'image',
+        src: 'https://example.com/wiki/Nebulosa_%28astronomia%29%20a.png',
+        alt: 'a [grande] nebulosa',
+        caption: 'Foto "real" \\o/',
+      },
+    ]);
+  });
+
+  it('formatação em linha passa intacta', () => {
+    expect(read([{ id: 'b0', type: 'p', text: '1. Com **negrito**, `código` e [link](/a).' }])).toEqual<
+      readonly Block[]
+    >([
+      {
+        type: 'paragraph',
+        children: [
+          { type: 'text', text: '1. Com ' },
+          { type: 'strong', children: [{ type: 'text', text: 'negrito' }] },
+          { type: 'text', text: ', ' },
+          { type: 'code', text: 'código' },
+          { type: 'text', text: ' e ' },
+          { type: 'link', href: '/a', children: [{ type: 'text', text: 'link' }] },
+          { type: 'text', text: '.' },
+        ],
+      },
+    ]);
+  });
+
+  it('importar Markdown com escape preserva o texto literal', () => {
+    const blocks = blocksToDraftBlocks('Um \\*asterisco\\* literal.');
+    expect(read(blocks)).toEqual([paragraph('Um *asterisco* literal.')]);
   });
 });
