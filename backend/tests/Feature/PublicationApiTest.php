@@ -316,6 +316,25 @@ class PublicationApiTest extends TestCase
         $this->assertSame('Descrição de SEO.', $data['seo_description']);
     }
 
+    public function test_o_detalhe_lista_os_idiomas_em_que_o_artigo_existe(): void
+    {
+        $this->assertSame(
+            ['pt', 'en'],
+            $this->getJson('/api/publications/code-review-sem-atrito?locale=en')->json('data.locales'),
+        );
+
+        $publication = Publication::create([
+            'slug' => 'so-em-portugues',
+            'category' => 'artigo',
+            'published_at' => now()->subDay(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+        $publication->translations()->create(['locale' => 'pt', 'title' => 'T', 'summary' => 'R', 'body' => 'C.']);
+
+        $this->assertSame(['pt'], $this->getJson('/api/publications/so-em-portugues?locale=pt')->json('data.locales'));
+    }
+
     public function test_slug_desconhecido_e_404(): void
     {
         $this->getJson('/api/publications/nao-existe-de-jeito-nenhum')->assertNotFound();

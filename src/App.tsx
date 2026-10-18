@@ -39,6 +39,7 @@ import type { MetaArticle } from './core/seo';
 import { placeStars } from './core/timeline';
 import type { PlacedStar } from './core/timeline';
 import type { Category, Locale, Viewport } from './core/types';
+import { LOCALES } from './core/types';
 import { createSource } from './data/source';
 import { useCosmosEngine } from './hooks/useCosmosEngine';
 import { useHeadMeta } from './hooks/useHeadMeta';
@@ -481,16 +482,17 @@ function Shell({ route }: { route: Route }) {
     };
   }, [reader.phase, reader.slug, article, t]);
 
+  // Os idiomas que o detalhe declara, os mesmos que o prerender usa: o
+  // Googlebot indexa o DOM renderizado, e um hreflang para a tradução que não
+  // existe apontava para um 404.
+  const metaLocales = article.status === 'ready' ? article.detail.locales : LOCALES;
+
   const pageMeta = useMemo(
     () =>
       metaArticle === null
         ? homeMeta(SITE, locale, t.meta)
-        // Sem o terceiro argumento: o cliente não sabe se a tradução do
-        // outro idioma existe (a API não expõe isso fora da lista), então
-        // assume os dois. O prerender, que tem as duas listas completas,
-        // passa o conjunto real — é lá que o hreflang importa de verdade.
-        : articleMeta(SITE, locale, metaArticle),
-    [metaArticle, locale, t.meta],
+        : articleMeta(SITE, locale, metaArticle, metaLocales),
+    [metaArticle, metaLocales, locale, t.meta],
   );
 
   const jsonLd = useMemo(

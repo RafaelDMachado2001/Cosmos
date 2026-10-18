@@ -146,10 +146,9 @@ export function articleMeta(
   locale: Locale,
   article: MetaArticle,
   /**
-   * Os idiomas que de fato têm tradução deste artigo. Default para os dois
-   * porque o cliente (`App.tsx`) ainda não sabe dizer — o contrato da API
-   * não expõe essa informação fora da lista, só o prerender, que já tem as
-   * duas listas completas antes de montar qualquer página.
+   * Os idiomas que de fato têm tradução deste artigo. O prerender tira das
+   * duas listas; o cliente, do `locales` do detalhe da API — sem passar, o
+   * padrão "os dois" punha no DOM um hreflang para uma tradução que dava 404.
    */
   locales: readonly Locale[] = LOCALES,
 ): PageMeta {
