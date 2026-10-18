@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Modules\Identity\Models\Member;
 
 return [
 
@@ -42,6 +43,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Os leitores (módulo Identity). Outra chave de sessão e outro
+        // provider: uma sessão de admin nunca autentica aqui, e o contrário.
+        'member' => [
+            'driver' => 'session',
+            'provider' => 'members',
+        ],
     ],
 
     /*
@@ -65,6 +73,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'members' => [
+            'driver' => 'eloquent',
+            'model' => Member::class,
         ],
 
         // 'users' => [
