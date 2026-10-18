@@ -12,6 +12,9 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "types": ["node"],
+    // O Worker da borda (infra/cloudflare) é JS puro, para o Terraform subir
+    // sem bundler; o teste o importa e lê os tipos do JSDoc.
+    "allowJs": true,
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -28,6 +31,7 @@
     "vitest.config.ts",
     "playwright.config.ts",
     "scripts",
-    "e2e"
+    "e2e",
+    "infra"
   ]
 }

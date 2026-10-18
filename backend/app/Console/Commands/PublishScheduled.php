@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Jobs\RegenerateSite;
 use App\Models\Publication;
+use App\Support\SiteRebuild;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -33,7 +33,7 @@ class PublishScheduled extends Command
          * que ela cruza para `published`. Um `update()` por publicação, não
          * um update em massa — é o que dispara `PublicationObserver` e
          * regenera o site; um update em massa não passa pelos eventos do
-         * Eloquent, e nada mais chamaria `RegenerateSite` neste instante.
+         * Eloquent, e nada mais pediria a regeneração neste instante.
          */
         $transitioned = Publication::query()
             ->where('status', Publication::STATUS_SCHEDULED)
@@ -67,7 +67,7 @@ class PublishScheduled extends Command
         Cache::forever(self::CACHE_KEY, $eligible);
 
         if ($eligible > $previous) {
-            RegenerateSite::dispatch();
+            SiteRebuild::request();
             $this->info("publicações agendadas: {$previous} -> {$eligible}, regeração disparada");
         }
 

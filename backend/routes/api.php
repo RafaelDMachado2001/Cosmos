@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\PublicationController;
+use App\Http\Controllers\Internal\TickController;
+use App\Http\Middleware\VerifyGoogleOidc;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -14,3 +16,6 @@ use Illuminate\Support\Facades\Route;
  */
 Route::get('/publications', [PublicationController::class, 'index']);
 Route::get('/publications/{slug}', [PublicationController::class, 'show']);
+
+// O tick do Cloud Scheduler: só com o token OIDC da conta de serviço dele.
+Route::post('/internal/tick', TickController::class)->middleware(VerifyGoogleOidc::class);

@@ -247,6 +247,12 @@ describe('createHttpSource — a publicação', () => {
     expect(detail?.locales).toEqual(['pt']);
   });
 
+  it('uma API um deploy atrás, sem locales, não derruba o build', async () => {
+    const { impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: '' } } });
+    const detail = await createHttpSource('https://x.dev', impl).get('x', 'pt');
+    expect(detail?.locales).toEqual(['pt', 'en']);
+  });
+
   it('404 é ausência, não erro', async () => {
     const { impl } = stubFetch({ status: 404 });
     await expect(createHttpSource('https://x.dev', impl).get('sumiu', 'pt')).resolves.toBeNull();

@@ -24,19 +24,32 @@ class MediaController extends Controller
             'alt' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
-        Storage::disk('public')->makeDirectory('media');
+        $path = 'media/'.Str::uuid()->toString().'.webp';
 
-        $filename = Str::uuid()->toString().'.webp';
-        $path = Storage::disk('public')->path('media/'.$filename);
+        // O GD grava em arquivo; o disco pode ser um bucket. Converte num
+        // temporário e envia — nome por UUID, conteúdo nunca reescrito, então
+        // cache eterno na CDN.
+        $reserved = (string) tempnam(sys_get_temp_dir(), 'media');
+        $temporary = $reserved.'.webp';
+        try {
+            $image = Image::load($data['file']->getRealPath());
+            if ($image->getWidth() > self::MAX_WIDTH) {
+                $image->width(self::MAX_WIDTH);
+            }
+            $image->format('webp')->save($temporary);
 
-        $image = Image::load($data['file']->getRealPath());
-        if ($image->getWidth() > self::MAX_WIDTH) {
-            $image->width(self::MAX_WIDTH);
+            Storage::disk('media')->put($path, (string) file_get_contents($temporary), [
+                'visibility' => 'public',
+                'ContentType' => 'image/webp',
+                'CacheControl' => 'public, max-age=31536000, immutable',
+            ]);
+        } finally {
+            @unlink($reserved);
+            @unlink($temporary);
         }
-        $image->format('webp')->save($path);
 
         $media = Media::create([
-            'path' => 'media/'.$filename,
+            'path' => $path,
             'width' => $image->getWidth(),
             'height' => $image->getHeight(),
             'mime' => 'image/webp',

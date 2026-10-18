@@ -14,4 +14,9 @@ return [
     'render_dir' => env('RENDER_DIR', '/srv/render'),
     // Isenta as chamadas do prerender do throttle público (ver AppServiceProvider).
     'internal_token' => env('PRERENDER_INTERNAL_TOKEN'),
+    // `local`: RegenerateSite grava no volume do Nginx (docker compose).
+    // `vercel`: o deploy hook da Vercel, cujo build lê a API. Ver SiteRebuild.
+    'rebuild_driver' => env('SITE_REBUILD_DRIVER', 'local'),
+    'vercel_deploy_hook' => env('VERCEL_DEPLOY_HOOK_URL'),
+    'rebuild_min_interval' => (int) env('SITE_REBUILD_MIN_INTERVAL', 60),
 ];
