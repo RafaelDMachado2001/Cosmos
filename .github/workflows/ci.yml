@@ -160,6 +160,9 @@ jobs:
           status_js="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/rdm-studio/admin.js)"
           status_studio="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/studio)"
           [ "$status_js" = 200 ] && [ "$status_studio" = 302 ]
+          # O Livewire põe um hash no prefixo; o Nginx precisa encaminhá-lo ao PHP.
+          livewire="$(curl -fs http://localhost:8080/admin/login | grep -o 'livewire-[0-9a-f]*/livewire[^"]*\.js[^"]*' | head -1)"
+          [ -n "$livewire" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/$livewire")" = 200 ]
       - name: Publicar
         # O mesmo observer que o salvar do Filament dispara; o formulario em si
         # e coberto por AdminPanelTest na suite do backend.
