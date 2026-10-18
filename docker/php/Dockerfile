@@ -65,6 +65,8 @@ RUN addgroup -g "${GID}" app 2>/dev/null || true \
 # antes de sequer falar com a API.
 RUN chown -R app:app /srv/render/dist-ssr
 
+COPY docker/php/php.ini "$PHP_INI_DIR/conf.d/zz-rdm.ini"
+
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_MEMORY_LIMIT=-1
 
