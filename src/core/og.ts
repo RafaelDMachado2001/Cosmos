@@ -19,7 +19,7 @@ export const OG_SIZE = { width: 1200, height: 630 } as const;
  * Versão do desenho. Mudar o layout do cartão sem mudar isto deixaria no ar as
  * imagens antigas, porque o nome não mudaria.
  */
-const OG_DESIGN = 1;
+const OG_DESIGN = 2;
 
 export interface OgCard {
   readonly locale: Locale;
