@@ -50,12 +50,29 @@ jobs:
       DB_DATABASE: rdm_labs_test
       DB_USERNAME: rdm
       DB_PASSWORD: ci-test
+      # DraftBlocksCli chama "node dist-ssr/draft-blocks-cli.js" com este cwd;
+      # em produção é /srv/render (ver docker/php/Dockerfile), aqui é a raiz
+      # do checkout, onde o passo "Node (dist-ssr do RDM Studio)" abaixo builda.
+      RENDER_DIR: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Node (dist-ssr do RDM Studio)
+        working-directory: .
+        # Só o bundle de SSR, sem rodar o prerender (postbuild) — os testes do
+        # backend só precisam de dist-ssr/draft-blocks-cli.js existir.
+        run: |
+          npm ci --no-audit --no-fund
+          npx vite build --config vite.prerender.config.ts
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_pgsql, intl, zip
+          # gd e exif: o que spatie/image pede para o upload de mídia do RDM
+          # Studio (redimensionar e gravar WebP).
+          extensions: pdo_pgsql, intl, zip, gd, exif
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env && php artisan key:generate

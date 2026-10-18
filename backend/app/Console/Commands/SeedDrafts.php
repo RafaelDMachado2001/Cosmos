@@ -6,9 +6,8 @@ namespace App\Console\Commands;
 
 use App\Models\PublicationDraft;
 use App\Models\PublicationTranslation;
+use App\Support\DraftBlocksCli;
 use Illuminate\Console\Command;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
 
 /**
  * Preenche `publication_drafts` a partir do que já está publicado.
@@ -31,21 +30,7 @@ class SeedDrafts extends Command
         $this->info("convertendo {$translations->count()} traduções...");
 
         foreach ($translations as $translation) {
-            $process = new Process(
-                ['node', 'dist-ssr/draft-blocks-cli.js', 'markdown-to-blocks'],
-                '/srv/render',
-                null,
-                $translation->body,
-                30,
-            );
-            $process->run();
-
-            if (! $process->isSuccessful()) {
-                throw new ProcessFailedException($process);
-            }
-
-            /** @var list<array<string, mixed>> $blocks */
-            $blocks = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+            $blocks = DraftBlocksCli::toBlocks($translation->body);
 
             PublicationDraft::updateOrCreate(
                 ['publication_id' => $translation->publication_id, 'locale' => $translation->locale],
