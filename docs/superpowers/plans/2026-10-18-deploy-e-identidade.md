@@ -35,8 +35,8 @@ Preciso da sua resposta antes da tarefa indicada.
 
 | # | Decisão | Recomendação | Antes de |
 |---|---|---|---|
-| D1 | Região do Cloud Run e do Neon | `southamerica-east1` (São Paulo) e a região do Neon mais próxima. Conferir quais o Neon oferece no momento. | 1.6 |
-| D2 | Hosts | `api.rdmlabs.com.br` (API pública) e `admin.rdmlabs.com.br` (Filament e Studio) | 1.4 |
+| D1 | Região do Cloud Run e do Neon | **Decidido:** São Paulo, com um Worker da Cloudflare na frente. O mapeamento de domínio do Cloud Run não existe nessa região. | 1.6 |
+| D2 | Hosts | **Decidido:** `api.rdmlabs.com.br` e `admin.rdmlabs.com.br`. Os registros são do Terraform (`infra/cloudflare.tf`). | 1.4 |
 | D3 | Provedores de login do leitor | Google e GitHub | 2.3 |
 | D4 | Interface de login no site | Pedir um handoff ao Claude Design: o `CLAUDE.md` proíbe inventar cor, fonte ou espaçamento | 2.6 |
 | D5 | Ligar contas do mesmo e-mail entre provedores | Só quando os dois provedores declaram o e-mail verificado | 2.3 |
