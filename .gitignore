@@ -6,11 +6,13 @@ dist-ssr
 .DS_Store
 *.log
 .env
-# As specs são a exceção: o desenho aprovado de cada fase é versionado junto do
-# código que ele governa. O resto de /docs continua fora. A cadeia precisa ser
+# As specs, os planos e o documento de arquitetura são a exceção: o desenho
+# aprovado é versionado junto do código que ele governa. O resto de /docs
+# continua fora. A cadeia precisa ser
 # re-incluída diretório a diretório — sob um pai excluído o Git não desce, e uma
 # negação direta em /docs/superpowers/ não teria efeito nenhum.
 /docs/*
+!/docs/architecture.md
 !/docs/superpowers/
 /docs/superpowers/*
 !/docs/superpowers/specs/
