@@ -24,7 +24,11 @@ Route::middleware(PublicCors::class)->group(function (): void {
 // A conta do leitor: sessão do Sanctum vinda do site (config/sanctum.php),
 // com CSRF e CORS de credenciais (config/cors.php).
 Route::get('/me', [MeController::class, 'show']);
-Route::patch('/me', [MeController::class, 'update'])->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::patch('/me', [MeController::class, 'update']);
+    Route::delete('/me', [MeController::class, 'destroy']);
+    Route::get('/me/export', [MeController::class, 'export']);
+});
 
 // O tick do Cloud Scheduler: só com o token OIDC da conta de serviço dele.
 Route::post('/internal/tick', TickController::class)->middleware(VerifyGoogleOidc::class);

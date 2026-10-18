@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Identity\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Identity\Actions\DeleteMember;
+use App\Modules\Identity\Contracts\PersonalDataSource;
 use App\Modules\Identity\Http\Resources\MemberResource;
 use App\Modules\Identity\Models\Member;
 use App\Modules\Identity\Support\Handle;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +50,49 @@ class MeController extends Controller
         $member->update($data);
 
         return new MemberResource($member);
+    }
+
+    /**
+     * Tudo o que o site guarda sobre a pessoa (LGPD, art. 18): o perfil, as
+     * contas ligadas e o que cada módulo registrou.
+     */
+    public function export(Request $request): JsonResponse
+    {
+        /** @var Member $member */
+        $member = $request->user('sanctum');
+
+        $data = [
+            'profile' => [
+                'name' => $member->name,
+                'handle' => $member->handle,
+                'email' => $member->email,
+                'avatarUrl' => $member->avatar_url,
+                'locale' => $member->locale,
+                'createdAt' => $member->created_at->toIso8601String(),
+            ],
+            'identities' => $member->identities()->get(['provider', 'provider_user_id', 'created_at'])
+                ->map(static fn ($identity): array => ['provider' => $identity->provider, 'providerUserId' => $identity->provider_user_id])
+                ->all(),
+        ];
+
+        /** @var PersonalDataSource $source */
+        foreach (app()->tagged(PersonalDataSource::TAG) as $source) {
+            $data[$source->key()] = $source->export($member->id);
+        }
+
+        return response()->json($data, 200, [
+            'Content-Disposition' => 'attachment; filename="cosmos-meus-dados.json"',
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    public function destroy(Request $request, DeleteMember $delete): Response
+    {
+        /** @var Member $member */
+        $member = $request->user('sanctum');
+
+        $delete->handle($member);
+
+        return $this->logout($request);
     }
 
     public function logout(Request $request): Response

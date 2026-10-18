@@ -3,8 +3,8 @@
 # usar a plataforma (middleware, o admin, o controller base); a plataforma não
 # conhece nenhum. Os providers são a raiz de composição e ficam de fora.
 #
-# O Activity escuta os eventos do Identity (e, na etapa 3, os do Community), e
-# por isso conhece as classes deles, e só elas. Quem emite nunca conhece quem
+# O Activity escuta os eventos do Identity (e, na etapa 3, os do Community) e
+# implementa o contrato do export, e por isso conhece essas classes, e só elas. Quem emite nunca conhece quem
 # escuta.
 deptrac:
   paths:
@@ -21,13 +21,13 @@ deptrac:
     - name: Identity
       collectors:
         - type: directory
-          value: app/Modules/Identity/(?!Events/).*
-    # Os eventos são o contrato público de um módulo: o único pedaço dele que
-    # outro pode importar.
-    - name: IdentityEvents
+          value: app/Modules/Identity/(?!Events/|Contracts/).*
+    # Eventos e interfaces são o contrato público de um módulo: o único pedaço
+    # dele que outro pode importar.
+    - name: IdentityContract
       collectors:
         - type: directory
-          value: app/Modules/Identity/Events/.*
+          value: app/Modules/Identity/(Events|Contracts)/.*
     - name: Activity
       collectors:
         - type: directory
@@ -38,8 +38,8 @@ deptrac:
       - Platform
     Identity:
       - Platform
-      - IdentityEvents
-    IdentityEvents: ~
+      - IdentityContract
+    IdentityContract: ~
     Activity:
       - Platform
-      - IdentityEvents
+      - IdentityContract
