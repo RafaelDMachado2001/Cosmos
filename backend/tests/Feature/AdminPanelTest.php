@@ -73,7 +73,7 @@ class AdminPanelTest extends TestCase
         $this->getJson('/api/publications/nova-publicacao?locale=en')
             ->assertOk()
             ->assertJsonPath('data.title', 'Title')
-            ->assertJsonPath('data.body', ['One.', 'Two.']);
+            ->assertJsonPath('data.body', "One.\n\nTwo.");
 
         $this->getJson('/api/publications?locale=pt&q=resumo')
             ->assertOk()

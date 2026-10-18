@@ -63,8 +63,12 @@ export interface Band {
 export interface PublicationContent {
   readonly title: string;
   readonly summary: string;
-  /** Parágrafos. Virá do PostgreSQL como HTML sanitizado quando o backend existir. */
-  readonly body: readonly string[];
+  /**
+   * Markdown cru, no subconjunto de `core/blocks.ts` — título, parágrafo,
+   * citação, lista, código, imagem. Vem do PostgreSQL como um `text` só;
+   * quem o divide em blocos é `parseBlocks`, não o servidor.
+   */
+  readonly body: string;
 }
 
 /** Uma publicação completa, bilíngue. */
