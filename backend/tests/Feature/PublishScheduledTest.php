@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Jobs\RegenerateSite;
-use App\Models\Publication;
+use App\Modules\Content\Jobs\RegenerateSite;
+use App\Modules\Content\Models\Publication;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;

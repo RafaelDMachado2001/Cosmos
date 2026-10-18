@@ -1,0 +1,26 @@
+# Fronteiras do monólito modular (docs/architecture.md). Um módulo não importa
+# outro: o que precisa saber dele chega por evento de domínio. Os dois podem
+# usar a plataforma (middleware, o admin, o controller base); a plataforma não
+# conhece nenhum. Os providers são a raiz de composição e ficam de fora.
+deptrac:
+  paths:
+    - ./app
+  layers:
+    - name: Platform
+      collectors:
+        - type: directory
+          value: app/(?!Modules/|Providers/).*
+    - name: Content
+      collectors:
+        - type: directory
+          value: app/Modules/Content/.*
+    - name: Identity
+      collectors:
+        - type: directory
+          value: app/Modules/Identity/.*
+  ruleset:
+    Platform: ~
+    Content:
+      - Platform
+    Identity:
+      - Platform

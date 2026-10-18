@@ -1,11 +1,11 @@
 <?php
 
-use App\Http\Controllers\Admin\MediaController;
-use App\Http\Controllers\Admin\PublicationAdminController;
-use App\Http\Controllers\Admin\RdmStudioController;
-use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Auth\GoogleAuthController;
-use App\Http\Controllers\FallbackController;
+use App\Modules\Content\Http\Controllers\Admin\MediaController;
+use App\Modules\Content\Http\Controllers\Admin\PublicationAdminController;
+use App\Modules\Content\Http\Controllers\Admin\RdmStudioController;
+use App\Modules\Content\Http\Controllers\Admin\TagController;
+use App\Modules\Content\Http\Controllers\FallbackController;
 use Illuminate\Support\Facades\Route;
 
 /*
