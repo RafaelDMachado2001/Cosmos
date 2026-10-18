@@ -212,6 +212,11 @@ describe('homeJsonLd', () => {
 describe('renderHeadTags', () => {
   const html = renderHeadTags(articleMeta(SITE, 'pt', ARTICLE), articleJsonLd(SITE, 'pt', ARTICLE));
 
+  it('pede o cartão grande ao X, em name e não em property', () => {
+    expect(html).toContain('<meta name="twitter:card" data-head content="summary_large_image">');
+    expect(html).not.toContain('property="twitter:');
+  });
+
   it('abre com o título', () => {
     expect(html).toContain('<title>Code review sem atrito · RDM Labs</title>');
   });

@@ -157,6 +157,9 @@ export function homeOgCard(
  */
 function ogImageTags(site: MetaSite, card: OgCard): Readonly<Record<string, string>> {
   return {
+    // O X lê título, descrição e imagem do Open Graph, mas não o tamanho do
+    // cartão: sem isto ele mostra o pequeno, com a imagem cortada num quadrado.
+    'twitter:card': 'summary_large_image',
     'og:image': absolute(site.origin, ogImagePath(card)),
     'og:image:width': String(OG_SIZE.width),
     'og:image:height': String(OG_SIZE.height),
@@ -291,6 +294,14 @@ export function homeJsonLd(
 // cima dele.
 // ---------------------------------------------------------------------------
 
+/**
+ * `twitter:*` vai em `name`, o resto do mapa (`og:*`, `article:*`) em
+ * `property` — é o que cada especificação lê.
+ */
+export function metaKeyAttribute(key: string): 'name' | 'property' {
+  return key.startsWith('twitter:') ? 'name' : 'property';
+}
+
 /** Escapa o que entra em valor de atributo. */
 function attr(value: string): string {
   return value
@@ -337,7 +348,7 @@ export function renderHeadTags(meta: PageMeta, jsonLd: JsonLd | null): string {
       .filter(([, content]) => content !== '')
       .map(
         ([property, content]) =>
-          `<meta property="${attr(property)}" data-head content="${attr(content)}">`,
+          `<meta ${metaKeyAttribute(property)}="${attr(property)}" data-head content="${attr(content)}">`,
       ),
   ];
 
