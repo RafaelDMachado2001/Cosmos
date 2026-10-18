@@ -27,15 +27,20 @@ RUN npm run build
 FROM php:8.3-fpm-alpine
 
 # Bibliotecas de execução e o que o Composer usa para resolver pacotes.
-RUN apk add --no-cache libpq icu-libs libzip git unzip
+# `libwebp`/`libpng`/`libjpeg-turbo` ficam em tempo de execução: é o que o GD
+# lê para redimensionar e gravar o WebP que o RDM Studio grava em `media`
+# (fase do RDM Studio, upload de imagem — a origem pode chegar em qualquer
+# formato comum, inclusive JPEG de câmera).
+RUN apk add --no-cache libpq icu-libs libzip libwebp libpng libjpeg-turbo git unzip
 
 # Extensões compiladas.
 #
 # `libpq-dev` e não `postgresql-dev`: o segundo arrasta o llvm — cerca de 1GB,
 # para o JIT do servidor Postgres — e daqui só interessam os headers do cliente.
 # `intl` é o que Laravel e Filament pedem para formatação e collation.
-RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS libpq-dev icu-dev libzip-dev \
- && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip bcmath opcache \
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS libpq-dev icu-dev libzip-dev libwebp-dev libpng-dev libjpeg-turbo-dev \
+ && docker-php-ext-configure gd --with-webp --with-jpeg \
+ && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip bcmath opcache gd exif \
  && apk del --no-network .build-deps
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\MediaController;
+use App\Http\Controllers\Admin\PublicationAdminController;
+use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\FallbackController;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +22,22 @@ Route::middleware('throttle:10,1')->group(function (): void {
         ->name('auth.google.redirect');
     Route::get('/admin/login/google/callback', [GoogleAuthController::class, 'callback'])
         ->name('auth.google.callback');
+});
+
+/*
+ * A API do RDM Studio. `web` já é o grupo padrão deste arquivo; `auth` é o
+ * guard `web` padrão, o mesmo que `GoogleAuthController` autentica.
+ */
+Route::middleware('auth')->prefix('admin/api')->group(function (): void {
+    Route::get('/publications', [PublicationAdminController::class, 'index']);
+    Route::post('/publications', [PublicationAdminController::class, 'store']);
+    Route::get('/publications/{publication}', [PublicationAdminController::class, 'show']);
+    Route::patch('/publications/{publication}', [PublicationAdminController::class, 'update']);
+    Route::delete('/publications/{publication}', [PublicationAdminController::class, 'destroy']);
+    Route::post('/publications/{publication}/publish', [PublicationAdminController::class, 'publish']);
+    Route::post('/publications/{publication}/unpublish', [PublicationAdminController::class, 'unpublish']);
+    Route::post('/media', [MediaController::class, 'store']);
+    Route::get('/tags', [TagController::class, 'index']);
 });
 
 Route::get('/{locale}/{segment}/{slug}', [FallbackController::class, 'show'])
