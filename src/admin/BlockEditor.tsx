@@ -10,8 +10,14 @@ export interface BlockEditorProps {
   readonly onChange: (blocks: readonly DraftBlock[]) => void;
 }
 
+/**
+ * `getRandomValues`, não `randomUUID`: este só existe em contexto seguro
+ * (HTTPS ou localhost), e o painel aberto por HTTP em qualquer outro host
+ * lançava no clique — nenhum bloco podia ser adicionado.
+ */
 function newId(): string {
-  return `b${crypto.randomUUID()}`;
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  return `b${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
 function blankBlock(type: DraftBlock['type']): DraftBlock {
@@ -126,6 +132,7 @@ function BlockFields({
       return (
         <textarea
           className={styles.textarea}
+          aria-label={TYPE_LABEL[block.type]}
           value={block.text}
           onChange={(event) => onChange({ ...block, text: event.target.value })}
           rows={block.type === 'p' || block.type === 'quote' ? 4 : 1}
@@ -137,12 +144,14 @@ function BlockFields({
           <input
             type="text"
             placeholder="linguagem (opcional)"
+            aria-label="Linguagem"
             className={styles.input}
             value={block.lang ?? ''}
             onChange={(event) => onChange({ ...block, lang: event.target.value === '' ? null : event.target.value })}
           />
           <textarea
             className={styles.textareaMono}
+            aria-label="Código"
             value={block.text}
             onChange={(event) => onChange({ ...block, text: event.target.value })}
             rows={6}

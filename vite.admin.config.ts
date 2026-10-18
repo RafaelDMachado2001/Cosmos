@@ -22,6 +22,9 @@ import react from '@vitejs/plugin-react';
  */
 export default defineConfig({
   plugins: [react()],
+  // As fontes são referenciadas pelo CSS; sem isto saíam como `/assets/...`,
+  // a raiz do site público, e davam 404 — o Studio caía na fonte do sistema.
+  base: '/admin/rdm-studio/',
   build: {
     target: 'es2020',
     outDir: 'backend/public/admin/rdm-studio',
