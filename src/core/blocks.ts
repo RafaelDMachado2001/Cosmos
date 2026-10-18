@@ -118,6 +118,34 @@ function parseInline(raw: string): readonly InlineNode[] {
   return nodes;
 }
 
+/**
+ * O inverso de `parseInline`: uma árvore de volta para o mesmo subconjunto de
+ * Markdown. Usado só para migrar o corpo já publicado para os blocos do RDM
+ * Studio (ver `core/draftBlocks.ts`) — nunca no caminho de leitura, que já
+ * tem a árvore e nunca precisa do texto de volta.
+ *
+ * Sem escapar nada: um nó de texto é exatamente o que `parseInline` não
+ * reconheceu como marcação, então devolvê-lo cru reproduz o original.
+ */
+export function inlineToMarkdown(nodes: readonly InlineNode[]): string {
+  return nodes
+    .map((node) => {
+      switch (node.type) {
+        case 'text':
+          return node.text;
+        case 'code':
+          return `\`${node.text}\``;
+        case 'strong':
+          return `**${inlineToMarkdown(node.children)}**`;
+        case 'em':
+          return `*${inlineToMarkdown(node.children)}*`;
+        case 'link':
+          return `[${inlineToMarkdown(node.children)}](${node.href})`;
+      }
+    })
+    .join('');
+}
+
 // ---------------------------------------------------------------------------
 // Blocos
 // ---------------------------------------------------------------------------
