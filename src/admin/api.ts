@@ -75,6 +75,14 @@ export class ValidationError extends Error {
   }
 }
 
+/** O 413 do Nginx ou do PHP: o corpo nem chega ao Laravel, então não há 422. */
+export class PayloadTooLargeError extends Error {
+  constructor(path: string) {
+    super(`/admin/api${path} recusou o corpo: grande demais`);
+    this.name = 'PayloadTooLargeError';
+  }
+}
+
 function csrfToken(): string {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 }
@@ -100,6 +108,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const payload = (await response.json()) as { errors?: Record<string, readonly string[]> };
     throw new ValidationError(payload.errors ?? {});
   }
+
+  if (response.status === 413) throw new PayloadTooLargeError(path);
 
   if (!response.ok) {
     throw new Error(`/admin/api${path} respondeu ${String(response.status)}`);

@@ -32,7 +32,10 @@ services:
       - node_modules:/app/node_modules
     ports:
       # Mesma porta dos dois lados: o cliente do HMR acerta o websocket sozinho.
-      - "${VITE_PORT:-5174}:${VITE_PORT:-5174}"
+      # Só no loopback: o dev server serve o código-fonte e o node_modules, e
+      # tem histórico de path traversal. DEV_BIND=0.0.0.0 abre para a rede
+      # local (testar no celular), conscientemente.
+      - "${DEV_BIND:-127.0.0.1}:${VITE_PORT:-5174}:${VITE_PORT:-5174}"
     environment:
       - VITE_PORT=${VITE_PORT:-5174}
       - VITE_SITE_URL=${VITE_SITE_URL:-http://localhost:5174}
@@ -58,6 +61,8 @@ services:
       # Só os assets que o Filament publica. O PHP em si roda no serviço `app`;
       # daqui o Nginx apenas serve os arquivos estáticos do painel.
       - ./backend/public:/var/www/public:ro
+      # A mídia do RDM Studio, que o Nginx serve em /storage/.
+      - ./backend/storage/app/public:/var/www/storage/app/public:ro
       - site:/srv/site
     networks:
       - rdm-network
@@ -189,7 +194,9 @@ services:
     volumes:
       - postgres:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Só no loopback: o app alcança o banco pela rede do compose, a porta
+      # publicada é para um cliente SQL na própria máquina.
+      - "${DEV_BIND:-127.0.0.1}:${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-rdm} -d ${DB_DATABASE:-rdm_labs}"]
       interval: 10s

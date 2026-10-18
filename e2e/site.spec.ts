@@ -50,6 +50,19 @@ test('o segmento do outro idioma nao vira segunda URL do mesmo artigo', async ({
   expect(response?.status()).toBe(404);
 });
 
+test('barra final e index.html explícito redirecionam para o endereço canônico', async ({ request }) => {
+  for (const [from, to] of [
+    ['/pt/', '/pt'],
+    ['/en/index.html', '/en'],
+    ['/pt/publicacoes/code-review-sem-atrito/', '/pt/publicacoes/code-review-sem-atrito'],
+    ['/index.html', '/'],
+  ] as const) {
+    const response = await request.get(from, { maxRedirects: 0 });
+    expect(response.status(), from).toBe(301);
+    expect(response.headers()['location'], from).toBe(to);
+  }
+});
+
 test.describe('sem JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
@@ -64,4 +77,28 @@ test.describe('sem JavaScript', () => {
     await page.goto('/pt');
     await expect(page.locator('#prerender a[href^="/pt/publicacoes/"]').first()).toBeVisible();
   });
+});
+
+test('a CSP do Nginx não bloqueia nada do próprio site', async ({ page }) => {
+  test.setTimeout(60_000);
+  const violations: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /Content Security Policy/i.test(message.text())) {
+      violations.push(message.text());
+    }
+  });
+
+  const response = await page.goto('/pt');
+  expect(response?.headers()['content-security-policy']).toContain("script-src 'self'");
+
+  // A travessia monta o WebGL, as fontes e a constelação; abrir uma estrela,
+  // a vista de leitura com o corpo do artigo.
+  const star = await enterCosmos(page);
+  await star.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+
+  await page.goto('/en/publications/code-review-sem-atrito');
+  await expect(page.getByRole('dialog')).toBeVisible();
+
+  expect(violations).toEqual([]);
 });

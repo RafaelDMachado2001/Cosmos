@@ -34,11 +34,12 @@ import {
 import type { HoverSide, ReaderState } from './core/reader';
 import { articlePath, closeTarget, homePath, parseRoute } from './core/routing';
 import type { Route } from './core/routing';
-import { articleJsonLd, articleMeta, homeMeta } from './core/seo';
+import { articleJsonLd, articleMeta, homeJsonLd, homeMeta } from './core/seo';
 import type { MetaArticle } from './core/seo';
 import { placeStars } from './core/timeline';
 import type { PlacedStar } from './core/timeline';
 import type { Category, Locale, Viewport } from './core/types';
+import { LOCALES } from './core/types';
 import { createSource } from './data/source';
 import { useCosmosEngine } from './hooks/useCosmosEngine';
 import { useHeadMeta } from './hooks/useHeadMeta';
@@ -473,6 +474,7 @@ function Shell({ route }: { route: Route }) {
       title: detail.title,
       summary: detail.summary,
       publishedAt: detail.publishedAt,
+      ...(detail.updatedAt === undefined ? {} : { updatedAt: detail.updatedAt }),
       categoryLabel: t.categories[detail.category],
       category: detail.category,
       ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),
@@ -481,21 +483,25 @@ function Shell({ route }: { route: Route }) {
     };
   }, [reader.phase, reader.slug, article, t]);
 
+  // Os idiomas que o detalhe declara, os mesmos que o prerender usa: o
+  // Googlebot indexa o DOM renderizado, e um hreflang para a tradução que não
+  // existe apontava para um 404.
+  const metaLocales = article.status === 'ready' ? article.detail.locales : LOCALES;
+
   const pageMeta = useMemo(
     () =>
       metaArticle === null
         ? homeMeta(SITE, locale, t.meta)
-        // Sem o terceiro argumento: o cliente não sabe se a tradução do
-        // outro idioma existe (a API não expõe isso fora da lista), então
-        // assume os dois. O prerender, que tem as duas listas completas,
-        // passa o conjunto real — é lá que o hreflang importa de verdade.
-        : articleMeta(SITE, locale, metaArticle),
-    [metaArticle, locale, t.meta],
+        : articleMeta(SITE, locale, metaArticle, metaLocales),
+    [metaArticle, metaLocales, locale, t.meta],
   );
 
   const jsonLd = useMemo(
-    () => (metaArticle === null ? null : articleJsonLd(SITE, locale, metaArticle)),
-    [metaArticle, locale],
+    () =>
+      metaArticle === null
+        ? homeJsonLd(SITE, locale, t.meta)
+        : articleJsonLd(SITE, locale, metaArticle),
+    [metaArticle, locale, t.meta],
   );
 
   useHeadMeta(pageMeta, jsonLd, t.meta.localeTag);

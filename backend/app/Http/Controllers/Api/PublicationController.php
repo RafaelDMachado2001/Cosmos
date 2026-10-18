@@ -76,13 +76,19 @@ class PublicationController extends Controller
         $input = $this->validated($request, []);
 
         $publication = $this->published($input['locale'])
-            ->addSelect(['translation.body', 'translation.seo_title', 'translation.seo_description'])
+            ->addSelect(['publications.id', 'translation.body', 'translation.seo_title', 'translation.seo_description'])
             ->where('publications.slug', $slug)
             ->first();
 
         // 404 e não uma publicação vazia: o adapter do frontend distingue os
         // dois, e "não existe" tem tela própria enquanto "falhou" tem outra.
         abort_if($publication === null, 404);
+
+        // Os idiomas em que o artigo existe, na ordem do vocabulário. É o que o
+        // cliente precisa para o hreflang: sem isto ele assumia os dois, e o
+        // DOM renderizado apontava para uma tradução que dava 404.
+        $translated = PublicationTranslation::where('publication_id', $publication->id)->pluck('locale')->all();
+        $publication->setAttribute('locales', array_values(array_intersect(config('publications.locales'), $translated)));
 
         return new PublicationDetailResource($publication);
     }

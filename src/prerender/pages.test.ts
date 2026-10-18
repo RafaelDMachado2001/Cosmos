@@ -56,9 +56,9 @@ describe('prerenderPages', () => {
     );
   });
 
-  it('só o artigo traz JSON-LD', () => {
-    expect(at('/pt/publicacoes/code-review-sem-atrito')?.head).toContain('application/ld+json');
-    expect(at('/pt')?.head).not.toContain('application/ld+json');
+  it('o artigo traz o Article em JSON-LD, a home o WebSite', () => {
+    expect(at('/pt/publicacoes/code-review-sem-atrito')?.head).toContain('"@type":"Article"');
+    expect(at('/pt')?.head).toContain('"@type":"WebSite"');
   });
 
   it('declara o idioma do documento', () => {
@@ -126,7 +126,7 @@ describe('prerenderPages', () => {
       get: (slug, locale) =>
         Promise.resolve(
           locale === 'pt' && slug === soEmPortugues.slug
-            ? { ...soEmPortugues, body: 'Paragrafo.' }
+            ? { ...soEmPortugues, body: 'Paragrafo.', locales: ['pt'] as const }
             : null,
         ),
     };
