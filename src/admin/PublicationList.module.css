@@ -1,0 +1,136 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.createButton {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-wash);
+  color: var(--color-accent-soft);
+  border: 1px solid var(--color-border-accent);
+  font-size: 13px;
+}
+
+.createButton:hover {
+  background: var(--color-accent-active);
+}
+
+.search {
+  padding: 8px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter,
+.filterActive {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  letter-spacing: var(--tracking-nav);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.filterActive {
+  background: var(--color-accent-active);
+  color: var(--color-accent-hover);
+  border-color: var(--color-border-accent-strong);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item,
+.itemActive {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius-panel);
+  text-align: left;
+  border: 1px solid transparent;
+}
+
+.item:hover {
+  background: var(--color-surface);
+}
+
+.itemActive {
+  background: var(--color-accent-wash);
+  border-color: var(--color-border-accent);
+}
+
+.itemTitle {
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.itemMeta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.pill_draft,
+.pill_scheduled,
+.pill_published {
+  padding: 2px 8px;
+  border-radius: var(--radius-round);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-hint);
+  font-size: 10px;
+}
+
+.pill_draft {
+  background: var(--color-surface);
+  color: var(--color-text-faint);
+}
+
+.pill_scheduled {
+  background: rgba(255, 138, 61, 0.14);
+  color: var(--color-cat-projeto);
+}
+
+.pill_published {
+  background: rgba(74, 222, 155, 0.14);
+  color: var(--color-cat-estudo);
+}
+
+.empty {
+  color: var(--color-text-faint);
+  font-size: 13px;
+  padding: 12px;
+}

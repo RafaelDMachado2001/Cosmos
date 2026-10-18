@@ -1,0 +1,158 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 18px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.statusRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pill_draft,
+.pill_scheduled,
+.pill_published {
+  padding: 3px 10px;
+  border-radius: var(--radius-round);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-hint);
+}
+
+.pill_draft {
+  background: var(--color-surface);
+  color: var(--color-text-faint);
+}
+
+.pill_scheduled {
+  background: rgba(255, 138, 61, 0.14);
+  color: var(--color-cat-projeto);
+}
+
+.pill_published {
+  background: rgba(74, 222, 155, 0.14);
+  color: var(--color-cat-estudo);
+}
+
+.savePill {
+  font-size: 11px;
+  color: var(--color-text-faint);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 11px;
+  letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.input {
+  padding: 7px 10px;
+  border-radius: var(--radius-menu);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-ui);
+}
+
+.seo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.sectionTitle {
+  font-size: 13px;
+  color: var(--color-text-ui);
+  margin: 0;
+}
+
+.seoPreview {
+  padding: 10px;
+  border-radius: var(--radius-menu);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.seoPreviewTitle {
+  color: var(--color-accent-soft);
+  font-size: 14px;
+  margin: 0 0 2px;
+}
+
+.seoPreviewUrl {
+  color: var(--color-text-faint);
+  font-size: 11px;
+  margin: 0 0 4px;
+}
+
+.seoPreviewDescription {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 0;
+}
+
+.actionError {
+  color: var(--color-cat-rotina);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  text-align: center;
+  border: 1px solid var(--color-border);
+}
+
+.primaryButton {
+  background: var(--color-accent);
+  color: var(--color-text-primary);
+  border-color: var(--color-accent);
+}
+
+.secondaryButton {
+  color: var(--color-text-ui);
+}
+
+.dangerButton {
+  color: var(--color-cat-rotina);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
