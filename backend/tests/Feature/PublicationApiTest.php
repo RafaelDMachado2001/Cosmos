@@ -60,7 +60,7 @@ class PublicationApiTest extends TestCase
 
         $this->assertArrayNotHasKey('body', $first);
         $this->assertSame(
-            ['slug', 'category', 'published_at', 'updated_at', 'featured', 'title', 'summary'],
+            ['slug', 'category', 'published_at', 'updated_at', 'featured', 'indexable', 'title', 'summary'],
             array_keys($first)
         );
     }
@@ -260,6 +260,60 @@ class PublicationApiTest extends TestCase
         $en = $this->getJson('/api/publications/code-review-sem-atrito?locale=en')->json('data.body');
 
         $this->assertNotSame($pt, $en);
+    }
+
+    public function test_indexable_vem_true_por_padrao_na_lista_e_no_detalhe(): void
+    {
+        $this->assertTrue($this->getJson('/api/publications?locale=pt')->json('data.0.indexable'));
+        $this->assertTrue(
+            $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')->json('data.indexable')
+        );
+    }
+
+    public function test_indexable_false_aparece_na_lista_e_no_detalhe(): void
+    {
+        $publication = $this->publish(
+            'nao-indexavel',
+            'artigo',
+            (string) now()->subDay(),
+            ['Título PT', 'Resumo PT', "Corpo.\n\nSegundo parágrafo."],
+            ['Title EN', 'Summary EN', "Body.\n\nSecond paragraph."],
+        );
+        $publication->update(['indexable' => false]);
+
+        $this->assertFalse(
+            collect($this->getJson('/api/publications?locale=pt')->json('data'))
+                ->firstWhere('slug', 'nao-indexavel')['indexable']
+        );
+        $this->assertFalse(
+            $this->getJson('/api/publications/nao-indexavel?locale=pt')->json('data.indexable')
+        );
+    }
+
+    public function test_seo_title_e_seo_description_vem_nulos_sem_override(): void
+    {
+        $data = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')->json('data');
+        $this->assertNull($data['seo_title']);
+        $this->assertNull($data['seo_description']);
+    }
+
+    public function test_seo_title_e_seo_description_aparecem_quando_definidos(): void
+    {
+        $publication = $this->publish(
+            'com-seo',
+            'artigo',
+            (string) now()->subDay(),
+            ['Título PT', 'Resumo PT', "Corpo.\n\nSegundo parágrafo."],
+            ['Title EN', 'Summary EN', "Body.\n\nSecond paragraph."],
+        );
+        $publication->translations()->where('locale', 'pt')->update([
+            'seo_title' => 'Título de SEO',
+            'seo_description' => 'Descrição de SEO.',
+        ]);
+
+        $data = $this->getJson('/api/publications/com-seo?locale=pt')->json('data');
+        $this->assertSame('Título de SEO', $data['seo_title']);
+        $this->assertSame('Descrição de SEO.', $data['seo_description']);
     }
 
     public function test_slug_desconhecido_e_404(): void

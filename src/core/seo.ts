@@ -33,6 +33,11 @@ export interface MetaArticle {
   readonly categoryLabel: string;
   /** Pinta o acento do cartão de Open Graph. */
   readonly category: Category;
+  /** Sobrepõe `title`/`summary` no `<title>`, na meta description e no Open Graph. */
+  readonly seoTitle?: string;
+  readonly seoDescription?: string;
+  /** `false` tira a página do índice de busca — ver `PublicationInput.indexable`. */
+  readonly indexable?: boolean;
 }
 
 export interface Alternate {
@@ -53,6 +58,8 @@ export interface PageMeta {
    * página de artigo não acrescenta nada que a home já não anuncie.
    */
   readonly rssHref?: string;
+  /** `'noindex'` quando `MetaArticle.indexable` é `false`. Ausente em todo o resto. */
+  readonly robots?: string;
 }
 
 export interface ArticleJsonLd {
@@ -148,19 +155,22 @@ export function articleMeta(
 ): PageMeta {
   const path = (target: Locale): string => articlePath(target, article.slug);
   const canonical = absolute(site.origin, path(locale));
+  const title = article.seoTitle ?? article.title;
+  const description = article.seoDescription ?? article.summary;
 
   return {
     // O título da aba leva o nome do site; o do Open Graph não, porque ali o
     // cartão já mostra o domínio embaixo e repetir encurta o que se lê.
-    title: `${article.title} · ${site.siteName}`,
-    description: article.summary,
+    title: `${title} · ${site.siteName}`,
+    description,
     canonical,
     alternates: alternatesFor(site.origin, path, locales),
+    ...(article.indexable === false ? { robots: 'noindex' } : {}),
     og: {
       'og:type': 'article',
       'og:url': canonical,
-      'og:title': article.title,
-      'og:description': article.summary,
+      'og:title': title,
+      'og:description': description,
       'og:site_name': site.siteName,
       'og:locale': OG_LOCALE[locale],
       'og:locale:alternate': otherOgLocales(locale, locales),
@@ -263,6 +273,9 @@ export function renderHeadTags(meta: PageMeta, jsonLd: ArticleJsonLd | null): st
     `<title>${text(meta.title)}</title>`,
     `<meta name="description" data-head content="${attr(meta.description)}">`,
     `<link rel="canonical" data-head href="${attr(meta.canonical)}">`,
+    ...(meta.robots === undefined
+      ? []
+      : [`<meta name="robots" data-head content="${attr(meta.robots)}">`]),
     ...meta.alternates.map(
       (alternate) =>
         `<link rel="alternate" data-head hreflang="${attr(alternate.hreflang)}" href="${attr(alternate.href)}">`,
