@@ -36,6 +36,7 @@ locals {
     API_HOST                  = local.api_host
     ADMIN_EMAIL               = var.admin_email
     GOOGLE_REDIRECT_URI       = "https://${local.admin_host}/admin/login/google/callback"
+    SITE_URL                  = "https://${var.site_host}"
   }
 
   # Segredos: o Terraform cria o recipiente, nunca o valor — quem grava a
@@ -49,6 +50,8 @@ locals {
     VERCEL_DEPLOY_HOOK_URL   = "vercel-deploy-hook"
     GOOGLE_CLIENT_ID         = "google-client-id"
     GOOGLE_CLIENT_SECRET     = "google-client-secret"
+    GITHUB_CLIENT_ID         = "github-client-id"
+    GITHUB_CLIENT_SECRET     = "github-client-secret"
     PRERENDER_INTERNAL_TOKEN = "prerender-internal-token"
   }
 }
