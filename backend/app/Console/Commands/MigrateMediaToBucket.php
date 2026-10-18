@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Jobs\RegenerateSite;
 use App\Models\Media;
 use App\Models\PublicationDraft;
 use App\Models\PublicationTranslation;
+use App\Support\SiteRebuild;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -76,7 +76,7 @@ class MigrateMediaToBucket extends Command
         }
 
         if ($bodies > 0) {
-            RegenerateSite::dispatch();
+            SiteRebuild::request();
         }
 
         $this->info("{$sent} arquivo(s) enviado(s), {$bodies} corpo(s) e {$drafts} rascunho(s) reescrito(s).");
