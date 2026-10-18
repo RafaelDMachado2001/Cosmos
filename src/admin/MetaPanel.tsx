@@ -162,6 +162,28 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           <p className={styles.seoPreviewUrl}>rdmlabs.dev/pt/publicacoes/{editor.slug}</p>
           <p className={styles.seoPreviewDescription}>{seoDescription === '' ? '(sem descrição)' : seoDescription}</p>
         </div>
+
+        {/* A miniatura do og:image que o prerender desenha (src/prerender/og.tsx):
+            mesma estrela, mesma posição, mesmo título. Abaixo, o que a rede
+            social escreve embaixo da imagem. */}
+        <span className={styles.label}>Prévia do card</span>
+        <div className={styles.cardPreview}>
+          <div
+            className={styles.cardImage}
+            style={{ '--card-accent': `var(--color-cat-${editor.category})` } as React.CSSProperties}
+          >
+            <span className={styles.cardAura} aria-hidden="true" />
+            <span className={styles.cardStar} aria-hidden="true" />
+            <span className={styles.cardKicker}>{CATEGORY_LABEL[editor.category]}</span>
+            <span className={styles.cardTitle}>{editor.currentDraft.title === '' ? '(sem título)' : editor.currentDraft.title}</span>
+            <span className={styles.cardFooter}>RDM Labs / Cosmos</span>
+          </div>
+          <div className={styles.cardMeta}>
+            <span className={styles.cardHost}>RDMLABS.DEV</span>
+            <span className={styles.cardMetaTitle}>{seoTitle === '' ? '(sem título)' : seoTitle}</span>
+            <span className={styles.cardMetaDescription}>{seoDescription === '' ? '(sem descrição)' : seoDescription}</span>
+          </div>
+        </div>
       </div>
 
       {actionError !== null && <p className={styles.actionError}>{actionError}</p>}

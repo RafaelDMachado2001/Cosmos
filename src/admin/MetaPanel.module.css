@@ -112,6 +112,111 @@
   margin: 0;
 }
 
+/* Proporções de src/prerender/og.tsx (1200×630): estrela em 80% × 43%, 15% da
+   largura; aura em 70%; título até 63% da largura. */
+.cardPreview {
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-surface);
+}
+
+.cardImage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 1200 / 630;
+  padding: 6% 6.7%;
+  overflow: hidden;
+  background: var(--color-bg);
+  container-type: inline-size;
+}
+
+.cardAura,
+.cardStar {
+  position: absolute;
+  left: 80%;
+  top: 43%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.cardAura {
+  width: 70%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--card-accent) 20%, transparent) 0%,
+    color-mix(in srgb, var(--card-accent) 5%, transparent) 40%,
+    transparent 70%
+  );
+}
+
+.cardStar {
+  width: 15%;
+  background: radial-gradient(
+    circle at 40% 36%,
+    #ffffff 0%,
+    var(--card-accent) 44%,
+    transparent 78%
+  );
+  box-shadow: 0 0 6cqw 1.3cqw color-mix(in srgb, var(--card-accent) 33%, transparent);
+}
+
+.cardKicker,
+.cardFooter {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: 2cqw;
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-text-ui);
+}
+
+.cardFooter {
+  color: var(--color-text-muted);
+}
+
+.cardTitle {
+  position: relative;
+  max-width: 63%;
+  font-size: 6cqw;
+  font-weight: 300;
+  line-height: 1.12;
+  color: var(--color-text-title);
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px 12px;
+}
+
+.cardHost {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--color-text-faint);
+}
+
+.cardMetaTitle {
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+
+.cardMetaDescription {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
 .actionError {
   color: var(--color-cat-rotina);
   font-size: 12px;
