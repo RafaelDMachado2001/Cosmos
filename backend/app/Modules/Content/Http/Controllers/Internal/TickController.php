@@ -10,10 +10,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
 
 /**
- * O minuto do agendador, em produção.
+ * O relógio do agendador, em produção.
  *
  * Com o Cloud Run escalando a zero não há `schedule:work` sempre ligado: o
- * Cloud Scheduler chama esta rota a cada minuto. Publica o que venceu e leva
+ * Cloud Scheduler chama esta rota a cada 15 minutos (infra/gcp.tf, onde está
+ * o porquê). Publica o que venceu e leva
  * a regeneração que ficou pendente (ver SiteRebuild).
  */
 class TickController extends Controller

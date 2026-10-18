@@ -51,7 +51,7 @@ class VerifyGoogleOidc
 
     /**
      * As chaves públicas do Google, em cache por uma hora: elas giram, mas
-     * com antecedência de dias, e o tick roda a cada minuto.
+     * com antecedência de dias, e o tick roda a cada 15 minutos.
      *
      * @return array<string, mixed>
      */

@@ -95,6 +95,18 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
 - **Workers grátis:** 100 mil requisições por dia, somando painel, API e as
   leituras da constelação. Na abertura ao público, o plano pago (US$ 5/mês)
   tira o teto.
+- **Custo:** cerca de US$ 0,30 por mês, todo do Secret Manager (11 segredos,
+  6 de graça). O resto fica na camada gratuita: o Cloud Run escala a zero, o
+  Artifact Registry guarda só três imagens, e há um job no Scheduler.
+- **Neon grátis:** as horas de computação do mês acabam se o banco nunca
+  dorme. Ele suspende depois de 5 minutos parado, e por isso o tick roda a
+  cada 15 minutos, não a cada minuto. Um tick mais frequente, ou
+  `min_instance_count = 1` com um health check que toque o banco, pede o plano
+  pago do Neon.
+- **Teste gratuito do Google Cloud:** ao fim dos 90 dias (ou dos créditos), os
+  recursos param até a conta virar paga. A camada gratuita continua valendo
+  depois disso. Um alerta de orçamento em Billing → Budgets avisa se algo sair
+  do esperado.
 - **Escala:** o Cloud Run vai de 0 a 3 instâncias, com 40 requisições
   simultâneas por instância. Na abertura ao público, `min_instance_count = 1`
   evita a partida a frio.
