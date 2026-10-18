@@ -45,6 +45,13 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_PROXY ?? 'http://web',
           changeOrigin: true,
         },
+        // O login do leitor (/auth/{provider}/redirect, /callback, /logout).
+        // Mantém o Host do Vite: o Laravel monta a URI de callback do OAuth
+        // com ele, e ela precisa voltar por aqui, não pelo nome `web`.
+        '/auth': {
+          target: env.VITE_API_PROXY ?? 'http://web',
+          changeOrigin: false,
+        },
       },
       watch: {
         /*

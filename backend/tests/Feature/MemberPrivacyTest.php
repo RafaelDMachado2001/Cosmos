@@ -46,8 +46,11 @@ class MemberPrivacyTest extends TestCase
         $this->deleteJson('/api/me')->assertNoContent();
 
         $row = (array) DB::table('members')->where('id', $member->id)->first();
+        // Os valores exatos, não "ana": o handle aleatório pode conter a sílaba.
         foreach ($row as $column => $value) {
-            $this->assertStringNotContainsStringIgnoringCase('ana', (string) $value, "members.$column ainda identifica");
+            foreach ([self::EMAIL, 'Ana Souza', 'ana_souza', 'lh3.example'] as $personal) {
+                $this->assertStringNotContainsStringIgnoringCase($personal, (string) $value, "members.$column ainda identifica");
+            }
         }
         $this->assertSame('Conta removida', $row['name']);
         $this->assertNotNull($row['deleted_at']);
