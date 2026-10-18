@@ -22,6 +22,8 @@ class PublicationDetailResource extends PublicationResource
         return [
             ...parent::toArray($request),
             'body' => $this->resource->body,
+            'seo_title' => $this->resource->seo_title,
+            'seo_description' => $this->resource->seo_description,
         ];
     }
 }

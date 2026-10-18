@@ -91,6 +91,28 @@ describe('articleMeta', () => {
     expect(og['og:locale']).toBe('pt_BR');
     expect(og['og:locale:alternate']).toBe('en_GB');
   });
+
+  it('seoTitle/seoDescription sobrepõem title/summary no título, na descrição e no Open Graph', () => {
+    const override = { ...ARTICLE, seoTitle: 'Título de SEO', seoDescription: 'Descrição de SEO.' };
+    const meta = articleMeta(SITE, 'pt', override);
+
+    expect(meta.title).toBe('Título de SEO · RDM Labs');
+    expect(meta.description).toBe('Descrição de SEO.');
+    expect(meta.og['og:title']).toBe('Título de SEO');
+    expect(meta.og['og:description']).toBe('Descrição de SEO.');
+  });
+
+  it('sem seoTitle/seoDescription, cai em title/summary — comportamento de sempre', () => {
+    const meta = articleMeta(SITE, 'pt', ARTICLE);
+    expect(meta.title).toBe('Code review sem atrito · RDM Labs');
+    expect(meta.description).toBe('Revisar sem travar o time.');
+  });
+
+  it('indexable: false declara noindex; ausente ou true não declara nada', () => {
+    expect(articleMeta(SITE, 'pt', { ...ARTICLE, indexable: false }).robots).toBe('noindex');
+    expect(articleMeta(SITE, 'pt', { ...ARTICLE, indexable: true }).robots).toBeUndefined();
+    expect(articleMeta(SITE, 'pt', ARTICLE).robots).toBeUndefined();
+  });
 });
 
 describe('homeMeta', () => {
@@ -200,6 +222,12 @@ describe('renderHeadTags', () => {
   it('escapa o texto do título', () => {
     const risky = renderHeadTags(articleMeta(SITE, 'pt', { ...ARTICLE, title: 'A & B' }), null);
     expect(risky).toContain('<title>A &amp; B · RDM Labs</title>');
+  });
+
+  it('indexable: false acrescenta a meta robots noindex; o resto não tem a tag', () => {
+    const html2 = renderHeadTags(articleMeta(SITE, 'pt', { ...ARTICLE, indexable: false }), null);
+    expect(html2).toContain('<meta name="robots" data-head content="noindex">');
+    expect(html).not.toContain('name="robots"');
   });
 
   it('não emite JSON-LD quando não há artigo', () => {

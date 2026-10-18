@@ -189,6 +189,8 @@ class PublicationAdminController extends Controller
                     'title' => $draft->title,
                     'summary' => $draft->subtitle ?? '',
                     'body' => DraftBlocksCli::toMarkdown($draft->blocks),
+                    'seo_title' => $draft->seo_title,
+                    'seo_description' => $draft->seo_description,
                 ],
             );
         }

@@ -231,6 +231,25 @@ class PublicationAdminApiTest extends TestCase
         $this->assertSame("## Intro\n\nUm **parágrafo**.", $translation->body);
     }
 
+    public function test_publicar_copia_seo_title_e_seo_description_do_rascunho(): void
+    {
+        $publication = $this->publicationWithDrafts(['published_at' => now()->subDay()]);
+        $publication->drafts()->where('locale', 'pt')->update([
+            'title' => 'Título PT',
+            'blocks' => [['id' => 'b0', 'type' => 'p', 'text' => 'Texto.']],
+            'seo_title' => 'Título de SEO',
+            'seo_description' => 'Descrição de SEO.',
+        ]);
+
+        $this->actingAs($this->admin())
+            ->postJson("/admin/api/publications/{$publication->id}/publish")
+            ->assertOk();
+
+        $translation = $publication->translations()->where('locale', 'pt')->first();
+        $this->assertSame('Título de SEO', $translation->seo_title);
+        $this->assertSame('Descrição de SEO.', $translation->seo_description);
+    }
+
     public function test_publicar_com_data_futura_vira_agendada_nao_publicada(): void
     {
         $publication = $this->publicationWithDrafts(['published_at' => now()->addWeek()]);
