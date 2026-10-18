@@ -250,6 +250,47 @@ describe('createHttpSource — a publicação', () => {
   });
 });
 
+describe('createHttpSource — isenção de throttle do prerender', () => {
+  function stubFetchWithHeaders(reply: { body?: unknown } = {}) {
+    const headerValues: (string | null)[] = [];
+    const impl = (_input: string, init?: RequestInit): Promise<Response> => {
+      headerValues.push(new Headers(init?.headers).get('X-Internal-Token'));
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(reply.body ?? { data: [] }),
+      } as Response);
+    };
+    return { headerValues, impl: impl as unknown as typeof fetch };
+  }
+
+  it('sem token, não manda o cabeçalho', async () => {
+    const { headerValues, impl } = stubFetchWithHeaders();
+    await createHttpSource('https://x.dev', impl).list({ locale: 'pt' });
+    expect(headerValues[0]).toBeNull();
+  });
+
+  it('com token, manda o mesmo valor no cabeçalho na lista', async () => {
+    const { headerValues, impl } = stubFetchWithHeaders({ body: { data: [] } });
+    const source = createHttpSource('https://x.dev', impl, { internalToken: 'segredo-123' });
+
+    await source.list({ locale: 'pt' });
+
+    expect(headerValues).toEqual(['segredo-123']);
+  });
+
+  it('com token, manda o mesmo valor no cabeçalho na publicação', async () => {
+    const { headerValues, impl } = stubFetchWithHeaders({
+      body: { data: { ...SUMMARY_ROW, body: 'x' } },
+    });
+    const source = createHttpSource('https://x.dev', impl, { internalToken: 'segredo-123' });
+
+    await source.get('code-review-sem-atrito', 'pt');
+
+    expect(headerValues).toEqual(['segredo-123']);
+  });
+});
+
 /**
  * Um servidor de mentira que fala exatamente o que o Laravel vai falar.
  *

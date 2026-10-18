@@ -93,6 +93,11 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - ADMIN_NAME=${ADMIN_NAME:-RDM Labs}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@rdmlabs.dev}
+      # Isenta o prerender (que chega por `queue`, abaixo) do throttle
+      # público — ver AppServiceProvider e RegenerateSite. Não é credencial
+      # de operador: o mesmo valor em todo deploy já basta, o ponto é
+      # distinguir o próprio job do tráfego público, não um segredo por site.
+      - PRERENDER_INTERNAL_TOKEN=${PRERENDER_INTERNAL_TOKEN:-rdm-cosmos-prerender-7f3a9c2e}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
@@ -132,6 +137,7 @@ services:
       # rede do compose a API atende pelo nome do servico.
       - PRERENDER_API_URL=http://web
       - SITE_DIR=/srv/site
+      - PRERENDER_INTERNAL_TOKEN=${PRERENDER_INTERNAL_TOKEN:-rdm-cosmos-prerender-7f3a9c2e}
       - TZ=${TIMEZONE:-America/Sao_Paulo}
     depends_on:
       db:

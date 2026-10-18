@@ -215,6 +215,32 @@ class PublicationApiTest extends TestCase
         $this->getJson('/api/publications?locale=pt')->assertStatus(429);
     }
 
+    public function test_o_token_interno_do_prerender_isenta_do_throttle(): void
+    {
+        config(['publishing.internal_token' => 'segredo-do-teste']);
+
+        for ($i = 0; $i < 65; $i++) {
+            $this->withHeader('X-Internal-Token', 'segredo-do-teste')
+                ->getJson('/api/publications?locale=pt')
+                ->assertOk();
+        }
+    }
+
+    public function test_token_interno_errado_nao_isenta_do_throttle(): void
+    {
+        config(['publishing.internal_token' => 'segredo-do-teste']);
+
+        for ($i = 0; $i < 60; $i++) {
+            $this->withHeader('X-Internal-Token', 'token-errado')
+                ->getJson('/api/publications?locale=pt')
+                ->assertOk();
+        }
+
+        $this->withHeader('X-Internal-Token', 'token-errado')
+            ->getJson('/api/publications?locale=pt')
+            ->assertStatus(429);
+    }
+
     public function test_a_publicacao_traz_o_corpo_como_markdown_cru(): void
     {
         $data = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')

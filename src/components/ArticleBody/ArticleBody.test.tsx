@@ -53,18 +53,18 @@ describe('ArticleBody', () => {
   });
 
   it('imagem sai como figure > img, com legenda em figcaption', () => {
-    render(<ArticleBody markdown='![um gráfico](https://exemplo.com/a.png "Figura 1")' />);
+    render(<ArticleBody markdown='![um gráfico](https://example.com/a.png "Figura 1")' />);
 
     const image = screen.getByRole('img', { name: 'um gráfico' });
-    expect(image.getAttribute('src')).toBe('https://exemplo.com/a.png');
+    expect(image.getAttribute('src')).toBe('https://example.com/a.png');
     expect(image.closest('figure')?.textContent).toContain('Figura 1');
   });
 
   it('link com protocolo aceito sai como a, com href', () => {
-    render(<ArticleBody markdown="[este artigo](https://exemplo.com/a)" />);
+    render(<ArticleBody markdown="[este artigo](https://example.com/a)" />);
 
     expect(screen.getByRole('link', { name: 'este artigo' }).getAttribute('href')).toBe(
-      'https://exemplo.com/a',
+      'https://example.com/a',
     );
   });
 

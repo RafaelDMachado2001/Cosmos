@@ -242,7 +242,12 @@ async function main(): Promise<void> {
 
   const css = await readStaticCss();
   const apiUrl = apiUrlFrom(process.env);
-  const source = apiUrl === null ? createStaticSource(PUBLICATIONS) : createHttpSource(apiUrl);
+  const source =
+    apiUrl === null
+      ? createStaticSource(PUBLICATIONS)
+      : createHttpSource(apiUrl, fetch, {
+          internalToken: process.env.PRERENDER_INTERNAL_TOKEN ?? null,
+        });
   const { pages, notFound, sitemap, robots, rss } = await prerenderPages(source);
 
   // Os cartões antes das páginas: nenhum HTML gravado aponta para um
