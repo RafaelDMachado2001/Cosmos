@@ -56,4 +56,25 @@ class HostBoundaryTest extends TestCase
         $this->get('http://localhost/admin/login')->assertOk();
         $this->get('http://localhost/api/publications')->assertOk();
     }
+
+    public function test_sem_o_segredo_da_borda_o_contenedor_nao_responde(): void
+    {
+        config(['hosts.edge_secret' => 's3gredo']);
+
+        $this->get('http://'.self::API.'/api/publications')->assertNotFound();
+        $this->get('http://'.self::API.'/api/publications', ['X-Edge-Secret' => 'errado'])->assertNotFound();
+        $this->get('http://cosmos-api-xyz.a.run.app/up')->assertOk();
+    }
+
+    public function test_pela_borda_vale_o_host_original_do_x_forwarded_host(): void
+    {
+        config(['hosts.edge_secret' => 's3gredo']);
+        $edge = ['X-Edge-Secret' => 's3gredo', 'X-Forwarded-Host' => self::ADMIN, 'X-Forwarded-Proto' => 'https'];
+
+        // A requisição chega no host do run.app, como o Worker a entrega.
+        $response = $this->get('http://cosmos-api-xyz.a.run.app/admin/login', $edge)->assertOk();
+        $this->assertNotNull(collect($response->headers->getCookies())->firstWhere(fn ($cookie) => $cookie->getName() === 'rdm_admin'));
+
+        $this->get('http://cosmos-api-xyz.a.run.app/admin/login', [...$edge, 'X-Forwarded-Host' => self::API])->assertNotFound();
+    }
 }

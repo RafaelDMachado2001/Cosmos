@@ -55,6 +55,7 @@ class AssertProductionEnv extends Command
             'SCHEDULER_SERVICE_ACCOUNT ausente' => $filled('scheduler.service_account'),
             'ADMIN_HOST ausente' => $filled('hosts.admin'),
             'API_HOST ausente' => $filled('hosts.api'),
+            'EDGE_SHARED_SECRET ausente: o run.app ficaria aberto' => $filled('hosts.edge_secret'),
         ];
 
         return array_keys(array_filter($checks, static fn (bool $ok): bool => ! $ok));
