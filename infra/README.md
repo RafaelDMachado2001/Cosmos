@@ -38,17 +38,30 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
 2. **Variáveis:** copiar `terraform.tfvars.example` para `terraform.tfvars` e
    `state.gcs.tfbackend.example` para `state.gcs.tfbackend`, e preencher.
 
-3. **Aplicar:**
+3. **Aplicar em duas passadas.** O Cloud Run recusa uma revisão que lê um
+   segredo sem versão, então primeiro só os recipientes dos segredos, depois os
+   valores (passo 4), e só então o resto:
 
    ```sh
    terraform init -backend-config=state.gcs.tfbackend
+   terraform apply -target=google_secret_manager_secret.external
+   # passo 4: gravar os valores
    terraform apply
+   ```
+
+   Sem Terraform instalado, o mesmo pela imagem oficial, com as credenciais do
+   `gcloud auth application-default login`:
+
+   ```sh
+   docker run --rm -it -v "$PWD:/w" -w /w \
+     -v "$HOME/.config/gcloud:/root/.config/gcloud:ro" \
+     -e CLOUDFLARE_API_TOKEN hashicorp/terraform:1.9 apply
    ```
 
    A primeira revisão sobe com uma imagem de exemplo do Google. A imagem do
    Cosmos chega no primeiro deploy pelo pipeline.
 
-4. **Valores dos segredos:**
+4. **Valores dos segredos** (entre as duas passadas do passo 3):
 
    ```sh
    printf '%s' 'base64:...' | gcloud secrets versions add app-key --data-file=-
