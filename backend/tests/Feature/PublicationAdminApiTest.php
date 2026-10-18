@@ -305,7 +305,7 @@ class PublicationAdminApiTest extends TestCase
 
     public function test_upload_redimensiona_e_converte_para_webp(): void
     {
-        Storage::fake('public');
+        Storage::fake('media');
 
         $file = UploadedFile::fake()->image('grande.jpg', 2000, 1000);
 
@@ -318,6 +318,7 @@ class PublicationAdminApiTest extends TestCase
             ->assertJsonPath('data.altDefault', 'uma descrição');
 
         $this->assertSame(1, Media::count());
+        Storage::disk('media')->assertExists(Media::firstOrFail()->path);
     }
 
     public function test_url_da_midia_e_raiz_relativa(): void
@@ -325,7 +326,7 @@ class PublicationAdminApiTest extends TestCase
         // Sem Storage::fake, que ignora o 'url' do disco. Com o APP_URL, a
         // imagem publicada apontava para o host do backend, não o do site — o
         // Nginx serve /storage/ no mesmo host das páginas.
-        $this->assertSame('/storage/media/a.webp', Storage::disk('public')->url('media/a.webp'));
+        $this->assertSame('/storage/media/a.webp', Storage::disk('media')->url('media/a.webp'));
     }
 
     public function test_upload_recusa_arquivo_que_nao_e_imagem(): void

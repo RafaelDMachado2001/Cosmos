@@ -1,0 +1,4 @@
+project_id            = "rdm-labs-cosmos"
+cloudflare_account_id = "<id da conta na Cloudflare>"
+cloudflare_zone_id    = "<id da zona rdmlabs.com.br>"
+admin_email           = "<o e-mail do allowlist do painel>"
