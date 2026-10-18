@@ -92,4 +92,41 @@ describe('AdminApp', () => {
     await waitFor(() => expect(api.create).toHaveBeenCalledTimes(1));
     expect(await screen.findByPlaceholderText('Título')).not.toBeNull();
   });
+
+  it('publicar logo depois de editar salva o rascunho antes, e só então publica', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.update.mockImplementation((_id: number, patch: unknown) => Promise.resolve({ ...publication(), patch }));
+    api.publish.mockResolvedValue(publication({ status: 'published' }));
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    const title = await screen.findByDisplayValue('Code review sem atrito');
+
+    await user.type(title, ' agora');
+    // Sem esperar os 400ms do autosave.
+    await user.click(screen.getByRole('button', { name: 'Publicar' }));
+
+    await waitFor(() => expect(api.publish).toHaveBeenCalledTimes(1));
+    expect(api.update).toHaveBeenCalled();
+    const lastPatch = api.update.mock.calls.at(-1)?.[1] as { drafts: { pt: { title: string } } };
+    expect(lastPatch.drafts.pt.title).toBe('Code review sem atrito agora');
+    expect(api.update.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      api.publish.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('se o salvamento falha, não publica', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.update.mockRejectedValue(new Error('500'));
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.type(await screen.findByDisplayValue('Code review sem atrito'), '!');
+    await user.click(screen.getByRole('button', { name: 'Publicar' }));
+
+    expect(await screen.findByText('Não foi possível publicar.')).not.toBeNull();
+    expect(api.publish).not.toHaveBeenCalled();
+  });
 });

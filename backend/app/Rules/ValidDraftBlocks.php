@@ -74,6 +74,14 @@ class ValidDraftBlocks implements ValidationRule
 
         if (array_key_exists('lang', $block) && $block['lang'] !== null && ! is_string($block['lang'])) {
             $fail("{$attribute}.{$index}.lang precisa ser texto ou nulo.");
+
+            return;
+        }
+
+        // A linguagem vai na cerca de abertura do bloco; com espaço ou crase
+        // a cerca deixa de ser reconhecida e o código vira parágrafo.
+        if (is_string($block['lang'] ?? null) && preg_match('/[\s`]/', trim($block['lang'])) === 1) {
+            $fail("{$attribute}.{$index}.lang não pode ter espaços nem crases.");
         }
     }
 

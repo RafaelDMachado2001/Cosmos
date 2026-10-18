@@ -271,3 +271,35 @@ describe('inlineToMarkdown', () => {
     expect(roundTrip('[**forte**](/pt)')).toBe('[**forte**](/pt)');
   });
 });
+
+describe('escape e cercas', () => {
+  it('barra invertida escapa pontuação, como no CommonMark', () => {
+    expect(parseBlocks('\\*não\\* é itálico, \\## nem título')).toEqual<readonly Block[]>([
+      { type: 'paragraph', children: [text('*não* é itálico, ## nem título')] },
+    ]);
+  });
+
+  it('barra antes de letra e dentro de código fica literal', () => {
+    expect(parseBlocks('C:\\Users e `a\\*b`')).toEqual<readonly Block[]>([
+      { type: 'paragraph', children: [text('C:\\Users e '), { type: 'code', text: 'a\\*b' }] },
+    ]);
+  });
+
+  it('cerca maior contém uma menor; fechamento com linguagem não fecha', () => {
+    expect(parseBlocks('````md\n```ts\nx\n```\n````\n\nDepois.')).toEqual<readonly Block[]>([
+      { type: 'code', code: '```ts\nx\n```', language: 'md' },
+      { type: 'paragraph', children: [text('Depois.')] },
+    ]);
+  });
+
+  it('alt e legenda de imagem aceitam escape', () => {
+    expect(parseBlocks('![a \\] b](/x.png "diz \\"oi\\"")')).toEqual<readonly Block[]>([
+      { type: 'image', src: '/x.png', alt: 'a ] b', caption: 'diz "oi"' },
+    ]);
+  });
+
+  it('inlineToMarkdown escapa de novo só o texto que viria de um escape', () => {
+    expect(inlineToMarkdown([text('5 * 3 = 15')])).toBe('5 * 3 = 15');
+    expect(inlineToMarkdown([text('*literal*')])).toBe('\\*literal\\*');
+  });
+});
