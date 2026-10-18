@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Activity\ActivityServiceProvider;
 use App\Modules\Content\ContentServiceProvider;
 use App\Modules\Identity\IdentityServiceProvider;
 use App\Providers\AppServiceProvider;
@@ -9,5 +10,6 @@ return [
     AppServiceProvider::class,
     ContentServiceProvider::class,
     IdentityServiceProvider::class,
+    ActivityServiceProvider::class,
     AdminPanelProvider::class,
 ];
