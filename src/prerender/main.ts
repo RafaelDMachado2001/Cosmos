@@ -25,6 +25,7 @@ import { DEFAULT_LOCALE, LOCALES } from '../core/types';
 import { PUBLICATIONS } from '../data/publications';
 import { createHttpSource, createStaticSource } from '../data/PublicationsSource';
 import { missingAssets } from './assets';
+import { SLOT, compose } from './compose';
 import { apiUrlFrom, distDir, templateDir } from './config';
 import { ogPng } from './og';
 import { prerenderPages } from './pages';
@@ -36,22 +37,6 @@ const SSR_DIR = 'dist-ssr';
 
 /** Onde os cartões moram, igual ao prefixo de `ogImagePath`. */
 const OG_DIR = 'og';
-
-/** O ponto onde a casca entra. `src/main.tsx` a remove quando o React monta. */
-const SLOT = '<div id="prerender"></div>';
-
-const LANG = /<html lang="[^"]*">/;
-
-/**
- * O que o template traz e o cabeçalho da rota substitui.
- *
- * Precisa sair antes, não depois: com dois `<title>` no documento vale o
- * primeiro, e o primeiro seria o genérico do `index.html` — cada artigo subiria
- * para o buscador com o título da tela de entrada. O mesmo vale para a
- * descrição.
- */
-const TEMPLATE_TITLE = /[ \t]*<title>[\s\S]*?<\/title>\n?/;
-const TEMPLATE_DESCRIPTION = /[ \t]*<meta\s+name="description"[\s\S]*?>\n?/;
 
 /**
  * O CSS dos componentes estáticos, embutido em cada página.
@@ -76,15 +61,6 @@ async function readStaticCss(): Promise<string> {
     sheets.map((sheet) => readFile(join(sheet.parentPath, sheet.name), 'utf8')),
   );
   return parts.join('\n');
-}
-
-function compose(template: string, page: PrerenderedPage, css: string): string {
-  return template
-    .replace(LANG, `<html lang="${page.lang}">`)
-    .replace(TEMPLATE_TITLE, '')
-    .replace(TEMPLATE_DESCRIPTION, '')
-    .replace('</head>', `${page.head}\n<style data-head>${css}</style>\n</head>`)
-    .replace(SLOT, `<div id="prerender">${page.body}</div>`);
 }
 
 /**
