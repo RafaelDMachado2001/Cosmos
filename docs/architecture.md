@@ -124,7 +124,7 @@ public API runs on `api.rdmlabs.com.br`. One deployment, two hosts. See
 
 ### Database (Neon)
 
-Postgres 16, serverless. It also holds full-text search: a generated
+Postgres 18, serverless. It also holds full-text search: a generated
 `tsvector` per language with the matching dictionary (Portuguese stemming for
 `pt`, English for `en`).
 
