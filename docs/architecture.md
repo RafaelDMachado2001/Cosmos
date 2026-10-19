@@ -261,7 +261,9 @@ provider identities and anonymizes the member row, in one transaction. The
 row keeps its id, so activities keep pointing at someone and aggregate
 numbers do not shift. The export returns the profile, the identities and
 every module's records. The only cookies are the session and the CSRF token,
-both essential, so no consent banner is needed.
+both essential, so no consent banner is needed. Page views are counted by
+Vercel Web Analytics, which sets no cookie and keeps no persistent
+identifier, and only on the production build.
 
 **A Worker at the edge over a cloud load balancer.** The load balancer is
 Google's production answer for custom domains, at a fixed monthly cost even

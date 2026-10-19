@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Analytics } from '@vercel/analytics/react';
 
 // Só latin e latin-ext: o site é PT/EN, e os subsets cirílico, grego, vietnamita
 // e math respondiam por dois terços do CSS.
@@ -32,5 +33,11 @@ createRoot(container).render(
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
+    {/*
+     * Sem cookie e sem identificador persistente: conta visita sem dado pessoal,
+     * então não pede banner de consentimento. O script vem de
+     * /_vercel/insights/, a mesma origem, e cabe na CSP (`script-src 'self'`).
+     */}
+    {__ANALYTICS__ && <Analytics />}
   </StrictMode>,
 );

@@ -19,7 +19,7 @@ The project is being built as an experiment in expressive interfaces: a place wh
 
 **Backend:** Laravel 13, Filament 5 for the admin panel, a React editor (the RDM Studio), Laravel Sanctum and Socialite for reader accounts, PostgreSQL.
 
-**Infrastructure:** Vercel for the site, Google Cloud Run (São Paulo) for the backend, Neon for Postgres, Cloudflare for DNS, the edge Worker and R2 media storage, Terraform for all of it, and GitHub Actions for delivery.
+**Infrastructure:** Vercel for the site and its cookieless Web Analytics, Google Cloud Run (São Paulo) for the backend, Neon for Postgres, Cloudflare for DNS, the edge Worker and R2 media storage, Terraform for all of it, and GitHub Actions for delivery.
 
 Laravel 13 rather than 11: every Laravel 11 release still available carries open security advisories, and Composer refuses to install them. Filament 3 does not run on Laravel 13, hence Filament 5.
 
