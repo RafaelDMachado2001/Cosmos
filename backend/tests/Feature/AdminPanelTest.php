@@ -22,6 +22,23 @@ class AdminPanelTest extends TestCase
         $this->get('/admin/publications')->assertRedirect('/admin/login');
     }
 
+    public function test_o_admin_do_allowlist_entra_no_painel_fora_do_local(): void
+    {
+        // O Filament só deixa qualquer usuário entrar com APP_ENV=local; aqui é
+        // testing, como em produção. Sem canAccessPanel, o login funcionava e
+        // o /admin respondia 403 (achado na virada).
+        $this->actingAs(User::factory()->create(['email' => strtoupper((string) config('admin.email'))]));
+
+        $this->get('/admin')->assertOk();
+    }
+
+    public function test_outro_usuario_autenticado_nao_entra_no_painel(): void
+    {
+        $this->actingAs(User::factory()->create(['email' => 'outra.pessoa@example.com']));
+
+        $this->get('/admin')->assertForbidden();
+    }
+
     public function test_nao_existe_registro_publico(): void
     {
         // O painel é de um autor só. Uma rota de registro aberta seria um
