@@ -15,12 +15,13 @@ import '../styles/global.css';
 import './admin.css';
 
 import { AdminApp } from './AdminApp';
+import { selectedFromSearch } from './selection';
 
 const container = document.getElementById('admin-root');
 if (!container) throw new Error('#admin-root não encontrado');
 
 createRoot(container).render(
   <StrictMode>
-    <AdminApp />
+    <AdminApp initialSelectedId={selectedFromSearch(window.location.search)} />
   </StrictMode>,
 );

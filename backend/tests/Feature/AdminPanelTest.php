@@ -39,6 +39,24 @@ class AdminPanelTest extends TestCase
         $this->get('/admin')->assertForbidden();
     }
 
+    public function test_o_menu_e_a_lista_levam_ao_studio(): void
+    {
+        $this->actingAs(User::factory()->create(['email' => config('admin.email')]));
+        $publication = Publication::create([
+            'slug' => 'abre-no-studio',
+            'category' => 'artigo',
+            'published_at' => now(),
+            'featured' => false,
+            'status' => Publication::STATUS_PUBLISHED,
+        ]);
+
+        $this->get('/admin')->assertOk()->assertSee(route('rdm-studio'), false);
+
+        Livewire::test(ListPublications::class)
+            ->assertTableActionHasUrl('studio', route('rdm-studio', ['publication' => $publication->id]), $publication)
+            ->assertActionHasUrl('studio', route('rdm-studio'));
+    }
+
     public function test_nao_existe_registro_publico(): void
     {
         // O painel é de um autor só. Uma rota de registro aberta seria um
