@@ -165,9 +165,12 @@ export function yearMarkers(
   const firstYear = new Date(first.timestamp).getUTCFullYear();
   const lastYear = new Date(last.timestamp).getUTCFullYear();
 
+  // O ano inicial ancora no mês da primeira publicação, não em janeiro: um
+  // acervo que começa em outubro não pode abrir com nove meses de vazio.
+  const start = firstMonthStart(stars);
   const markers: YearMarker[] = [];
   for (let year = firstYear; year <= lastYear; year += 1) {
-    markers.push({ year, x: xAtTime(stars, Date.UTC(year, 0, 1), config) });
+    markers.push({ year, x: xAtTime(stars, Math.max(start, Date.UTC(year, 0, 1)), config) });
   }
   return markers;
 }
@@ -180,8 +183,10 @@ export interface MonthMarker {
   readonly month: number;
   readonly timestamp: number;
   readonly x: number;
-  /** Janeiro carrega o ano no rótulo e um filete mais forte. */
+  /** Janeiro tem um filete mais forte. */
   readonly january: boolean;
+  /** Janeiro e o primeiro marcador carregam o ano no rótulo. */
+  readonly withYear: boolean;
   /** Meses com publicação ganham destaque; os vazios ficam apagados. */
   readonly hasPublication: boolean;
 }
@@ -190,10 +195,17 @@ function monthKey(year: number, month: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}`;
 }
 
+/** O instante em que começa o mês (UTC) da publicação mais antiga. */
+function firstMonthStart(stars: readonly PlacedStar[]): number {
+  const first = new Date(stars[0]?.timestamp ?? 0);
+  return Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), 1);
+}
+
 /**
- * Um marcador por mês, de janeiro do primeiro ano até o mês da publicação mais
- * recente. Começa em janeiro, e não no primeiro mês com dados, para que o ano
- * inicial também tenha o seu rótulo `JAN 2024` no eixo.
+ * Um marcador por mês, do mês da publicação mais antiga até o da mais
+ * recente. Começar em janeiro deixava meses vazios antes da primeira estrela —
+ * e, depois de apagar os anos mais antigos, um ano inteiro. O primeiro
+ * marcador carrega o ano (`OUT 2026`) para o eixo nunca abrir sem ele.
  */
 export function monthMarkers(
   stars: readonly PlacedStar[],
@@ -213,7 +225,9 @@ export function monthMarkers(
   const end = new Date(last.timestamp);
   const endIndex = end.getUTCFullYear() * 12 + end.getUTCMonth();
   const markers: MonthMarker[] = [];
-  for (let index = new Date(first.timestamp).getUTCFullYear() * 12; index <= endIndex; index += 1) {
+  const start = new Date(first.timestamp);
+  const startIndex = start.getUTCFullYear() * 12 + start.getUTCMonth();
+  for (let index = startIndex; index <= endIndex; index += 1) {
     const year = Math.floor(index / 12);
     const month = index % 12;
     const timestamp = Date.UTC(year, month, 1);
@@ -225,6 +239,7 @@ export function monthMarkers(
       timestamp,
       x: xAtTime(stars, timestamp, config),
       january: month === 0,
+      withYear: month === 0 || index === startIndex,
       hasPublication: withPublication.has(key),
     });
   }
@@ -249,8 +264,10 @@ export function strandExtent(
   const last = stars[stars.length - 1];
   if (!first || !last) return { minX: 0, maxX: 0, widthPx: 0 };
 
-  // Publicações anteriores à época têm x negativo: a faixa acompanha.
-  const minX = Math.min(0, first.x - config.originX);
+  // A faixa começa na primeira estrela, não na época: a época é fixa (é o que
+  // impede um item retroativo de mover os demais), mas apagar as publicações
+  // mais antigas não pode deixar o pan inicial num trecho vazio do eixo.
+  const minX = first.x - config.originX;
   const maxX = last.x + config.trailingPadPx;
   return { minX, maxX, widthPx: maxX - minX };
 }
@@ -266,6 +283,14 @@ export function panBounds(
   config: TimelineConfig = TIMELINE,
 ): PanBounds {
   const extent = strandExtent(stars, config);
+  const first = stars[0];
+  const last = stars[stars.length - 1];
+  // Acervo que cabe inteiro na tela: as estrelas ficam no centro, sem pan.
+  // Ancorar na borda esquerda deixava metade da tela vazia à direita.
+  if (first && last && extent.widthPx <= viewportWidth) {
+    const centered = (first.x + last.x) / 2 - viewportWidth / 2;
+    return { min: centered, max: centered };
+  }
   return { min: extent.minX, max: Math.max(extent.minX, extent.maxX - viewportWidth) };
 }
 
