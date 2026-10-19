@@ -108,6 +108,21 @@ return [
              * não pode depender de onde o servidor está.
              */
             'timezone' => 'UTC',
+
+            /*
+             * Em produção o Neon fica atrás do pooler (PgBouncer em modo
+             * transação). Com prepared statements no servidor, o segundo
+             * comando de uma transação chegava a outra conexão e a migração
+             * abortava em "current transaction is aborted". Emulado, o PDO
+             * manda o SQL já com os parâmetros, e o pooler não vê estado.
+             *
+             * Pela mesma razão, nada de SET de sessão que precise durar: o
+             * `timezone` acima só vale porque o Neon já fala UTC, e o
+             * `cosmos.anonymizing` do Activity é SET LOCAL, preso à transação.
+             */
+            'options' => [
+                PDO::ATTR_EMULATE_PREPARES => (bool) env('DB_EMULATE_PREPARES', false),
+            ],
         ],
 
         'sqlsrv' => [
