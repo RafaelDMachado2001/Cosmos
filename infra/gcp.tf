@@ -271,14 +271,14 @@ resource "google_cloud_run_v2_job" "migrate" {
 
 # --- Agendador ---------------------------------------------------------------
 
+# A cada 15 minutos, não a cada minuto: todo tick acorda o Neon, que só
+# suspende depois de 5 minutos parado. De minuto em minuto o banco nunca
+# dormiria e estouraria as horas de computação do plano gratuito. O preço:
+# uma publicação agendada sai em até 15 minutos, e o último rebuild de uma
+# rajada de edições também (o salvar comum dispara na hora).
 resource "google_cloud_scheduler_job" "tick" {
   name      = "cosmos-tick"
   region    = var.region
-  # A cada 15 minutos, não a cada minuto: todo tick acorda o Neon, que só
-  # suspende depois de 5 minutos parado. De minuto em minuto o banco nunca
-  # dormiria e estouraria as horas de computação do plano gratuito. O preço:
-  # uma publicação agendada sai em até 15 minutos, e o último rebuild de uma
-  # rajada de edições também (o salvar comum dispara na hora).
   schedule  = "*/15 * * * *"
   time_zone = "America/Sao_Paulo"
 
