@@ -98,6 +98,29 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
    - `VITE_API_URL` e `PRERENDER_API_URL`: os dois iguais a `https://api.rdmlabs.com.br`;
    - `PRERENDER_INTERNAL_TOKEN`: o mesmo valor do segredo `prerender-internal-token`.
 
+## Bots
+
+O que a aplicação já faz:
+- **Na borda (Worker):** cada host só repassa os caminhos que atende. Varreduras (`/wp-admin`,
+  `/.env`) recebem 404 sem acordar o Cloud Run. O `robots.txt` fecha `api.` e `admin.`, e a
+  leitura pública da API fica 60 s em cache, sem cookie. O build da Vercel, com o token
+  interno, lê sempre da origem.
+- **No Laravel:** throttle de 60 req/min por IP na API e de 10/min no login, contado pelo IP que
+  a Cloudflare viu; `X-Robots-Tag: noindex` em toda resposta.
+- **No Cloud Run:** no máximo 3 instâncias. Um ataque custa no máximo isso, nunca uma conta
+  aberta.
+- **O site** é estático na CDN da Vercel: leitor e bot nunca chegam ao backend por ele.
+
+O que fica de fora, de propósito:
+- **Bot Fight Mode da Cloudflare: não ligar.** Ele desafia tráfego de datacenter, e é de
+  datacenter que vêm o build da Vercel (AWS) e o tick do Cloud Scheduler (Google). Ligar quebra
+  a publicação. No plano gratuito ele não aceita exceção.
+- **Regra de rate limiting no WAF** (uma no plano gratuito): seria a camada antes do Worker, e
+  pouparia a cota de 100 mil requisições/dia dele. O token do Terraform precisa da permissão
+  Zone → WAF → Edit para isso.
+- **Firewall da Vercel:** o plano Hobby já mitiga DDoS no site. O "Attack Challenge Mode" fica
+  para um ataque de verdade, porque também desafiaria leitores.
+
 ## Limites que valem saber
 
 - **Workers grátis:** 100 mil requisições por dia, somando painel, API e as
