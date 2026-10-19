@@ -38,17 +38,39 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
 2. **Variáveis:** copiar `terraform.tfvars.example` para `terraform.tfvars` e
    `state.gcs.tfbackend.example` para `state.gcs.tfbackend`, e preencher.
 
-3. **Aplicar:**
+3. **Aplicar em duas passadas.** O Cloud Run recusa uma revisão que lê um
+   segredo sem versão, então primeiro só os recipientes dos segredos, depois os
+   valores (passo 4), e só então o resto. O bucket R2 entra na primeira: o
+   token de acesso à mídia é emitido para um bucket que já existe.
 
    ```sh
    terraform init -backend-config=state.gcs.tfbackend
+   terraform apply -target=google_secret_manager_secret.external -target=cloudflare_r2_bucket.media
+   # passo 4: gravar os valores
    terraform apply
    ```
+
+   Sem Terraform instalado, o mesmo pela imagem oficial, com as credenciais do
+   `gcloud auth application-default login`:
+
+   ```sh
+   docker run --rm -it -v "$PWD:/w" -w /w \
+     -v "$HOME/.config/gcloud:/root/.config/gcloud:ro" \
+     -e CLOUDFLARE_API_TOKEN hashicorp/terraform:1.9 apply
+   ```
+
+   No WSL com o Docker Desktop, `$PWD` e `$HOME` chegam ao contêiner como pastas
+   vazias, e o Terraform responde "no configuration files". Lá os dois `-v`
+   levam o caminho UNC: `'\\wsl.localhost\Ubuntu\home\<usuário>\...'`.
+
+   O token da Cloudflare vai por nome (`-e CLOUDFLARE_API_TOKEN`), nunca o valor
+   no comando: exporte antes com `read -rs CLOUDFLARE_API_TOKEN && export
+   CLOUDFLARE_API_TOKEN`, que não ecoa nem vai para o histórico.
 
    A primeira revisão sobe com uma imagem de exemplo do Google. A imagem do
    Cosmos chega no primeiro deploy pelo pipeline.
 
-4. **Valores dos segredos:**
+4. **Valores dos segredos** (entre as duas passadas do passo 3):
 
    ```sh
    printf '%s' 'base64:...' | gcloud secrets versions add app-key --data-file=-
@@ -60,7 +82,8 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
    | `database-url` | A connection string do Neon (endpoint com pooler, `sslmode=require`) |
    | `media-s3-key`, `media-s3-secret` | Um token de API do R2 com leitura e escrita só neste bucket |
    | `vercel-deploy-hook` | Vercel → Settings → Git → Deploy Hooks, na branch `main` |
-   | `google-client-id`, `google-client-secret` | O cliente OAuth do login do painel. Callback: `https://admin.rdmlabs.com.br/admin/login/google/callback` |
+   | `google-client-id`, `google-client-secret` | O cliente OAuth do Google, o mesmo para o painel e para os leitores. Duas URIs de redirecionamento autorizadas: `https://admin.rdmlabs.com.br/admin/login/google/callback` e `https://api.rdmlabs.com.br/auth/google/callback` |
+   | `github-client-id`, `github-client-secret` | Um OAuth App do GitHub (Settings → Developer settings), só para os leitores. Callback: `https://api.rdmlabs.com.br/auth/github/callback` |
    | `prerender-internal-token` | O mesmo valor de `PRERENDER_INTERNAL_TOKEN` no projeto da Vercel |
 
 5. **Variáveis do repositório no GitHub** (Settings → Secrets and variables →
@@ -80,6 +103,18 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
 - **Workers grátis:** 100 mil requisições por dia, somando painel, API e as
   leituras da constelação. Na abertura ao público, o plano pago (US$ 5/mês)
   tira o teto.
+- **Custo:** cerca de US$ 0,30 por mês, todo do Secret Manager (11 segredos,
+  6 de graça). O resto fica na camada gratuita: o Cloud Run escala a zero, o
+  Artifact Registry guarda só três imagens, e há um job no Scheduler.
+- **Neon grátis:** as horas de computação do mês acabam se o banco nunca
+  dorme. Ele suspende depois de 5 minutos parado, e por isso o tick roda a
+  cada 15 minutos, não a cada minuto. Um tick mais frequente, ou
+  `min_instance_count = 1` com um health check que toque o banco, pede o plano
+  pago do Neon.
+- **Teste gratuito do Google Cloud:** ao fim dos 90 dias (ou dos créditos), os
+  recursos param até a conta virar paga. A camada gratuita continua valendo
+  depois disso. Um alerta de orçamento em Billing → Budgets avisa se algo sair
+  do esperado.
 - **Escala:** o Cloud Run vai de 0 a 3 instâncias, com 40 requisições
   simultâneas por instância. Na abertura ao público, `min_instance_count = 1`
   evita a partida a frio.

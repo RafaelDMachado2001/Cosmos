@@ -79,6 +79,8 @@ jobs:
       - run: ./vendor/bin/pint --test
       # Nivel 8, sem baseline.
       - run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+      # Fronteiras entre os módulos (deptrac.yaml).
+      - run: ./vendor/bin/deptrac analyse --no-progress
       - run: php artisan test
 
   e2e:
@@ -171,6 +173,7 @@ jobs:
           ADMIN_HOST=admin.rdmlabs.test
           API_HOST=api.rdmlabs.test
           EDGE_SHARED_SECRET=ci-edge
+          SITE_URL=https://cosmos.rdmlabs.test
           EOF
           sed -i 's/^ *//' prod.env
       - name: Configuração incompleta não sobe
@@ -247,7 +250,7 @@ jobs:
         # e coberto por AdminPanelTest na suite do backend.
         run: |
           docker compose --profile backend exec -T app php artisan tinker --execute="
-          \$p = App\Models\Publication::create(['slug' => '$SLUG', 'category' => 'artigo', 'published_at' => now(), 'featured' => false, 'status' => App\Models\Publication::STATUS_PUBLISHED]);
+          \$p = App\Modules\Content\Models\Publication::create(['slug' => '$SLUG', 'category' => 'artigo', 'published_at' => now(), 'featured' => false, 'status' => App\Modules\Content\Models\Publication::STATUS_PUBLISHED]);
           \$p->translations()->create(['locale' => 'pt', 'title' => '$TITLE', 'summary' => 'Resumo.', 'body' => 'Texto do CI.']);
           \$p->translations()->create(['locale' => 'en', 'title' => '$TITLE', 'summary' => 'Summary.', 'body' => 'CI text.']);
           "
@@ -267,7 +270,7 @@ jobs:
           exit 1
       - name: Apagar devolve 404
         run: |
-          docker compose --profile backend exec -T app php artisan tinker --execute="App\Models\Publication::where('slug', '$SLUG')->first()->delete();"
+          docker compose --profile backend exec -T app php artisan tinker --execute="App\Modules\Content\Models\Publication::where('slug', '$SLUG')->first()->delete();"
           url="http://localhost:8080/pt/publicacoes/$SLUG"
           for _ in $(seq 1 60); do
             status="$(curl -s -o /dev/null -w '%{http_code}' "$url")"

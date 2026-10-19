@@ -2,10 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\Publication;
-use App\Models\PublicationTranslation;
-use App\Observers\PublicationObserver;
-use App\Support\SiteRebuild;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -26,13 +22,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Publication::observe(PublicationObserver::class);
-
-        // A traducao nao passa pelo observer de Publication: salvar so o
-        // texto, sem tocar na publicacao, nao dispara `saved` nela.
-        PublicationTranslation::saved(static fn () => SiteRebuild::request());
-        PublicationTranslation::deleted(static fn () => SiteRebuild::request());
-
         // O grupo `api` so aplica `throttle:api` porque bootstrap/app.php
         // chama throttleApi() — sem este limiter registrado, a primeira
         // requisicao lancaria "Rate limiter [api] is not defined".
