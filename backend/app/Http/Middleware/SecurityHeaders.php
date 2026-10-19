@@ -28,6 +28,9 @@ class SecurityHeaders
         $response->headers->set('Content-Security-Policy', "frame-ancestors 'none'");
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        // Nada do backend é página para buscador: o painel, a API e o login
+        // ficam fora do índice. O conteúdo indexável é o do site estático.
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
 
         return $response;
     }
