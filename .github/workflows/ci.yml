@@ -31,7 +31,10 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        # A versão do Neon em produção. O compose local segue no 16 até
+        # alguém migrar o volume (pg_dump + restore): o diretório de dados
+        # de uma versão não abre na outra.
+        image: postgres:18-alpine
         env:
           # Termina em _test: tests/TestCase.php recusa qualquer outro banco.
           POSTGRES_DB: rdm_labs_test
@@ -150,7 +153,7 @@ jobs:
       - name: Postgres
         run: |
           docker network create prod
-          docker run -d --name db --network prod -e POSTGRES_DB=rdm -e POSTGRES_USER=rdm -e POSTGRES_PASSWORD=ci-test postgres:16-alpine
+          docker run -d --name db --network prod -e POSTGRES_DB=rdm -e POSTGRES_USER=rdm -e POSTGRES_PASSWORD=ci-test postgres:18-alpine
           for _ in $(seq 1 30); do docker exec db pg_isready -U rdm -d rdm && exit 0; sleep 2; done
           exit 1
       - name: Ambiente de produção com valores de teste
