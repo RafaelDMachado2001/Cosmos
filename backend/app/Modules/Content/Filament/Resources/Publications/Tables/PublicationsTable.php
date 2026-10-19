@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Content\Filament\Resources\Publications\Tables;
 
 use App\Modules\Content\Models\Publication;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -86,7 +87,21 @@ class PublicationsTable
                         'Rotina',
                     ])),
             ])
-            ->recordActions([EditAction::make()])
+            // Editar é no Studio. O formulário do Filament grava o Markdown
+            // publicado direto, sem passar pelo rascunho, e o próximo
+            // "publicar" do Studio sobrescreveria o que foi feito ali.
+            ->recordUrl(fn (Publication $record): string => self::studioUrl($record))
+            ->recordActions([
+                Action::make('studio')
+                    ->label('Editar no Studio')
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->url(fn (Publication $record): string => self::studioUrl($record)),
+            ])
             ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
+    }
+
+    public static function studioUrl(Publication $publication): string
+    {
+        return route('rdm-studio', ['publication' => $publication->id]);
     }
 }

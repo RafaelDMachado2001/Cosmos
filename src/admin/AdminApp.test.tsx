@@ -78,6 +78,26 @@ describe('AdminApp', () => {
     expect(await screen.findByDisplayValue('Code review sem atrito')).not.toBeNull();
   });
 
+  it('abre direto na publicação do endereço, e o endereço segue a seleção', async () => {
+    api.list.mockResolvedValue([publication(), publication({ id: 7, slug: 'outra', drafts: {} })]);
+    window.history.replaceState(null, '', '/admin/studio?publication=1');
+
+    render(<AdminApp initialSelectedId={1} />);
+
+    expect(await screen.findByDisplayValue('Code review sem atrito')).not.toBeNull();
+    expect(window.location.search).toBe('?publication=1');
+  });
+
+  it('um id que não está no acervo vira estado vazio e sai do endereço', async () => {
+    api.list.mockResolvedValue([publication()]);
+    window.history.replaceState(null, '', '/admin/studio?publication=99');
+
+    render(<AdminApp initialSelectedId={99} />);
+
+    expect(await screen.findByText(/selecione uma publicação/i)).not.toBeNull();
+    await waitFor(() => expect(window.location.search).toBe(''));
+  });
+
   it('"+ Nova" cria uma publicação e a seleciona', async () => {
     api.list.mockResolvedValue([]);
     const created = publication({ id: 2, slug: 'rascunho-123', drafts: {} });
@@ -95,7 +115,9 @@ describe('AdminApp', () => {
 
   it('publicar logo depois de editar salva o rascunho antes, e só então publica', async () => {
     api.list.mockResolvedValue([publication()]);
-    api.update.mockImplementation((_id: number, patch: unknown) => Promise.resolve({ ...publication(), patch }));
+    api.update.mockImplementation((_id: number, patch: unknown) =>
+      Promise.resolve({ ...publication(), patch }),
+    );
     api.publish.mockResolvedValue(publication({ status: 'published' }));
     const user = userEvent.setup();
 

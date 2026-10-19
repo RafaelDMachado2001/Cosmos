@@ -7,6 +7,7 @@ import { PLACEHOLDER_SLUG_PREFIX, usePublicationEditor } from './usePublicationE
 import { PublicationList } from './PublicationList';
 import { api } from './api';
 import type { AdminPublication } from './api';
+import { searchForSelected } from './selection';
 
 /** A publicação selecionada: busca a lista uma vez e edita localmente a partir daí. */
 function EditorPane({
@@ -27,9 +28,14 @@ function EditorPane({
   );
 }
 
-export function AdminApp(): React.JSX.Element {
+export function AdminApp({
+  initialSelectedId = null,
+}: {
+  /** Vem de `?publication=` (ver `selection.ts`): o link do Filament abre direto nela. */
+  readonly initialSelectedId?: number | null;
+} = {}): React.JSX.Element {
   const [publications, setPublications] = useState<readonly AdminPublication[] | null>(null);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
@@ -41,8 +47,29 @@ export function AdminApp(): React.JSX.Element {
 
   useEffect(() => reload(), [reload]);
 
+  // Um id do endereço que não está no acervo (apagado, link velho) vira estado vazio.
+  useEffect(() => {
+    if (
+      publications !== null &&
+      selectedId !== null &&
+      !publications.some((item) => item.id === selectedId)
+    ) {
+      setSelectedId(null);
+    }
+  }, [publications, selectedId]);
+
+  // O endereço acompanha a seleção: recarregar volta para a mesma publicação.
+  useEffect(() => {
+    const search = searchForSelected(window.location.search, selectedId);
+    if (search !== window.location.search) {
+      window.history.replaceState(null, '', `${window.location.pathname}${search}`);
+    }
+  }, [selectedId]);
+
   function handleUpdated(updated: AdminPublication): void {
-    setPublications((prev) => prev?.map((item) => (item.id === updated.id ? updated : item)) ?? prev);
+    setPublications(
+      (prev) => prev?.map((item) => (item.id === updated.id ? updated : item)) ?? prev,
+    );
   }
 
   function handleDeleted(id: number): void {
