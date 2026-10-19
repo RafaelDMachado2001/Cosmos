@@ -15,12 +15,16 @@ export default defineConfig(({ mode }) => {
   // Mesma porta dentro e fora do container: assim o cliente do HMR acerta
   // o websocket sozinho, sem precisar de server.hmr.clientPort.
   const port = Number(env.VITE_PORT ?? DEFAULT_PORT);
+  // A Vercel expõe VITE_VERCEL_ENV no build. Só a produção conta visita: nem os
+  // previews das PRs nem o build local do Nginx carregam o script.
+  const analytics = env.VITE_VERCEL_ENV === 'production';
 
   return {
     plugins: [react()],
     define: {
       __SITE_ORIGIN__: JSON.stringify(origin),
       __API_URL__: JSON.stringify(apiUrl),
+      __ANALYTICS__: JSON.stringify(analytics),
     },
     css: {
       // Fixo porque o build de SSR (prerender) precisa gerar exatamente os mesmos
