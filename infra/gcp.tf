@@ -206,8 +206,11 @@ resource "google_cloud_run_v2_service" "api" {
   }
 
   lifecycle {
-    # Quem troca a imagem é o pipeline (.github/workflows/deploy.yml).
-    ignore_changes = [template[0].containers[0].image, client, client_version]
+    # Quem troca a imagem e nomeia a revisão (cosmos-api-<sha>) é o pipeline
+    # (.github/workflows/deploy.yml). O `scaling` do serviço é o padrão que a
+    # API devolve preenchido; o que vale é o do template. Sem isto, todo plan
+    # mostrava mudança, e um plan limpo deixava de querer dizer alguma coisa.
+    ignore_changes = [template[0].containers[0].image, template[0].revision, scaling, client, client_version]
   }
 
   depends_on = [google_secret_manager_secret_iam_member.runtime]
