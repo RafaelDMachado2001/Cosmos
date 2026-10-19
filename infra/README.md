@@ -59,6 +59,14 @@ em `CLOUDFLARE_API_TOKEN`, com estas permissões:
      -e CLOUDFLARE_API_TOKEN hashicorp/terraform:1.9 apply
    ```
 
+   No WSL com o Docker Desktop, `$PWD` e `$HOME` chegam ao contêiner como pastas
+   vazias, e o Terraform responde "no configuration files". Lá os dois `-v`
+   levam o caminho UNC: `'\\wsl.localhost\Ubuntu\home\<usuário>\...'`.
+
+   O token da Cloudflare vai por nome (`-e CLOUDFLARE_API_TOKEN`), nunca o valor
+   no comando: exporte antes com `read -rs CLOUDFLARE_API_TOKEN && export
+   CLOUDFLARE_API_TOKEN`, que não ecoa nem vai para o histórico.
+
    A primeira revisão sobe com uma imagem de exemplo do Google. A imagem do
    Cosmos chega no primeiro deploy pelo pipeline.
 
