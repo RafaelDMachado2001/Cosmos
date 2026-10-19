@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Media;
-use App\Models\Publication;
-use App\Models\PublicationDraft;
+use App\Modules\Content\Models\Media;
+use App\Modules\Content\Models\Publication;
+use App\Modules\Content\Models\PublicationDraft;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;

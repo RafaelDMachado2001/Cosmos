@@ -28,6 +28,7 @@ class AssertProductionEnvTest extends TestCase
             'hosts.admin' => 'admin.rdmlabs.com.br',
             'hosts.api' => 'api.rdmlabs.com.br',
             'hosts.edge_secret' => 's3gredo',
+            'hosts.site' => 'https://cosmos.rdmlabs.com.br',
         ]);
     }
 

@@ -56,6 +56,7 @@ class AssertProductionEnv extends Command
             'ADMIN_HOST ausente' => $filled('hosts.admin'),
             'API_HOST ausente' => $filled('hosts.api'),
             'EDGE_SHARED_SECRET ausente: o run.app ficaria aberto' => $filled('hosts.edge_secret'),
+            'SITE_URL precisa ser https: o login do leitor devolve para lá' => str_starts_with((string) config('hosts.site'), 'https://'),
         ];
 
         return array_keys(array_filter($checks, static fn (bool $ok): bool => ! $ok));

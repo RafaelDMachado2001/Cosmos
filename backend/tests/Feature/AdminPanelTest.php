@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Filament\Resources\Publications\Pages\CreatePublication;
-use App\Filament\Resources\Publications\Pages\ListPublications;
-use App\Models\Publication;
 use App\Models\User;
+use App\Modules\Content\Filament\Resources\Publications\Pages\CreatePublication;
+use App\Modules\Content\Filament\Resources\Publications\Pages\ListPublications;
+use App\Modules\Content\Models\Publication;
 use Database\Seeders\PublicationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;

@@ -28,6 +28,16 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    /*
+     * Login do leitor (módulo Identity). A URI de redirecionamento é montada
+     * por rota, no host da API. Sem client_id, o provedor responde 404.
+     */
+    'github' => [
+        'client_id' => env('GITHUB_CLIENT_ID'),
+        'client_secret' => env('GITHUB_CLIENT_SECRET'),
+        'redirect' => null,
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

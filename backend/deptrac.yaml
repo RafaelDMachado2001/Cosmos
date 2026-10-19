@@ -1,0 +1,45 @@
+# Fronteiras do monólito modular (docs/architecture.md). Um módulo não importa
+# outro: o que precisa saber dele chega por evento de domínio. Todos podem
+# usar a plataforma (middleware, o admin, o controller base); a plataforma não
+# conhece nenhum. Os providers são a raiz de composição e ficam de fora.
+#
+# O Activity escuta os eventos do Identity (e, na etapa 3, os do Community) e
+# implementa o contrato do export, e por isso conhece essas classes, e só elas. Quem emite nunca conhece quem
+# escuta.
+deptrac:
+  paths:
+    - ./app
+  layers:
+    - name: Platform
+      collectors:
+        - type: directory
+          value: app/(?!Modules/|Providers/).*
+    - name: Content
+      collectors:
+        - type: directory
+          value: app/Modules/Content/.*
+    - name: Identity
+      collectors:
+        - type: directory
+          value: app/Modules/Identity/(?!Events/|Contracts/).*
+    # Eventos e interfaces são o contrato público de um módulo: o único pedaço
+    # dele que outro pode importar.
+    - name: IdentityContract
+      collectors:
+        - type: directory
+          value: app/Modules/Identity/(Events|Contracts)/.*
+    - name: Activity
+      collectors:
+        - type: directory
+          value: app/Modules/Activity/.*
+  ruleset:
+    Platform: ~
+    Content:
+      - Platform
+    Identity:
+      - Platform
+      - IdentityContract
+    IdentityContract: ~
+    Activity:
+      - Platform
+      - IdentityContract

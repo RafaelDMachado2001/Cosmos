@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Publication;
+use App\Modules\Content\Models\Publication;
 use Illuminate\Database\Seeder;
 
 /**
