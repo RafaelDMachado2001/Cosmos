@@ -3,7 +3,7 @@
 namespace App\Modules\Content\Filament\Resources\Publications\Pages;
 
 use App\Modules\Content\Filament\Resources\Publications\PublicationResource;
-use Filament\Actions\CreateAction;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPublications extends ListRecords
@@ -13,7 +13,10 @@ class ListPublications extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            // Criar também é no Studio (ver PublicationsTable).
+            Action::make('studio')
+                ->label('Nova publicação')
+                ->url(fn (): string => route('rdm-studio')),
         ];
     }
 }
