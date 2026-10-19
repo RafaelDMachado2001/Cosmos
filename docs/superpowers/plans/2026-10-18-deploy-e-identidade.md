@@ -324,14 +324,10 @@ não pode ir junto (ver "Two hosts, one app" no documento de arquitetura).
 - **Monitoramento** (Sentry, métricas e alertas). Entra antes da abertura ao público (etapa 4),
   junto com backups testados do Neon.
 - **Gamificação** (etapa 5). Um módulo que projeta pontos a partir de `activities`.
-- **Itens da auditoria que ficaram de fora:**
-  - cache das imagens `/og/`;
-  - gzip do XML;
-  - RSS com `<language>`;
-  - `safeUrl` aceitando `//host`;
-  - limite de dimensões da imagem no upload.
-
-  São pequenos e podem entrar em qualquer tarefa que toque o mesmo arquivo.
+- **Itens da auditoria que ficaram de fora:** feitos depois da etapa 2, numa PR só: cache das
+  imagens `/og/`, gzip do XML no Nginx (a Vercel já comprime), RSS com `<language>`, `safeUrl`
+  recusando `//host` e `/\host`, e um teto de 16 MP no upload, checado no cabeçalho antes de o GD
+  abrir a imagem.
 
 ## Riscos
 

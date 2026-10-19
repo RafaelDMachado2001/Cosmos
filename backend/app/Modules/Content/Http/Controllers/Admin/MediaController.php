@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Content\Http\Resources\Admin\MediaResource;
 use App\Modules\Content\Models\Media;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Image\Image;
@@ -17,10 +18,26 @@ class MediaController extends Controller
     /** O alvo do handoff: 1600px de largura, nunca upscale. */
     private const int MAX_WIDTH = 1600;
 
+    /**
+     * O teto de área antes de o GD abrir a imagem. Decodificada, ela ocupa 4
+     * bytes por pixel: 16 MP são ~64 MB, dentro dos 128 MB do PHP. Um PNG de
+     * poucos KB com 20000×20000 ("bomba de descompressão") derrubaria o
+     * processo; o getimagesize lê só o cabeçalho e recusa antes.
+     */
+    private const int MAX_PIXELS = 16_000_000;
+
     public function store(Request $request): MediaResource
     {
         $data = $request->validate([
-            'file' => ['required', 'image', 'max:20480'],
+            'file' => [
+                'required', 'image', 'max:20480',
+                static function (string $attribute, mixed $value, \Closure $fail): void {
+                    $size = $value instanceof UploadedFile ? @getimagesize($value->getRealPath()) : false;
+                    if ($size !== false && $size[0] * $size[1] > self::MAX_PIXELS) {
+                        $fail('A imagem passa de 16 megapixels. Reduza antes de enviar.');
+                    }
+                },
+            ],
             'alt' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
