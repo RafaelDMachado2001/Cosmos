@@ -82,6 +82,11 @@ jobs:
       # Fronteiras entre os módulos (deptrac.yaml).
       - run: ./vendor/bin/deptrac analyse --no-progress
       - run: php artisan test
+      # De novo como em produção: o pooler do Neon pede prepared statements
+      # emulados (config/database.php), e eles mudam como os parâmetros viajam.
+      - run: php artisan test
+        env:
+          DB_EMULATE_PREPARES: 'true'
 
   e2e:
     name: e2e
@@ -238,7 +243,9 @@ jobs:
       - run: docker compose --profile backend up -d db app queue web
       - name: RDM Studio responde (casca exige login; os assets, não)
         run: |
-          for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/admin/rdm-studio/admin.js && break; sleep 2; done
+          # Espera pelo PHP, não pelo Nginx: o admin.js é estático e responde antes
+          # de o PHP-FPM aceitar conexão, e o /admin/studio dava 502 na corrida.
+          for _ in $(seq 1 30); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/studio)" = 302 ] && break; sleep 2; done
           status_js="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/rdm-studio/admin.js)"
           status_studio="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/studio)"
           [ "$status_js" = 200 ] && [ "$status_studio" = 302 ]
