@@ -17,7 +17,7 @@ The project is being built as an experiment in expressive interfaces: a place wh
 ## Stack
 **Site:** React 18, TypeScript, Vite, Three.js (used directly, without React Three Fiber), CSS Modules and CSS custom properties for the design tokens.
 
-**Backend:** Laravel 13, Filament 5 for the admin panel, a React editor (the RDM Studio), Laravel Sanctum and Socialite for reader accounts, PostgreSQL.
+**Backend:** Laravel 13, Filament 5 for the admin panel, a React editor (the RDM Studio), Laravel Sanctum and Socialite for reader accounts, PostgreSQL 18.
 
 **Infrastructure:** Vercel for the site and its cookieless Web Analytics, Google Cloud Run (São Paulo) for the backend, Neon for Postgres, Cloudflare for DNS, the edge Worker and R2 media storage, Terraform for all of it, and GitHub Actions for delivery.
 
