@@ -93,6 +93,22 @@ URL. It sends:
 The app answers 404 to anything that arrives without the secret, so the
 `run.app` URL is not a back door.
 
+The Worker is also the first defense against bots. Every request that reaches
+Cloud Run can wake an instance and the database, so whatever can be answered
+at the edge stops there:
+- each host forwards only the paths it serves; scans for `/wp-admin`, `/.env`
+  and the like get a 404 from the Worker;
+- `robots.txt` comes from the Worker and closes both hosts to crawlers, and
+  every backend response carries `X-Robots-Tag: noindex`;
+- the public read API is cached at the edge for a minute, requested without
+  cookies so that no response carries a session. The site's build sends an
+  internal token and always reads from the origin, so publishing never
+  rebuilds the site from stale content.
+
+Behind that, Laravel rate-limits the API per client IP (the one Cloudflare
+saw, not one a client can claim), Cloud Run is capped at three instances, and
+readers never touch the backend at all: the site is static files on a CDN.
+
 ### API and studio (Cloud Run)
 
 Laravel 13 in a single container image (FrankenPHP: HTTP server and PHP in
