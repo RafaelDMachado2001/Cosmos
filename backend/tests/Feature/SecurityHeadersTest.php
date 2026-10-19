@@ -23,4 +23,10 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     }
+
+    public function test_nada_do_backend_entra_no_indice_dos_buscadores(): void
+    {
+        $this->get('/admin/login')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->get('/api/publications')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
 }
