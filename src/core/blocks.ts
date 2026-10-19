@@ -54,7 +54,9 @@ export type Block =
 export function safeUrl(url: string): string | null {
   const trimmed = url.trim();
   if (trimmed === '') return null;
-  if (trimmed.startsWith('/') || trimmed.startsWith('#')) return trimmed;
+  // `//host` e `/\host` não são raiz-relativos: o navegador lê os dois como
+  // outro host, e um link que parece interno levaria para fora do site.
+  if (/^\/(?![/\\])/.test(trimmed) || trimmed.startsWith('#')) return trimmed;
   if (/^(https?|mailto):/i.test(trimmed)) return trimmed;
   return null;
 }
