@@ -205,6 +205,17 @@ class PublicationAdminApiTest extends TestCase
         $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
             'references' => [['title' => 'Fonte', 'url' => 'javascript:alert(1)']],
         ])->assertUnprocessable()->assertJsonValidationErrors('references.0.url');
+
+        // Parecem raiz-relativos, mas o navegador os lê como outro host.
+        foreach (['//evil.example/x', '/\\evil.example/x'] as $url) {
+            $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+                'references' => [['title' => 'Fonte', 'url' => $url]],
+            ])->assertUnprocessable()->assertJsonValidationErrors('references.0.url');
+        }
+
+        $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+            'references' => [['title' => 'Fonte', 'url' => '/pt/publicacoes/outra']],
+        ])->assertOk();
     }
 
     // -- publish / unpublish ----------------------------------------------------
@@ -327,6 +338,29 @@ class PublicationAdminApiTest extends TestCase
         // imagem publicada apontava para o host do backend, não o do site — o
         // Nginx serve /storage/ no mesmo host das páginas.
         $this->assertSame('/storage/media/a.webp', Storage::disk('media')->url('media/a.webp'));
+    }
+
+    public function test_upload_recusa_imagem_acima_de_16_megapixels(): void
+    {
+        // Uma bomba de descompressão: poucos bytes, e o cabeçalho declara
+        // 20000 × 20000. Decodificada, ocuparia 1,6 GB; nem o próprio
+        // UploadedFile::fake()->image() desenharia isso nos 128 MB do PHP.
+        $file = UploadedFile::fake()->createWithContent('bomba.png', self::pngHeader(20000, 20000));
+
+        $this->actingAs($this->admin())
+            ->postJson('/admin/api/media', ['file' => $file])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['file' => '16 megapixels']);
+
+        $this->assertSame(0, Media::count());
+    }
+
+    /** Assinatura e IHDR de um PNG: o que o getimagesize lê para dar o tamanho. */
+    private static function pngHeader(int $width, int $height): string
+    {
+        $ihdr = 'IHDR'.pack('NNCCCCC', $width, $height, 8, 6, 0, 0, 0);
+
+        return "\x89PNG\r\n\x1a\n".pack('N', 13).$ihdr.pack('N', crc32($ihdr));
     }
 
     public function test_upload_recusa_arquivo_que_nao_e_imagem(): void

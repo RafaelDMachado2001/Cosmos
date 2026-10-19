@@ -36,6 +36,11 @@ describe('rssXml', () => {
     expect(xml).toContain('<description>Artigos, estudos, projetos e registros de rotina.</description>');
   });
 
+  it('o canal declara o idioma, com o mesmo código do lang da página', () => {
+    expect(xml).toContain('<language>pt-BR</language>');
+    expect(rssXml('https://rdmlabs.dev', 'en', CHANNEL, [])).toContain('<language>en</language>');
+  });
+
   it('um item por publicação, com link absoluto do idioma pedido', () => {
     expect(xml.match(/<item>/g)?.length).toBe(2);
     expect(xml).toContain('<link>https://rdmlabs.dev/pt/publicacoes/code-review-sem-atrito</link>');

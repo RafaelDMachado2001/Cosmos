@@ -10,6 +10,7 @@
  */
 
 import { articlePath, homePath } from './routing';
+import { LOCALE_TAG } from './types';
 import type { Locale } from './types';
 import { absolute } from './url';
 
@@ -73,6 +74,9 @@ export function rssXml(
     `    <title>${escapeXml(channel.title)}</title>`,
     `    <link>${absolute(origin, homePath(locale))}</link>`,
     `    <description>${escapeXml(channel.description)}</description>`,
+    // O mesmo código BCP 47 do `lang` da página: o leitor de RSS escolhe
+    // hifenização e voz de leitura por ele.
+    `    <language>${LOCALE_TAG[locale]}</language>`,
     ...entries.map((entry) => item(origin, locale, entry)),
     '  </channel>',
     '</rss>',
