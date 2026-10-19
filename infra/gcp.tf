@@ -20,6 +20,7 @@ locals {
     APP_URL                   = "https://${local.admin_host}"
     DB_CONNECTION             = "pgsql"
     DB_SSLMODE                = "require"
+    DB_EMULATE_PREPARES       = "true"
     SESSION_DRIVER            = "database"
     SESSION_SECURE_COOKIE     = "true"
     SESSION_DOMAIN            = ".${var.domain}"
