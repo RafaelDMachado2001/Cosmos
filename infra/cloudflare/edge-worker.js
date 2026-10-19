@@ -138,6 +138,9 @@ export default {
    */
   fetch(request, env, ctx) {
     // `caches.default` é o cache da Cloudflare no datacenter que atendeu.
-    return handle(request, env, ctx, { cache: caches.default, fetch });
+    // O `fetch` vai embrulhado: chamado como `deps.fetch(...)`, o `this` dele
+    // vira o objeto, e o runtime da Cloudflare lança "Illegal invocation"
+    // (erro 1101 em toda requisição, visto em produção).
+    return handle(request, env, ctx, { cache: caches.default, fetch: (input) => fetch(input) });
   },
 };
