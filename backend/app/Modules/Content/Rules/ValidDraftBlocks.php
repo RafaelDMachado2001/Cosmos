@@ -159,7 +159,8 @@ class ValidDraftBlocks implements ValidationRule
             return null;
         }
 
-        if (str_starts_with($trimmed, '/') || str_starts_with($trimmed, '#')) {
+        // `//host` e `/\host` o navegador lê como outro host (ver core/blocks.ts).
+        if (preg_match('#^/(?![/\\\\])#', $trimmed) === 1 || str_starts_with($trimmed, '#')) {
             return $trimmed;
         }
 
