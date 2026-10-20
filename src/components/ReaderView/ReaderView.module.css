@@ -1,163 +1,415 @@
 /* O laço de quadro escreve opacity e transform a cada quadro; os valores aqui
-   são só o ponto de partida, para que a vista nunca pisque montada e opaca. */
+   são só o ponto de partida, para que a vista nunca pisque montada e opaca.
+
+   O overlay é o contêiner de rolagem (em toda largura): o painel da
+   esquerda fica preso a ele, e o progresso de leitura é a rolagem dele. */
 .overlay {
   position: absolute;
   inset: 0;
   z-index: var(--z-reader);
   display: grid;
-  grid-template-columns: minmax(200px, 25%) 1fr;
-  grid-template-rows: 1fr;
-  overflow: hidden;
+  grid-template-columns: clamp(270px, 24vw, 400px) minmax(0, 1fr);
+  align-items: start;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
-  background: linear-gradient(180deg, var(--color-bg-elev), var(--color-bg));
+  background: var(--color-bg-elev);
   opacity: 0;
   transform: scale(1.06);
   will-change: opacity, transform;
   /* Reverte a nave do palco (App.module.css): ler texto com um cursor que
      não é de texto atrapalha mais do que ambienta. */
   cursor: auto;
+
+  /* Escala da leitura, lida por ArticleBody. */
+  --reading-size: clamp(18px, 1.15vw, 22px);
+  --reading-leading: 1.8;
+  --reading-h2: 28px;
+  --reading-measure: 46em;
 }
 
-/* --- Coluna da estrela ---------------------------------------------------
- * Todas as camadas na cor da categoria, empilhadas e centradas. Imóvel
- * enquanto o texto rola: é a âncora visual de onde o leitor está. */
+/* --- Painel da esquerda --------------------------------------------------
+ * Preso durante a rolagem: é a âncora de onde o leitor está. */
 .aside {
-  position: relative;
+  position: sticky;
+  top: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 22px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 28px clamp(22px, 2.2vw, 36px) 28px;
   overflow: hidden;
+  border-right: 1px solid color-mix(in oklch, var(--cat) 16%, transparent);
+  background: radial-gradient(120% 70% at 50% 30%, color-mix(in oklch, var(--n1) 9%, transparent), transparent 70%),
+    #07080e;
+}
+
+/* Tudo no painel fica acima da nebulosa. */
+.aside > :not(:first-child) {
+  position: relative;
+}
+
+.backLink {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--tracking-nav);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--dur-ui) var(--ease);
+}
+
+.backLink:hover {
+  color: var(--color-text-primary);
+}
+
+/* --- O planeta -------------------------------------------------------------
+ * Camadas na cor da categoria, empilhadas e centradas. Ao passar o mouse
+ * pelo painel ele se inclina na direção do ponteiro (--tilt-x/--tilt-y,
+ * escritos direto no estilo) e, sobre ele, acende: halo maior, anel mais
+ * rápido, brilho que percorre a superfície. */
+.orb {
+  --tilt-x: 0;
+  --tilt-y: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: min(100%, 220px);
+  aspect-ratio: 1;
+  margin: 6px auto 0;
+  transform: translate(calc(var(--tilt-x) * 14px), calc(var(--tilt-y) * 14px));
+  transition: transform 600ms var(--ease);
 }
 
 .aura,
 .halo,
 .core,
-.ring {
+.ring,
+.glint {
   position: absolute;
   aspect-ratio: 1;
   border-radius: 50%;
 }
 
 .aura {
-  width: 150%;
+  width: 170%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--star-color) 15%, transparent) 0%,
-    color-mix(in srgb, var(--star-color) 5%, transparent) 35%,
+    color-mix(in srgb, var(--cat) 16%, transparent) 0%,
+    color-mix(in srgb, var(--n2) 6%, transparent) 38%,
     transparent 68%
   );
   animation: rdmHalo 9s ease-in-out infinite;
 }
 
 .halo {
-  width: min(58%, 210px);
+  width: 92%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--star-color) 30%, transparent) 0%,
-    color-mix(in srgb, var(--star-color) 10%, transparent) 46%,
+    color-mix(in srgb, var(--cat) 32%, transparent) 0%,
+    color-mix(in srgb, var(--n1) 12%, transparent) 46%,
     transparent 72%
   );
   filter: blur(6px);
   animation: rdmHalo 5.5s ease-in-out infinite;
+  transition: transform 700ms var(--ease), opacity 700ms var(--ease);
 }
 
 .core {
-  width: min(30%, 108px);
+  width: 46%;
   background: radial-gradient(
-    circle at 40% 36%,
+    circle at calc(40% - var(--tilt-x) * 20%) calc(36% - var(--tilt-y) * 20%),
     #ffffff 0%,
-    var(--star-color) 44%,
-    transparent 78%
+    color-mix(in oklch, var(--cat) 70%, #ffffff) 18%,
+    var(--cat) 46%,
+    var(--n1) 72%,
+    color-mix(in oklch, var(--n1) 40%, #05060b) 100%
   );
   box-shadow:
-    0 0 70px 14px color-mix(in srgb, var(--star-color) 40%, transparent),
-    0 0 160px 40px color-mix(in srgb, var(--star-color) 15%, transparent);
+    0 0 60px 12px color-mix(in srgb, var(--cat) 40%, transparent),
+    0 0 150px 40px color-mix(in srgb, var(--n2) 16%, transparent),
+    inset -10px -14px 28px color-mix(in oklch, var(--n1) 60%, #000000);
   animation: rdmBreathe 4.5s ease-in-out infinite;
+  transition: box-shadow 700ms var(--ease);
 }
 
 .ring {
-  width: min(46%, 168px);
-  border: 1px solid color-mix(in srgb, var(--star-color) 23%, transparent);
-  border-top-color: color-mix(in srgb, var(--star-color) 67%, transparent);
+  width: 72%;
+  border: 1px solid color-mix(in srgb, var(--cat) 23%, transparent);
+  border-top-color: color-mix(in srgb, var(--cat) 70%, transparent);
   animation: rdmSpin 26s linear infinite;
 }
 
+/* Um reflexo que só aparece sob o mouse e cruza a superfície. */
+.glint {
+  width: 46%;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
+  background-size: 260% 100%;
+  background-position: 120% 0;
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 400ms var(--ease);
+}
+
+.orb:hover .halo {
+  transform: scale(1.18);
+}
+
+.orb:hover .core {
+  box-shadow:
+    0 0 80px 20px color-mix(in srgb, var(--cat) 55%, transparent),
+    0 0 190px 60px color-mix(in srgb, var(--n2) 24%, transparent),
+    inset -10px -14px 28px color-mix(in oklch, var(--n1) 60%, #000000);
+}
+
+.orb:hover .ring {
+  animation-duration: 7s;
+}
+
+.orb:hover .glint {
+  opacity: 1;
+  animation: readerGlint 1.6s var(--ease) both;
+}
+
+@keyframes readerGlint {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
 .asideMeta {
-  position: absolute;
-  right: 0;
-  bottom: 44px;
-  left: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  margin: 0;
+  font-family: var(--font-mono);
+  text-align: center;
+}
+
+.asideMeta p {
+  margin: 0;
+}
+
+.asideCategory {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
+  color: color-mix(in oklch, var(--cat) 45%, var(--color-text-primary));
+  font-size: 11px;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
 }
 
 .asideDate {
   color: var(--color-text-muted);
-  font-size: 9.5px;
-  letter-spacing: 0.26em;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .asidePosition {
   color: var(--color-text-faint);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.2em;
+}
+
+/* --- Sumário --------------------------------------------------------------- */
+.toc {
+  min-height: 0;
+  margin-top: 4px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.tocTitle {
+  margin: 0 0 12px;
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
+}
+
+.tocList {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tocList li[data-level='3'] {
+  padding-left: 14px;
+}
+
+/* O traço cresce de 4px para 14px no item ativo. */
+.tocLink {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: color var(--dur-ui) var(--ease);
+}
+
+.tocLink::before {
+  content: '';
+  flex: none;
+  width: 4px;
+  height: 1px;
+  margin-bottom: 0.3em;
+  background: currentColor;
+  transition: width 300ms var(--ease), background 300ms var(--ease);
+}
+
+.tocLink:hover {
+  color: var(--color-text-primary);
+}
+
+.tocLink[aria-current='location'] {
+  color: var(--color-text-primary);
+}
+
+.tocLink[aria-current='location']::before {
+  width: 14px;
+  background: var(--cat);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--cat) 70%, transparent);
+}
+
+/* --- Progresso ------------------------------------------------------------- */
+.progress {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  font-family: var(--font-mono);
+}
+
+.progressHead {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-faint);
+  font-size: 10px;
+  letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
+}
+
+.progressValue {
+  color: var(--color-text-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+.progressTrack {
+  display: block;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: var(--color-border-soft);
+}
+
+.progressBar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--n1), var(--cat));
+  box-shadow: 0 0 8px color-mix(in oklch, var(--cat) 60%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.resume {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in oklch, var(--cat) 40%, transparent);
+  border-radius: var(--radius-round);
+  background: color-mix(in oklch, var(--cat) 10%, transparent);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.resume:hover {
+  border-color: var(--cat);
 }
 
 /* --- Coluna do artigo ----------------------------------------------------- */
 .article {
   position: relative;
-  height: 100%;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: clamp(72px, 9vh, 104px) clamp(24px, 5vw, 72px) 96px;
-  border-left: 1px solid var(--color-border-accent-faint);
-  background: linear-gradient(180deg, rgba(13, 14, 26, 0.6), rgba(8, 9, 17, 0.9));
+  width: 100%;
+  max-width: 1400px;
+  padding: clamp(96px, 14vh, 150px) clamp(80px, 6vw, 128px) 160px clamp(32px, 6vw, 112px);
 }
 
-.measure {
-  max-width: var(--measure);
-  margin: 0 auto;
+.header {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+/* A nebulosa só atrás do cabeçalho, e some antes do texto. */
+.headerNebula {
+  inset: calc(clamp(96px, 14vh, 150px) * -1) calc(clamp(80px, 6vw, 128px) * -1) auto calc(clamp(32px, 6vw, 112px) * -1);
+  height: 640px;
+  mask-image: linear-gradient(180deg, #000000 35%, transparent 100%);
+  z-index: 0;
+}
+
+.header > :not(.headerNebula) {
+  position: relative;
+  z-index: 1;
 }
 
 .close {
-  position: absolute;
+  position: fixed;
   top: 24px;
   right: 28px;
-  z-index: 1;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--close-size);
-  height: var(--close-size);
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--color-border-soft);
   border-radius: 50%;
   background: var(--color-surface-close);
   backdrop-filter: blur(var(--blur-header));
   color: var(--color-text-ui);
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   transition: all var(--dur-ui) var(--ease);
 }
 
 .close:hover {
-  border-color: var(--color-accent-line-strong);
+  border-color: color-mix(in oklch, var(--cat) 70%, transparent);
   background: rgba(24, 20, 48, 0.72);
   color: #ffffff;
 }
 
 .meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin: 0 0 22px;
-  color: var(--color-text-secondary);
+  margin: 0 0 26px;
+  color: color-mix(in oklch, var(--cat) 40%, var(--color-text-primary));
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   letter-spacing: var(--tracking-meta);
   text-transform: uppercase;
 }
@@ -167,37 +419,45 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--star-color);
-  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--star-color) 60%, transparent);
+  background: var(--cat);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--cat) 60%, transparent);
 }
 
 .metaDate {
-  color: var(--color-text-faint);
+  color: var(--color-text-muted);
   letter-spacing: var(--tracking-nav);
 }
 
 .title {
-  margin: 0 0 18px;
+  max-width: 18em;
+  margin: 0 0 26px;
   color: var(--color-text-title);
-  font-size: clamp(30px, 3.4vw, 46px);
+  font-size: clamp(40px, 4.4vw, 84px);
   font-weight: 300;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-  text-wrap: pretty;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
 .lede {
-  margin: 0 0 30px;
+  max-width: 900px;
+  margin: 0 0 40px;
   color: var(--color-text-lede);
-  font-size: 17px;
-  line-height: 1.65;
+  font-size: clamp(20px, 1.35vw, 26px);
+  font-weight: 300;
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
 .filet {
   height: 1px;
-  margin-bottom: 30px;
-  background: linear-gradient(90deg, rgba(124, 92, 255, 0.35), transparent);
+  margin-bottom: 56px;
+  background: linear-gradient(90deg, var(--cat), var(--n2) 40%, transparent);
+  opacity: 0.6;
+}
+
+.body {
+  position: relative;
 }
 
 .footer {
@@ -205,61 +465,116 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 40px;
-  padding-top: 20px;
+  max-width: var(--reading-measure);
+  margin-top: 64px;
+  padding-top: 22px;
   border-top: 1px solid var(--color-border);
+  font-size: var(--reading-size);
 }
 
 .position {
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 10px;
   letter-spacing: 0.2em;
 }
 
 .back {
-  border: 1px solid var(--color-accent-line);
+  border: 1px solid color-mix(in oklch, var(--cat) 40%, transparent);
   border-radius: var(--radius-round);
-  padding: 9px 16px;
+  padding: 10px 18px;
   background: transparent;
-  color: var(--color-accent-soft);
+  color: color-mix(in oklch, var(--cat) 40%, var(--color-text-primary));
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 10px;
   letter-spacing: 0.2em;
   cursor: pointer;
   transition: all var(--dur-ui) var(--ease);
 }
 
 .back:hover {
-  border-color: var(--color-accent-line-strong);
+  border-color: var(--cat);
   color: #ffffff;
 }
 
+/* --- Telas médias: menos respiro lateral ---------------------------------- */
+@media (max-width: 1100px) {
+  .article {
+    padding-right: 56px;
+    padding-left: 40px;
+  }
+
+  .headerNebula {
+    inset: calc(clamp(96px, 14vh, 150px) * -1) -56px auto -40px;
+  }
+}
+
 /* --- Mobile --------------------------------------------------------------
- * O overlay inteiro vira o contêiner de rolagem e a estrela rola junto com a
- * página, como faixa hero — fixá-la comeria metade da tela de leitura. */
+ * Uma coluna: o planeta vira faixa de abertura e rola com a página, o
+ * sumário sai (o texto inteiro está a um polegar) e o progresso fica numa
+ * linha fina presa ao topo. */
 @media (max-width: 779px) {
   .overlay {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    overflow-y: auto;
+    display: block;
+    --reading-size: 17.5px;
+    --reading-h2: 23px;
   }
 
   .aside {
-    min-height: 46vh;
+    position: relative;
+    height: auto;
+    min-height: 0;
+    padding: 24px 24px 8px;
+    border-right: 0;
+    background: transparent;
+  }
+
+  .orb {
+    width: 150px;
+  }
+
+  .toc,
+  .asideMeta {
+    display: none;
+  }
+
+  .progress {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 2;
+    margin: 0;
+  }
+
+  .progressHead,
+  .resume {
+    display: none;
+  }
+
+  .progressTrack {
+    border-radius: 0;
   }
 
   .article {
-    height: auto;
-    overflow-y: visible;
-    padding: 40px 24px 88px;
-    border-left: none;
-    border-top: 1px solid var(--color-border-accent-faint);
+    padding: 32px 22px 96px;
   }
 
-  /* Aqui quem rola é o overlay; o transform dele ancora o `fixed`, então o
-     botão fica parado sobre a página em vez de subir com o texto. */
+  .headerNebula {
+    inset: -32px -22px auto -22px;
+    height: 420px;
+  }
+
+  .title {
+    font-size: clamp(32px, 9vw, 44px);
+  }
+
+  .lede {
+    font-size: 18px;
+  }
+
   .close {
-    position: fixed;
+    top: 14px;
+    right: 14px;
   }
 }

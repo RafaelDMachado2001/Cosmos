@@ -5,6 +5,7 @@ import styles from './ArticleBody.module.css';
 import { parseBlocks } from '../../core/blocks';
 import type { Block, InlineNode } from '../../core/blocks';
 import { highlight } from '../../core/highlight';
+import { outline } from '../../core/outline';
 import type { CodeToken } from '../../core/highlight';
 
 export interface ArticleBodyProps {
@@ -57,13 +58,13 @@ function renderCode(code: string, language: string | null, key: string): ReactNo
   );
 }
 
-function renderBlock(block: Block, key: string): ReactNode {
+function renderBlock(block: Block, key: string, headingId?: string): ReactNode {
   switch (block.type) {
     case 'heading': {
       const Tag = block.level === 2 ? 'h2' : 'h3';
       const className = block.level === 2 ? styles.heading2 : styles.heading3;
       return (
-        <Tag key={key} className={className}>
+        <Tag key={key} id={headingId} className={className}>
           {renderInline(block.children, key)}
         </Tag>
       );
@@ -186,10 +187,15 @@ function renderBlock(block: Block, key: string): ReactNode {
  */
 export function ArticleBody({ markdown }: ArticleBodyProps) {
   const blocks = useMemo(() => parseBlocks(markdown), [markdown]);
+  // Os mesmos ids que o sumário da leitura monta (`core/outline.ts`).
+  const ids = useMemo(() => outline(blocks).map((entry) => entry.id), [blocks]);
 
+  let heading = 0;
   return (
     <>
-      {blocks.map((block, index) => renderBlock(block, `block-${String(index)}`))}
+      {blocks.map((block, index) =>
+        renderBlock(block, `block-${String(index)}`, block.type === 'heading' ? ids[heading++] : undefined),
+      )}
     </>
   );
 }

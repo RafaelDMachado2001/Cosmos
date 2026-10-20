@@ -12,6 +12,7 @@ import { SkipLink } from './components/SkipLink/SkipLink';
 import type { HoverCard, HoverVia } from './components/HoverPanel/HoverPanel';
 import { ReaderView } from './components/ReaderView/ReaderView';
 import type { ReaderCard } from './components/ReaderView/ReaderView';
+import { resolveAppearance } from './core/appearance';
 import { StarIndex } from './components/StarIndex/StarIndex';
 import { TimeRuler } from './components/TimeRuler/TimeRuler';
 import { countByCategory, dimmedStars } from './core/filter';
@@ -447,6 +448,7 @@ function Shell({ route }: { route: Route }) {
     const position = timelinePosition(detail.slug, stars);
 
     return {
+      slug: detail.slug,
       category: detail.category,
       categoryLabel: t.categories[detail.category],
       dateLabel: date,
@@ -454,6 +456,7 @@ function Shell({ route }: { route: Route }) {
       title: detail.title,
       summary: detail.summary,
       body: detail.body,
+      appearance: resolveAppearance(detail.appearance),
     };
   }, [reader, article, stars, dateLabel, t]);
 

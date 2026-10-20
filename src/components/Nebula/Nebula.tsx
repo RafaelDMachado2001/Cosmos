@@ -11,7 +11,7 @@ export interface NebulaProps {
   /** 0 a 1.6; ver `core/appearance.ts`. */
   readonly intensity: number;
   readonly motion: boolean;
-  readonly className?: string;
+  readonly className?: string | undefined;
 }
 
 const pct = (value: number): string => `${value.toFixed(2)}%`;
