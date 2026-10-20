@@ -1,7 +1,10 @@
 import { useState } from 'react';
 
+import { DEFAULT_APPEARANCE, NEBULA_MAX } from '../core/appearance';
 import { CATEGORIES } from '../core/types';
 import type { Category } from '../core/types';
+import { CategoryTheme } from '../components/CategoryTheme/CategoryTheme';
+import { Nebula } from '../components/Nebula/Nebula';
 import { CATEGORY_LABEL, STATUS_LABEL } from './categoryLabels';
 import styles from './MetaPanel.module.css';
 import { TagInput } from './TagInput';
@@ -118,6 +121,8 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           ))}
         </select>
       </label>
+
+      <AppearanceSection editor={editor} />
 
       <label className={styles.field}>
         <span className={styles.label}>Data de publicação (UTC)</span>
@@ -241,6 +246,62 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           {armedDelete ? 'Confirmar exclusão' : 'Apagar'}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * A nebulosa e o movimento da tela de leitura. "Herdar" grava nulo: a
+ * publicação segue o padrão (`core/appearance.ts`) e muda junto com ele.
+ * A prévia é o topo do artigo, com os mesmos `CategoryTheme` e `Nebula`.
+ */
+function AppearanceSection({ editor }: { readonly editor: PublicationEditorState }): React.JSX.Element {
+  const inherit = editor.appearance === null;
+  const current = editor.appearance ?? DEFAULT_APPEARANCE;
+  const title = editor.currentDraft.title === '' ? '(sem título)' : editor.currentDraft.title;
+
+  return (
+    <div className={styles.field}>
+      <span className={styles.label}>Aparência</span>
+      <label className={styles.toggle}>
+        <input
+          type="checkbox"
+          checked={inherit}
+          onChange={(event) => editor.setAppearance(event.target.checked ? null : DEFAULT_APPEARANCE)}
+        />
+        Herdar da categoria
+      </label>
+      <label className={styles.rangeField}>
+        <span className={styles.rangeHead}>
+          <span>Intensidade da nebulosa</span>
+          <span className={styles.rangeValue}>{current.nebula.toFixed(2)}</span>
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={NEBULA_MAX}
+          step={0.05}
+          disabled={inherit}
+          value={current.nebula}
+          onChange={(event) => editor.setAppearance({ ...current, nebula: Number(event.target.value) })}
+        />
+      </label>
+      <label className={styles.toggle}>
+        <input
+          type="checkbox"
+          disabled={inherit}
+          checked={current.motion}
+          onChange={(event) => editor.setAppearance({ ...current, motion: event.target.checked })}
+        />
+        Movimento
+      </label>
+
+      <CategoryTheme category={editor.category} className={styles.appearancePreview}>
+        <Nebula seed={editor.slug} variant="wide" intensity={current.nebula * 0.85} motion={current.motion} />
+        <span className={styles.appearanceKicker}>{CATEGORY_LABEL[editor.category]}</span>
+        <span className={styles.appearanceTitle}>{title}</span>
+        <span className={styles.appearanceFilet} aria-hidden="true" />
+      </CategoryTheme>
     </div>
   );
 }
