@@ -1,0 +1,92 @@
+.nebula {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+
+.dust {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(4, 5, 10, 0.85);
+  filter: blur(18px);
+}
+
+.star,
+.twinkle,
+.sparkle {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0.55;
+}
+
+.twinkle {
+  opacity: 0.7;
+}
+
+/* Brilho em cruz: dois traços de 1px atravessando a estrela. */
+.sparkle {
+  opacity: 0.9;
+  box-shadow: 0 0 6px 1px color-mix(in oklch, var(--cat, #ffffff) 50%, #ffffff);
+}
+
+.sparkle::before,
+.sparkle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.sparkle::before {
+  width: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+}
+
+.sparkle::after {
+  width: 1px;
+  height: 18px;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .moving .blob {
+    animation-name: nebDrift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+  }
+
+  .moving .twinkle {
+    animation: nebTwinkle 3.6s ease-in-out infinite;
+  }
+}
+
+@keyframes nebDrift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(3%, -3%) scale(1.08);
+  }
+}
+
+@keyframes nebTwinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}

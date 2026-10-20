@@ -235,6 +235,30 @@ class PublicationAdminApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
     }
 
+    public function test_aparencia_grava_limpa_e_recusa_fora_da_faixa(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $url = "/admin/api/publications/{$publication->id}";
+
+        $this->actingAs($this->admin())->patchJson($url, ['appearance' => ['nebula' => 0.7, 'motion' => false]])
+            ->assertOk()
+            ->assertJsonPath('data.appearance.nebula', 0.7)
+            ->assertJsonPath('data.appearance.motion', false);
+
+        // Sem a chave, a aparência fica como está.
+        $this->actingAs($this->admin())->patchJson($url, ['featured' => true])
+            ->assertJsonPath('data.appearance.nebula', 0.7);
+
+        $this->actingAs($this->admin())->patchJson($url, ['appearance' => null])
+            ->assertOk()
+            ->assertJsonPath('data.appearance', null);
+
+        $this->actingAs($this->admin())->patchJson($url, ['appearance' => ['nebula' => 2, 'motion' => true]])
+            ->assertUnprocessable()->assertJsonValidationErrors('appearance.nebula');
+        $this->actingAs($this->admin())->patchJson($url, ['appearance' => ['nebula' => 0.5]])
+            ->assertUnprocessable()->assertJsonValidationErrors('appearance.motion');
+    }
+
     public function test_autosave_recusa_imagem_sem_alt(): void
     {
         $publication = $this->publicationWithDrafts();

@@ -76,7 +76,7 @@ class PublicationController extends Controller
         $input = $this->validated($request, []);
 
         $publication = $this->published($input['locale'])
-            ->addSelect(['publications.id', 'translation.body', 'translation.seo_title', 'translation.seo_description'])
+            ->addSelect(['publications.id', 'publications.appearance', 'translation.body', 'translation.seo_title', 'translation.seo_description'])
             ->where('publications.slug', $slug)
             ->first();
 

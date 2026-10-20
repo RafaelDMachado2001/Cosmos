@@ -25,6 +25,7 @@ class PublicationAdminResource extends JsonResource
             'publishedAt' => $this->resource->published_at->toIso8601ZuluString('millisecond'),
             'featured' => (bool) $this->resource->featured,
             'indexable' => (bool) $this->resource->indexable,
+            'appearance' => $this->resource->appearance,
             'status' => $this->resource->status,
             'pendingChanges' => $this->pendingChanges(),
             'tags' => $this->resource->tags->pluck('slug')->values(),

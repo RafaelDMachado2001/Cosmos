@@ -290,6 +290,22 @@ class PublicationApiTest extends TestCase
         );
     }
 
+    public function test_a_aparencia_vem_nula_por_padrao_e_so_no_detalhe(): void
+    {
+        $this->getJson('/api/publications/code-review-sem-atrito')->assertJsonPath('data.appearance', null);
+        $this->assertArrayNotHasKey('appearance', $this->getJson('/api/publications')->json('data.0'));
+    }
+
+    public function test_a_aparencia_gravada_chega_no_detalhe(): void
+    {
+        Publication::where('slug', 'code-review-sem-atrito')->firstOrFail()
+            ->update(['appearance' => ['nebula' => 0.8, 'motion' => false]]);
+
+        $this->getJson('/api/publications/code-review-sem-atrito')
+            ->assertJsonPath('data.appearance.nebula', 0.8)
+            ->assertJsonPath('data.appearance.motion', false);
+    }
+
     public function test_seo_title_e_seo_description_vem_nulos_sem_override(): void
     {
         $data = $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')->json('data');

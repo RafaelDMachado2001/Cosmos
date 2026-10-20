@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable $published_at
  * @property bool $featured
  * @property bool $indexable
+ * @property array{nebula: float, motion: bool}|null $appearance
  * @property string $status
  * @property CarbonImmutable|null $content_published_at
  * @property-read Collection<int, PublicationTranslation> $translations
@@ -53,7 +54,7 @@ class Publication extends Model
         return config('publications.categories');
     }
 
-    protected $fillable = ['slug', 'category', 'published_at', 'featured', 'indexable', 'status'];
+    protected $fillable = ['slug', 'category', 'published_at', 'featured', 'indexable', 'appearance', 'status'];
 
     protected function casts(): array
     {
@@ -62,6 +63,7 @@ class Publication extends Model
             'content_published_at' => 'immutable_datetime',
             'featured' => 'boolean',
             'indexable' => 'boolean',
+            'appearance' => 'array',
         ];
     }
 
