@@ -46,6 +46,11 @@ export const en: Dictionary = {
   reader: {
     back: 'BACK TO CONSTELLATION',
     close: 'Close and return to the constellation',
+    constellation: 'Constellation',
+    inThisArticle: 'In this article',
+    minutes: 'min read',
+    progress: 'Reading progress',
+    resume: 'Pick up where you left off',
   },
   categories: {
     filterBy: 'FILTER BY CATEGORY',

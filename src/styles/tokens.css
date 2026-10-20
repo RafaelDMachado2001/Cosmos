@@ -8,7 +8,7 @@
 :root {
   /* --- Superfícies ------------------------------------------------------- */
   --color-bg: #05060b; /* fundo global */
-  --color-bg-elev: #06070e; /* fundo da vista de leitura */
+  --color-bg-elev: #0a0b12; /* fundo da vista de leitura */
   --color-surface: rgba(11, 12, 22, 0.82); /* painéis translúcidos */
   --color-surface-nav: rgba(14, 15, 28, 0.5); /* pílulas do header */
   --color-surface-close: rgba(14, 15, 28, 0.6); /* botão de fechar */
@@ -25,8 +25,8 @@
    * acessibilidade reprovou #6E6F8C, #5D6079 e #4C4F68. */
   --color-text-primary: #f2f1fa; /* títulos */
   --color-text-title: #f4f3fb; /* título do artigo */
-  --color-text-lede: #b6b8cc; /* lide do artigo */
-  --color-text-reading: #a2a4bc; /* corpo do artigo */
+  --color-text-lede: #cfd2e0; /* lide do artigo */
+  --color-text-reading: #b9bdcf; /* corpo do artigo */
   --color-text-secondary: #9698b2; /* resumos */
   --color-text-muted: #8a8ca3; /* metadados (contraste >= 4.5:1) */
   --color-text-faint: #7c7f99; /* placeholders, datas */

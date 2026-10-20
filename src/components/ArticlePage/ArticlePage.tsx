@@ -1,5 +1,9 @@
 import styles from './ArticlePage.module.css';
 import { ArticleBody } from '../ArticleBody/ArticleBody';
+import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
+import { parseBlocks } from '../../core/blocks';
+import { readingMinutes } from '../../core/readingTime';
+import type { Category } from '../../core/types';
 import { useLocale } from '../../i18n/useLocale';
 
 export interface ArticleLink {
@@ -8,6 +12,7 @@ export interface ArticleLink {
 }
 
 export interface ArticlePageProps {
+  readonly category: Category;
   readonly categoryLabel: string;
   readonly dateLabel: string;
   readonly title: string;
@@ -41,6 +46,7 @@ export interface ArticlePageProps {
  * No cliente esta casca é descartada assim que o React monta — ver `main.tsx`.
  */
 export function ArticlePage({
+  category,
   categoryLabel,
   dateLabel,
   title,
@@ -51,9 +57,10 @@ export function ArticlePage({
   index,
 }: ArticlePageProps) {
   const { t } = useLocale();
+  const minutes = readingMinutes(parseBlocks(body));
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} style={categoryThemeStyle(category)}>
       <header className={styles.top}>
         <a className={styles.brand} href={homeHref}>
           {t.nav.brand}
@@ -76,7 +83,9 @@ export function ArticlePage({
       <article className={styles.article}>
         <p className={styles.meta}>
           {categoryLabel}
-          <span className={styles.metaDate}>/ {dateLabel}</span>
+          <span className={styles.metaDate}>
+            / {dateLabel} · {minutes} {t.reader.minutes}
+          </span>
         </p>
         <h1 className={styles.title}>{title}</h1>
         <p className={styles.lede}>{summary}</p>
