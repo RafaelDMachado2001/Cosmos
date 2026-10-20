@@ -11,9 +11,9 @@
   padding: 28px clamp(20px, 6vw, 64px) 96px;
 
   /* A mesma escala da vista de leitura (ReaderView), lida por ArticleBody. */
-  --reading-size: 18px;
-  --reading-leading: 1.75;
-  --reading-h2: 24px;
+  --reading-size: 16px;
+  --reading-leading: 1.8;
+  --reading-h2: 22px;
   --reading-measure: none;
   --page-width: 1180px;
 }
@@ -66,7 +66,6 @@
 }
 
 .title {
-  max-width: 18em;
   font-size: clamp(32px, 3vw, 54px);
   font-weight: 300;
   line-height: 1.08;
