@@ -90,16 +90,55 @@ function renderBlock(block: Block, key: string): ReactNode {
         </Tag>
       );
     }
-    case 'code':
-      return (
+    case 'code': {
+      const pre = (
         <pre key={key} className={styles.code}>
-          {block.language !== null && <span className={styles.codeLang}>{block.language}</span>}
+          {block.filename === null && block.language !== null && (
+            <span className={styles.codeLang}>{block.language}</span>
+          )}
           <code className={styles.codeText}>{renderCode(block.code, block.language, key)}</code>
         </pre>
       );
+      if (block.filename === null) return pre;
+      // Com nome de arquivo, o cabeçalho vira a legenda do bloco: o ponto na
+      // cor da categoria, o arquivo, e a linguagem à direita.
+      return (
+        <figure key={key} className={styles.codeFile}>
+          <figcaption className={styles.codeHeader}>
+            <span className={styles.codeDot} aria-hidden="true" />
+            <span className={styles.codeFilename}>{block.filename}</span>
+            {block.language !== null && <span className={styles.codeHeaderLang}>{block.language}</span>}
+          </figcaption>
+          {pre}
+        </figure>
+      );
+    }
+    case 'highlight':
+      return (
+        <p key={key} className={styles.highlight}>
+          {renderInline(block.children, key)}
+        </p>
+      );
+    case 'note':
+      return (
+        <div key={key} className={styles.note} role="note">
+          {block.title !== null && <p className={styles.noteTitle}>{renderInline(block.title, `${key}-t`)}</p>}
+          <p className={styles.noteText}>{renderInline(block.children, key)}</p>
+        </div>
+      );
+    case 'flow':
+      return (
+        <ol key={key} className={styles.flow}>
+          {block.steps.map((step, index) => (
+            <li key={`${key}-${String(index)}`} className={styles.flowStep}>
+              <span className={styles.flowPill}>{renderInline(step, `${key}-${String(index)}`)}</span>
+            </li>
+          ))}
+        </ol>
+      );
     case 'table':
-      // O alinhamento vai num `data-align`, não em `style`: o HTML do
-      // prerender passa pela CSP, que não aceita atributo de estilo.
+      // O alinhamento vai num `data-align`, não em `style`: a regra fica
+      // inteira no CSS do módulo, junto com o resto da tabela.
       return (
         // A rolagem horizontal precisa ser alcançável pelo teclado.
         <div key={key} className={styles.tableScroll} tabIndex={0}>

@@ -103,6 +103,26 @@ describe('ArticleBody', () => {
     expect(container.querySelector('[style]')).toBeNull();
   });
 
+  it('destaque, nota e fluxo saem com a semântica de cada um', () => {
+    render(
+      <ArticleBody
+        markdown={['> [!highlight]', '> Importa.', '', '> [!note] Atenção', '> Detalhe.', '', '> [!flow]', '> - A', '> - B'].join('\n')}
+      />,
+    );
+
+    expect(screen.getByText('Importa.').tagName).toBe('P');
+    expect(screen.getByRole('note').textContent).toBe('AtençãoDetalhe.');
+    expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual(['A', 'B']);
+    expect(screen.queryByRole('blockquote')).toBeNull();
+  });
+
+  it('código com nome de arquivo ganha o cabeçalho como legenda', () => {
+    const { container } = render(<ArticleBody markdown={['```ts title="src/app.ts"', 'const a = 1;', '```'].join('\n')} />);
+
+    expect(container.querySelector('figure figcaption')?.textContent).toBe('src/app.tsts');
+    expect(container.querySelector('figure pre code')?.textContent).toBe('const a = 1;');
+  });
+
   it('markdown vazio não desenha nada', () => {
     const { container } = render(<ArticleBody markdown="" />);
 

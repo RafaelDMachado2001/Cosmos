@@ -32,8 +32,14 @@ function blankBlock(type: DraftBlock['type']): DraftBlock {
     case 'h3':
     case 'quote':
       return { id: newId(), type, text: '' };
+    case 'highlight':
+      return { id: newId(), type, text: '' };
+    case 'note':
+      return { id: newId(), type, title: null, text: '' };
+    case 'flow':
+      return { id: newId(), type, steps: ['', ''] };
     case 'code':
-      return { id: newId(), type, lang: null, text: '' };
+      return { id: newId(), type, lang: null, filename: null, text: '' };
     case 'list':
       return { id: newId(), type, ordered: false, items: [''] };
     case 'img':
@@ -48,6 +54,9 @@ const TYPE_LABEL: Record<DraftBlock['type'], string> = {
   h2: 'Intertítulo',
   h3: 'Subtítulo',
   quote: 'Citação',
+  highlight: 'Destaque',
+  note: 'Nota',
+  flow: 'Fluxo',
   list: 'Lista',
   code: 'Código',
   img: 'Imagem',
@@ -207,17 +216,61 @@ function BlockFields({
           rows={block.type === 'p' || block.type === 'quote' ? 3 : 1}
         />
       );
-    case 'code':
+    case 'highlight':
+      return (
+        <AutoTextarea
+          className={styles.textarea}
+          aria-label="Destaque"
+          value={block.text}
+          onChange={(event) => onChange({ ...block, text: event.target.value })}
+          rows={2}
+        />
+      );
+    case 'note':
       return (
         <div className={styles.fieldGroup}>
           <input
             type="text"
-            placeholder="linguagem (opcional)"
-            aria-label="Linguagem"
+            placeholder="Título (opcional)"
+            aria-label="Título da nota"
             className={styles.input}
-            value={block.lang ?? ''}
-            onChange={(event) => onChange({ ...block, lang: event.target.value === '' ? null : event.target.value })}
+            value={block.title ?? ''}
+            onChange={(event) => onChange({ ...block, title: event.target.value === '' ? null : event.target.value })}
           />
+          <AutoTextarea
+            className={styles.textarea}
+            aria-label="Nota"
+            value={block.text}
+            onChange={(event) => onChange({ ...block, text: event.target.value })}
+            rows={2}
+          />
+        </div>
+      );
+    case 'flow':
+      return <FlowFields block={block} onChange={onChange} />;
+    case 'code':
+      return (
+        <div className={styles.fieldGroup}>
+          <div className={styles.inlineFields}>
+            <input
+              type="text"
+              placeholder="linguagem (opcional)"
+              aria-label="Linguagem"
+              className={styles.input}
+              value={block.lang ?? ''}
+              onChange={(event) => onChange({ ...block, lang: event.target.value === '' ? null : event.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="nome do arquivo (opcional)"
+              aria-label="Nome do arquivo"
+              className={styles.input}
+              value={block.filename ?? ''}
+              onChange={(event) =>
+                onChange({ ...block, filename: event.target.value === '' ? null : event.target.value })
+              }
+            />
+          </div>
           <AutoTextarea
             className={styles.textareaMono}
             aria-label="Código"
@@ -234,6 +287,66 @@ function BlockFields({
     case 'table':
       return <TableFields block={block} onChange={onChange} />;
   }
+}
+
+function FlowFields({
+  block,
+  onChange,
+}: {
+  readonly block: Extract<DraftBlock, { type: 'flow' }>;
+  readonly onChange: (block: DraftBlock) => void;
+}): React.JSX.Element {
+  function setSteps(steps: readonly string[]): void {
+    onChange({ ...block, steps });
+  }
+
+  function move(index: number, delta: number): void {
+    const target = index + delta;
+    if (target < 0 || target >= block.steps.length) return;
+    const steps = [...block.steps];
+    const [moved] = steps.splice(index, 1);
+    if (moved === undefined) return;
+    steps.splice(target, 0, moved);
+    setSteps(steps);
+  }
+
+  return (
+    <div className={styles.fieldGroup}>
+      {block.steps.map((step, index) => (
+        <div key={index} className={styles.listItemRow}>
+          <span className={styles.stepNumber}>{index + 1}</span>
+          <input
+            type="text"
+            className={styles.input}
+            aria-label={`Etapa ${String(index + 1)}`}
+            value={step}
+            onChange={(event) => setSteps(block.steps.map((current, i) => (i === index ? event.target.value : current)))}
+          />
+          <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label={`Subir etapa ${String(index + 1)}`}>
+            ↑
+          </button>
+          <button
+            type="button"
+            onClick={() => move(index, 1)}
+            disabled={index === block.steps.length - 1}
+            aria-label={`Descer etapa ${String(index + 1)}`}
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            onClick={() => setSteps(block.steps.filter((_, i) => i !== index))}
+            aria-label={`Remover etapa ${String(index + 1)}`}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <button type="button" className={styles.addButton} onClick={() => setSteps([...block.steps, ''])}>
+        + etapa
+      </button>
+    </div>
+  );
 }
 
 function ListFields({

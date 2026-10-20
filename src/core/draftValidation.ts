@@ -28,6 +28,12 @@ export function wordCount(blocks: readonly DraftBlock[]): number {
         return total + block.items.reduce((sum, item) => sum + words(item), 0);
       case 'img':
         return total + words(block.alt);
+      case 'highlight':
+        return total + words(block.text);
+      case 'note':
+        return total + words(block.title ?? '') + words(block.text);
+      case 'flow':
+        return total + block.steps.reduce((sum, step) => sum + words(step), 0);
       case 'table':
         return total + [block.header, ...block.rows].flat().reduce((sum, cell) => sum + words(cell), 0);
       case 'code':
@@ -50,6 +56,12 @@ export function validateDraftBlock(block: DraftBlock): string | null {
       // deixa de ser cerca e o bloco inteiro seria lido como parágrafo.
       if (block.lang !== null && /[\s`]/.test(block.lang.trim())) return 'Linguagem sem espaços nem crases.';
       return null;
+    case 'highlight':
+    case 'note':
+      return block.text.trim() === '' ? 'Texto vazio.' : null;
+    case 'flow':
+      if (block.steps.length < 2) return 'Fluxo precisa de ao menos duas etapas.';
+      return block.steps.some((step) => step.trim() === '') ? 'Etapa vazia.' : null;
     case 'list':
       if (block.items.length === 0) return 'Lista sem itens.';
       return block.items.some((item) => item.trim() === '') ? 'Item de lista vazio.' : null;

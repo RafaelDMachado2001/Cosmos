@@ -30,7 +30,17 @@ export type DraftBlock =
       readonly ordered: boolean;
       readonly items: readonly string[];
     }
-  | { readonly id: string; readonly type: 'code'; readonly lang: string | null; readonly text: string }
+  | { readonly id: string; readonly type: 'highlight'; readonly text: string }
+  | { readonly id: string; readonly type: 'note'; readonly title: string | null; readonly text: string }
+  | { readonly id: string; readonly type: 'flow'; readonly steps: readonly string[] }
+  | {
+      readonly id: string;
+      readonly type: 'code';
+      readonly lang: string | null;
+      /** Ausente nos rascunhos gravados antes do campo existir: vale `null`. */
+      readonly filename?: string | null;
+      readonly text: string;
+    }
   | {
       readonly id: string;
       readonly type: 'table';
@@ -76,8 +86,19 @@ export function blocksToDraftBlocks(markdown: string): readonly DraftBlock[] {
           ordered: block.ordered,
           items: block.items.map((item) => inlineToMarkdown(item)),
         };
+      case 'highlight':
+        return { id, type: 'highlight', text: inlineToMarkdown(block.children) };
+      case 'note':
+        return {
+          id,
+          type: 'note',
+          title: block.title === null ? null : inlineToMarkdown(block.title),
+          text: inlineToMarkdown(block.children),
+        };
+      case 'flow':
+        return { id, type: 'flow', steps: block.steps.map((step) => inlineToMarkdown(step)) };
       case 'code':
-        return { id, type: 'code', lang: block.language, text: block.code };
+        return { id, type: 'code', lang: block.language, filename: block.filename, text: block.code };
       case 'table':
         return {
           id,
@@ -171,8 +192,17 @@ export function draftBlocksToMarkdown(blocks: readonly DraftBlock[]): string {
         case 'quote':
           return block.text
             .split(/\r?\n/)
-            .map((line) => `> ${line}`)
+            // Uma citação que começa com `[!` seria lida como destaque/nota/fluxo.
+            .map((line, index) => `> ${index === 0 && line.trimStart().startsWith('[!') ? `\\${line.trimStart()}` : line}`)
             .join('\n');
+        case 'highlight':
+          return `> [!highlight]\n> ${oneLine(block.text)}`;
+        case 'note': {
+          const title = block.title === null ? '' : oneLine(block.title);
+          return `> [!note]${title === '' ? '' : ` ${title}`}\n> ${oneLine(block.text)}`;
+        }
+        case 'flow':
+          return ['> [!flow]', ...block.steps.map((step) => `> - ${oneLine(step)}`)].join('\n');
         case 'h2':
           return `## ${oneLine(block.text)}`;
         case 'h3':
@@ -183,7 +213,9 @@ export function draftBlocksToMarkdown(blocks: readonly DraftBlock[]): string {
             .join('\n');
         case 'code': {
           const fence = codeFence(block.text);
-          return `${fence}${block.lang?.trim() ?? ''}\n${block.text}\n${fence}`;
+          const filename = oneLine(block.filename ?? '');
+          const title = filename === '' ? '' : ` title="${filename.replace(/["\\]/g, '\\$&')}"`;
+          return `${fence}${block.lang?.trim() ?? ''}${title}\n${block.text}\n${fence}`;
         }
         case 'table': {
           // Sempre uma célula por coluna do alinhamento: o parser descarta a

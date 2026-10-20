@@ -199,3 +199,21 @@
   display: flex;
   gap: 6px;
 }
+
+.inlineFields {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 6px;
+}
+
+.stepNumber {
+  min-width: 18px;
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+}
+
+.listItemRow button:disabled {
+  opacity: 0.3;
+}
