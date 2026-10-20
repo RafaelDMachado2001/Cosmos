@@ -48,7 +48,10 @@ const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1
 const TOC_OFFSET_PX = 80;
 
 function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 }
 
 /**
@@ -115,7 +118,8 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
     const overlay = overlayRef.current;
     const heading = overlay?.querySelector<HTMLElement>(`[id="${id}"]`);
     if (!overlay || !heading) return;
-    const top = heading.getBoundingClientRect().top - overlay.getBoundingClientRect().top + overlay.scrollTop;
+    const top =
+      heading.getBoundingClientRect().top - overlay.getBoundingClientRect().top + overlay.scrollTop;
     scrollToTop(top - TOC_OFFSET_PX);
   }
 
@@ -155,17 +159,6 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
       aria-labelledby={TITLE_ID}
       style={categoryThemeStyle(card.category)}
     >
-      <button
-        ref={closeRef}
-        type="button"
-        className={styles.close}
-        onClick={onClose}
-        aria-label={t.reader.close}
-        title={t.reader.close}
-      >
-        <span aria-hidden="true">&#10005;</span>
-      </button>
-
       <aside className={styles.aside} onPointerMove={tiltOrb} onPointerLeave={resetOrb}>
         <Nebula
           seed={card.slug}
@@ -239,37 +232,62 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
       </aside>
 
       <article className={styles.article}>
-        <header className={styles.header}>
+        {/* Estrelas presas à tela por toda a coluna, e a nebulosa só atrás do
+            cabeçalho — as duas vão de borda a borda, por baixo do X. */}
+        <div className={styles.starfield} aria-hidden="true">
           <Nebula
-            className={styles.headerNebula}
-            seed={card.slug}
+            seed={`${card.slug}/campo`}
             variant="wide"
-            intensity={card.appearance.nebula * 0.85}
+            intensity={0}
             motion={card.appearance.motion}
+            starsOnly
           />
-          <p className={styles.meta}>
-            <span className={styles.dot} aria-hidden="true" />
-            {card.categoryLabel}
-            <span className={styles.metaDate}>/ {meta}</span>
-          </p>
-
-          <h1 id={TITLE_ID} className={styles.title}>
-            {card.title}
-          </h1>
-          <p className={styles.lede}>{card.summary}</p>
-          <div className={styles.filet} aria-hidden="true" />
-        </header>
-
-        <div className={styles.body}>
-          <ArticleBody markdown={card.body} />
         </div>
+        <Nebula
+          className={styles.headerNebula}
+          seed={card.slug}
+          variant="wide"
+          intensity={card.appearance.nebula * 0.85}
+          motion={card.appearance.motion}
+        />
 
-        <footer className={styles.footer}>
-          <span className={styles.position}>{card.timelineLabel}</span>
-          <button type="button" className={styles.back} onClick={onClose}>
-            {t.reader.back}
-          </button>
-        </footer>
+        <button
+          ref={closeRef}
+          type="button"
+          className={styles.close}
+          onClick={onClose}
+          aria-label={t.reader.close}
+          title={t.reader.close}
+        >
+          <span aria-hidden="true">&#10005;</span>
+        </button>
+
+        <div className={styles.inner}>
+          <header className={styles.header}>
+            <p className={styles.meta}>
+              <span className={styles.dot} aria-hidden="true" />
+              {card.categoryLabel}
+              <span className={styles.metaDate}>/ {meta}</span>
+            </p>
+
+            <h1 id={TITLE_ID} className={styles.title}>
+              {card.title}
+            </h1>
+            <p className={styles.lede}>{card.summary}</p>
+            <div className={styles.filet} aria-hidden="true" />
+          </header>
+
+          <div className={styles.body}>
+            <ArticleBody markdown={card.body} />
+          </div>
+
+          <footer className={styles.footer}>
+            <span className={styles.position}>{card.timelineLabel}</span>
+            <button type="button" className={styles.back} onClick={onClose}>
+              {t.reader.back}
+            </button>
+          </footer>
+        </div>
       </article>
     </div>
   );

@@ -12,6 +12,8 @@ export interface NebulaProps {
   readonly intensity: number;
   readonly motion: boolean;
   readonly className?: string | undefined;
+  /** Só as estrelas, sem manchas nem poeira: o fundo do texto corrido. */
+  readonly starsOnly?: boolean;
 }
 
 const pct = (value: number): string => `${value.toFixed(2)}%`;
@@ -22,7 +24,14 @@ const pct = (value: number): string => `${value.toFixed(2)}%`;
  * nunca alvo de ponteiro. O movimento só liga com `motion` e quando o
  * sistema não pede movimento reduzido (o CSS decide a segunda parte).
  */
-export function Nebula({ seed, variant, intensity, motion, className }: NebulaProps) {
+export function Nebula({
+  seed,
+  variant,
+  intensity,
+  motion,
+  className,
+  starsOnly = false,
+}: NebulaProps) {
   const layout = useMemo(() => nebulaLayout(seed, variant), [seed, variant]);
 
   return (
@@ -31,11 +40,12 @@ export function Nebula({ seed, variant, intensity, motion, className }: NebulaPr
       aria-hidden="true"
       data-variant={variant}
     >
-      {layout.blobs.map((blob, index) => (
-        <span
-          key={`b${String(index)}`}
-          className={styles.blob}
-          style={{
+      {!starsOnly &&
+        layout.blobs.map((blob, index) => (
+          <span
+            key={`b${String(index)}`}
+            className={styles.blob}
+            style={{
               left: pct(blob.x),
               top: pct(blob.y),
               width: pct(blob.width),
@@ -45,22 +55,23 @@ export function Nebula({ seed, variant, intensity, motion, className }: NebulaPr
               background: `radial-gradient(closest-side, var(--${blob.tone}), transparent)`,
               animationDuration: `${blob.driftSec.toFixed(1)}s`,
               animationDelay: `${blob.delaySec.toFixed(1)}s`,
-          }}
-        />
-      ))}
-      {layout.dust.map((lane, index) => (
-        <span
-          key={`d${String(index)}`}
-          className={styles.dust}
-          style={{
-            left: pct(lane.x),
-            top: pct(lane.y),
-            width: pct(lane.width),
-            height: pct(lane.height),
-            transform: `rotate(${lane.angleDeg.toFixed(1)}deg)`,
-          }}
-        />
-      ))}
+            }}
+          />
+        ))}
+      {!starsOnly &&
+        layout.dust.map((lane, index) => (
+          <span
+            key={`d${String(index)}`}
+            className={styles.dust}
+            style={{
+              left: pct(lane.x),
+              top: pct(lane.y),
+              width: pct(lane.width),
+              height: pct(lane.height),
+              transform: `rotate(${lane.angleDeg.toFixed(1)}deg)`,
+            }}
+          />
+        ))}
       {layout.stars.map((star, index) => (
         <span
           key={`s${String(index)}`}
