@@ -81,19 +81,20 @@ describe('parseBlocks', () => {
         type: 'code',
         language: 'ts',
         code: 'function soma(a, b) {\n\n  return a + b;\n}',
+        filename: null,
       },
     ]);
   });
 
   it('bloco de código sem linguagem declarada', () => {
     expect(parseBlocks('```\nplain\n```')).toEqual<readonly Block[]>([
-      { type: 'code', language: null, code: 'plain' },
+      { type: 'code', language: null, code: 'plain', filename: null },
     ]);
   });
 
   it('bloco de código sem fechamento consome até o fim, não quebra', () => {
     expect(parseBlocks('```\nsem fechamento')).toEqual<readonly Block[]>([
-      { type: 'code', language: null, code: 'sem fechamento' },
+      { type: 'code', language: null, code: 'sem fechamento', filename: null },
     ]);
   });
 
@@ -298,7 +299,7 @@ describe('escape e cercas', () => {
 
   it('cerca maior contém uma menor; fechamento com linguagem não fecha', () => {
     expect(parseBlocks('````md\n```ts\nx\n```\n````\n\nDepois.')).toEqual<readonly Block[]>([
-      { type: 'code', code: '```ts\nx\n```', language: 'md' },
+      { type: 'code', code: '```ts\nx\n```', language: 'md', filename: null },
       { type: 'paragraph', children: [text('Depois.')] },
     ]);
   });
@@ -371,5 +372,50 @@ describe('tabela', () => {
 
   it('barra solta num parágrafo continua parágrafo', () => {
     expect(parseBlocks('isto | aquilo').map((block) => block.type)).toEqual(['paragraph']);
+  });
+});
+
+describe('destaque, nota e fluxo', () => {
+  const text = (value: string) => [{ type: 'text', text: value }];
+
+  it('o marcador na primeira linha da citação decide o bloco', () => {
+    const blocks = parseBlocks(
+      [
+        '> [!highlight]',
+        '> O que **importa**.',
+        '',
+        '> [!note] Atenção',
+        '> Um detalhe',
+        '> em duas linhas.',
+        '',
+        '> [!NOTE]',
+        '> Sem título.',
+        '',
+        '> [!flow]',
+        '> - Ler',
+        '> - Escrever',
+        '> Publicar',
+      ].join('\n'),
+    );
+    expect(blocks).toEqual([
+      { type: 'highlight', children: [{ type: 'text', text: 'O que ' }, { type: 'strong', children: text('importa') }, { type: 'text', text: '.' }] },
+      { type: 'note', title: text('Atenção'), children: text('Um detalhe em duas linhas.') },
+      { type: 'note', title: null, children: text('Sem título.') },
+      { type: 'flow', steps: [text('Ler'), text('Escrever'), text('Publicar')] },
+    ]);
+  });
+
+  it('marcador desconhecido ou escapado continua citação', () => {
+    expect(parseBlocks('> [!aviso] x').map((block) => block.type)).toEqual(['quote']);
+    expect(parseBlocks('> \\[!note] x')).toEqual([{ type: 'quote', children: text('[!note] x') }]);
+  });
+
+  it('código com nome de arquivo na cerca', () => {
+    expect(parseBlocks(['```ts title="src/a \\"b\\".ts"', 'const a = 1;', '```'].join('\n'))).toEqual([
+      { type: 'code', code: 'const a = 1;', language: 'ts', filename: 'src/a "b".ts' },
+    ]);
+    expect(parseBlocks(['``` title="Makefile"', 'all:', '```'].join('\n'))).toEqual([
+      { type: 'code', code: 'all:', language: null, filename: 'Makefile' },
+    ]);
   });
 });
