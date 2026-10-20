@@ -26,4 +26,12 @@ class RdmStudioTest extends TestCase
         $response->assertSee('name="csrf-token"', false);
         $response->assertSee('rdm-studio/admin.js', false);
     }
+
+    public function test_a_casca_declara_o_endereco_do_site_para_as_previas(): void
+    {
+        config(['hosts.site' => 'https://cosmos.example.test']);
+
+        $this->actingAs(User::factory()->create())->get('/admin/studio')
+            ->assertSee('<meta name="site-url" content="https://cosmos.example.test">', false);
+    }
 }
