@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 
 import { validateDraftBlock } from '../core/draftValidation';
 import type { DraftBlock } from '../core/draftBlocks';
@@ -50,11 +50,53 @@ const TYPE_LABEL: Record<DraftBlock['type'], string> = {
   img: 'Imagem',
 };
 
+/**
+ * Uma textarea que cresce com o texto até `maxVh` da tela e só então rola.
+ * A alça de `resize` continua: crescer é o padrão, não um teto.
+ */
+function AutoTextarea({
+  maxVh = 70,
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { readonly maxVh?: number }): React.JSX.Element {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (element === null) return;
+    element.style.height = 'auto';
+    const max = (window.innerHeight * maxVh) / 100;
+    // +2: a borda; sem ela o `scrollHeight` sempre deixa a última linha
+    // um pixel atrás e a barra de rolagem aparece à toa.
+    element.style.height = `${String(Math.min(element.scrollHeight + 2, max))}px`;
+  }, [props.value, maxVh]);
+
+  return <textarea ref={ref} {...props} />;
+}
+
 function replace(blocks: readonly DraftBlock[], index: number, block: DraftBlock): readonly DraftBlock[] {
   return blocks.map((current, i) => (i === index ? block : current));
 }
 
 export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.Element {
+  /**
+   * O bloco em que a pessoa está — o último que recebeu foco. Inserir põe o
+   * bloco novo logo depois dele; sem nenhum, no fim. Guardado pelo id para
+   * sobreviver a mover e remover blocos.
+   */
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const cardRefs = useRef(new Map<string, HTMLDivElement>());
+
+  useLayoutEffect(() => {
+    if (focusId === null) return;
+    const card = cardRefs.current.get(focusId);
+    setFocusId(null);
+    if (card === undefined) return;
+    // jsdom não implementa `scrollIntoView`.
+    card.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    card.querySelector<HTMLElement>('textarea, input')?.focus({ preventScroll: true });
+  }, [focusId]);
+
   function update(index: number, block: DraftBlock): void {
     onChange(replace(blocks, index, block));
   }
@@ -73,8 +115,14 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.E
     onChange(next);
   }
 
+  const activeIndex = blocks.findIndex((block) => block.id === activeId);
+
   function add(type: DraftBlock['type']): void {
-    onChange([...blocks, blankBlock(type)]);
+    const block = blankBlock(type);
+    const at = activeIndex === -1 ? blocks.length : activeIndex + 1;
+    onChange([...blocks.slice(0, at), block, ...blocks.slice(at)]);
+    setActiveId(block.id);
+    setFocusId(block.id);
   }
 
   return (
@@ -82,7 +130,15 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.E
       {blocks.map((block, index) => {
         const error = validateDraftBlock(block);
         return (
-          <div key={block.id} className={styles.card}>
+          <div
+            key={block.id}
+            ref={(element) => {
+              if (element === null) cardRefs.current.delete(block.id);
+              else cardRefs.current.set(block.id, element);
+            }}
+            className={block.id === activeId ? styles.cardActive : styles.card}
+            onFocus={() => setActiveId(block.id)}
+          >
             <div className={styles.cardHeader}>
               <span className={styles.cardType}>{TYPE_LABEL[block.type]}</span>
               <div className={styles.cardActions}>
@@ -110,7 +166,12 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.E
         );
       })}
 
-      <div className={styles.addBar}>
+      {/* Presa ao rodapé da coluna: num texto longo, inserir não exige rolar
+          até o fim, e o bloco novo entra depois daquele em que se está. */}
+      <div className={styles.addBar} role="toolbar" aria-label="Inserir bloco">
+        <span className={styles.addHint}>
+          {activeIndex === -1 ? 'Inserir no fim' : `Inserir após o bloco ${String(activeIndex + 1)}`}
+        </span>
         {(Object.keys(TYPE_LABEL) as DraftBlock['type'][]).map((type) => (
           <button key={type} type="button" className={styles.addButton} onClick={() => add(type)}>
             + {TYPE_LABEL[type]}
@@ -134,12 +195,12 @@ function BlockFields({
     case 'h3':
     case 'quote':
       return (
-        <textarea
+        <AutoTextarea
           className={styles.textarea}
           aria-label={TYPE_LABEL[block.type]}
           value={block.text}
           onChange={(event) => onChange({ ...block, text: event.target.value })}
-          rows={block.type === 'p' || block.type === 'quote' ? 4 : 1}
+          rows={block.type === 'p' || block.type === 'quote' ? 3 : 1}
         />
       );
     case 'code':
@@ -153,12 +214,12 @@ function BlockFields({
             value={block.lang ?? ''}
             onChange={(event) => onChange({ ...block, lang: event.target.value === '' ? null : event.target.value })}
           />
-          <textarea
+          <AutoTextarea
             className={styles.textareaMono}
             aria-label="Código"
             value={block.text}
             onChange={(event) => onChange({ ...block, text: event.target.value })}
-            rows={6}
+            rows={4}
           />
         </div>
       );

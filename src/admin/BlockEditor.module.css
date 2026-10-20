@@ -4,7 +4,8 @@
   gap: 10px;
 }
 
-.card {
+.card,
+.cardActive {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
@@ -12,6 +13,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.cardActive {
+  border-color: var(--color-border-accent);
 }
 
 .cardHeader {
@@ -57,6 +62,7 @@
   background: var(--color-bg);
   color: var(--color-text-primary);
   resize: vertical;
+  line-height: 1.6;
 }
 
 .textareaMono {
@@ -105,9 +111,28 @@
 }
 
 .addBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+  margin: 0 -10px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  backdrop-filter: blur(var(--blur-cats));
+}
+
+.addHint {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-hint);
+  color: var(--color-text-faint);
 }
 
 .addButton {

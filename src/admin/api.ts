@@ -34,6 +34,8 @@ export interface AdminPublication {
   readonly featured: boolean;
   readonly indexable: boolean;
   readonly status: PublicationStatus;
+  /** No ar, com rascunho editado depois da última publicação. */
+  readonly pendingChanges: boolean;
   readonly tags: readonly string[];
   readonly references: readonly AdminReference[];
   readonly drafts: Partial<Record<Locale, AdminDraft>>;
