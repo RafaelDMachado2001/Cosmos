@@ -198,6 +198,9 @@ class PublicationAdminController extends Controller
         $publication->status = $publication->published_at->isFuture()
             ? Publication::STATUS_SCHEDULED
             : Publication::STATUS_PUBLISHED;
+        // Republicar também passa por aqui: é o "Atualizar publicado" do Studio.
+        // O `saved` dispara mesmo sem outra mudança, e a marca garante que dispare.
+        $publication->content_published_at = now()->toImmutable();
         $publication->save();
 
         $publication->load(['drafts', 'tags', 'references']);

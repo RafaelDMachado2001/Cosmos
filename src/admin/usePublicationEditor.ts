@@ -181,6 +181,26 @@ export function usePublicationEditor(
     if (!ok) throw new Error('O rascunho não foi salvo; publicar agora levaria a versão anterior.');
   }
 
+  /** O "Salvar" manual: o mesmo salvamento do autosave, sem esperar o timer. */
+  async function saveNow(): Promise<void> {
+    await flushSave();
+  }
+
+  // Ctrl+S / Cmd+S salva em vez de abrir o "salvar página" do navegador.
+  const saveNowRef = useRef(saveNow);
+  saveNowRef.current = saveNow;
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key.toLowerCase() !== 's' || !(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      saveNowRef.current().catch(() => {
+        // O status já virou `error`; o atalho não tem onde mais avisar.
+      });
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   async function publish(): Promise<AdminPublication> {
     await flushSave();
     const updated = await api.publish(publication.id);
@@ -223,6 +243,7 @@ export function usePublicationEditor(
     setCurrentDraft,
     copyStructureFrom,
     status,
+    saveNow,
     publish,
     unpublish,
     destroy,
