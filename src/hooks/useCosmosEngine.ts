@@ -371,7 +371,10 @@ export function useCosmosEngine(
           const target = reader.state.phase === 'open' ? 1 : 0;
           s.readerFade = damp(s.readerFade, target, lambda.readerFade, delta);
           overlay.style.opacity = String(s.readerFade);
-          overlay.style.transform = `scale(${1.06 - s.readerFade * 0.06})`;
+          // Assentada a abertura, nenhum transform: com ele o overlay vira o
+          // contêiner dos `position: fixed` de dentro, que passavam a rolar
+          // com o texto (o X e a barra de progresso no celular).
+          overlay.style.transform = s.readerFade > 0.995 ? 'none' : `scale(${1.06 - s.readerFade * 0.06})`;
           if (target === 0 && s.readerFade < SETTLE_BELOW) {
             s.readerFade = 0;
             reader.onSettled();
