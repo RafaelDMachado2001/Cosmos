@@ -1,12 +1,14 @@
 import { useState } from 'react';
 
 import { DEFAULT_APPEARANCE, NEBULA_MAX } from '../core/appearance';
+import { articlePath } from '../core/routing';
 import { CATEGORIES } from '../core/types';
 import type { Category } from '../core/types';
 import { CategoryTheme } from '../components/CategoryTheme/CategoryTheme';
 import { Nebula } from '../components/Nebula/Nebula';
 import { CATEGORY_LABEL, STATUS_LABEL } from './categoryLabels';
 import styles from './MetaPanel.module.css';
+import { siteHost } from './site';
 import { TagInput } from './TagInput';
 import type { AdminPublication } from './api';
 import type { PublicationEditorState, SaveStatus } from './usePublicationEditor';
@@ -82,6 +84,10 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
   const seoTitle = editor.currentDraft.seoTitle !== '' ? editor.currentDraft.seoTitle : editor.currentDraft.title;
   const seoDescription =
     editor.currentDraft.seoDescription !== '' ? editor.currentDraft.seoDescription : editor.currentDraft.subtitle;
+  const host = siteHost(
+    document.querySelector('meta[name="site-url"]')?.getAttribute('content') ?? null,
+    window.location.host,
+  );
 
   return (
     <div className={styles.column}>
@@ -180,7 +186,10 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
         </label>
         <div className={styles.seoPreview}>
           <p className={styles.seoPreviewTitle}>{seoTitle === '' ? '(sem título)' : seoTitle}</p>
-          <p className={styles.seoPreviewUrl}>rdmlabs.dev/pt/publicacoes/{editor.slug}</p>
+          <p className={styles.seoPreviewUrl}>
+            {host}
+            {articlePath(editor.locale, editor.slug)}
+          </p>
           <p className={styles.seoPreviewDescription}>{seoDescription === '' ? '(sem descrição)' : seoDescription}</p>
         </div>
 
@@ -200,7 +209,7 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
             <span className={styles.cardFooter}>RDM Labs / Cosmos</span>
           </div>
           <div className={styles.cardMeta}>
-            <span className={styles.cardHost}>RDMLABS.DEV</span>
+            <span className={styles.cardHost}>{host.toUpperCase()}</span>
             <span className={styles.cardMetaTitle}>{seoTitle === '' ? '(sem título)' : seoTitle}</span>
             <span className={styles.cardMetaDescription}>{seoDescription === '' ? '(sem descrição)' : seoDescription}</span>
           </div>
