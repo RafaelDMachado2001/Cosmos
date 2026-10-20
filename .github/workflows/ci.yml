@@ -293,12 +293,12 @@ jobs:
           docker compose --profile backend logs queue
           exit 1
       - run: npx playwright install --with-deps chromium
-      - name: RDM Studio de ponta a ponta (publicar -> ver -> despublicar)
+      - name: RDM Studio de ponta a ponta (publicar -> ver -> despublicar; todos os blocos e imagem)
         # O login do painel é só por Google; e2e:admin-session grava a sessão
         # do admin direto no banco e imprime o cookie (recusa fora de local/testing).
         run: |
           export E2E_ADMIN_COOKIE="$(docker compose --profile backend exec -T app php artisan e2e:admin-session)"
-          npx playwright test e2e/studio.spec.ts
+          npx playwright test e2e/studio.spec.ts e2e/studio-content.spec.ts
         env:
           E2E_BASE_URL: http://localhost:8080
       - if: failure()
