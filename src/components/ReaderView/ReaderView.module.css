@@ -26,9 +26,9 @@
   /* Escala da leitura, lida por ArticleBody. 18px fixos no corpo: a escala
      fluida até 22px parecia zoom numa tela grande. Sem medida por
      parágrafo: o texto ocupa a coluna, e quem limita é `.inner`. */
-  --reading-size: 18px;
-  --reading-leading: 1.75;
-  --reading-h2: 24px;
+  --reading-size: 16px;
+  --reading-leading: 1.8;
+  --reading-h2: 22px;
   --reading-measure: none;
   /* O respiro lateral da coluna: o mesmo dos dois lados, medido até a
      borda da tela — o X fica por cima, não reserva espaço. */
@@ -395,7 +395,8 @@
 }
 
 .close {
-  position: absolute;
+  /* Preso à tela: fechar nunca exige voltar ao topo. */
+  position: fixed;
   top: 24px;
   right: 28px;
   z-index: 3;
@@ -422,18 +423,6 @@
   color: #ffffff;
 }
 
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 26px;
-  color: color-mix(in oklch, var(--cat) 40%, var(--color-text-primary));
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: var(--tracking-meta);
-  text-transform: uppercase;
-}
 
 .dot {
   flex: none;
@@ -444,20 +433,16 @@
   box-shadow: 0 0 10px 2px color-mix(in srgb, var(--cat) 60%, transparent);
 }
 
-.metaDate {
-  color: var(--color-text-muted);
-  letter-spacing: var(--tracking-nav);
-}
 
 .title {
-  max-width: 18em;
   margin: 0 0 26px;
   color: var(--color-text-title);
   font-size: clamp(34px, 3vw, 54px);
   font-weight: 300;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  text-wrap: balance;
+  /* Sem balance nem medida: o título usa a largura toda da coluna. */
+  text-wrap: pretty;
 }
 
 .lede {
@@ -484,7 +469,7 @@
 .footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   margin-top: 64px;
   padding-top: 22px;
@@ -492,12 +477,6 @@
   font-size: var(--reading-size);
 }
 
-.position {
-  color: var(--color-text-faint);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-}
 
 .back {
   border: 1px solid color-mix(in oklch, var(--cat) 40%, transparent);
@@ -524,8 +503,8 @@
 @media (max-width: 779px) {
   .overlay {
     display: block;
-    --reading-size: 17px;
-    --reading-h2: 22px;
+    --reading-size: 16px;
+    --reading-h2: 21px;
     --reading-gutter: 22px;
   }
 
@@ -542,8 +521,7 @@
     width: 150px;
   }
 
-  .toc,
-  .asideMeta {
+  .toc {
     display: none;
   }
 
@@ -586,10 +564,7 @@
     font-size: 17px;
   }
 
-  /* No celular o X fica preso à tela: lá não há painel ao lado com o
-     caminho de volta, e o botão sumiria ao rolar. */
   .close {
-    position: fixed;
     top: 14px;
     right: 14px;
   }
