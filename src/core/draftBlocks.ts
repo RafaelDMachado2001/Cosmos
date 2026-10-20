@@ -18,6 +18,7 @@
  */
 
 import { inlineToMarkdown, parseBlocks } from './blocks';
+import type { TableAlign } from './blocks';
 
 export type DraftBlock =
   | { readonly id: string; readonly type: 'p'; readonly text: string }
@@ -30,6 +31,14 @@ export type DraftBlock =
       readonly items: readonly string[];
     }
   | { readonly id: string; readonly type: 'code'; readonly lang: string | null; readonly text: string }
+  | {
+      readonly id: string;
+      readonly type: 'table';
+      readonly align: readonly TableAlign[];
+      /** Markdown inline cru por célula, como `text` nos outros blocos. */
+      readonly header: readonly string[];
+      readonly rows: readonly (readonly string[])[];
+    }
   | {
       readonly id: string;
       readonly type: 'img';
@@ -69,6 +78,14 @@ export function blocksToDraftBlocks(markdown: string): readonly DraftBlock[] {
         };
       case 'code':
         return { id, type: 'code', lang: block.language, text: block.code };
+      case 'table':
+        return {
+          id,
+          type: 'table',
+          align: block.align,
+          header: block.header.map((cell) => inlineToMarkdown(cell)),
+          rows: block.rows.map((row) => row.map((cell) => inlineToMarkdown(cell))),
+        };
       case 'image':
         return { id, type: 'img', url: block.src, mediaId: null, alt: block.alt, caption: block.caption };
     }
@@ -98,6 +115,22 @@ function escapeParagraphStart(line: string): string {
   // Imagem só existe como bloco próprio: num parágrafo, a sintaxe fica literal.
   if (line.startsWith('![')) return `!\\${line.slice(1)}`;
   return line;
+}
+
+/** A barra vertical separa colunas: dentro da célula, só escapada. */
+function tableCell(text: string): string {
+  return oneLine(text).replace(/\|/g, '\\|');
+}
+
+const DELIMITER: Record<NonNullable<TableAlign> | 'none', string> = {
+  none: '---',
+  left: ':---',
+  center: ':---:',
+  right: '---:',
+};
+
+function tableRow(cells: readonly string[]): string {
+  return `| ${cells.map(tableCell).join(' | ')} |`;
 }
 
 /** Uma cerca maior que qualquer sequência de crases que abra uma linha do código. */
@@ -151,6 +184,16 @@ export function draftBlocksToMarkdown(blocks: readonly DraftBlock[]): string {
         case 'code': {
           const fence = codeFence(block.text);
           return `${fence}${block.lang?.trim() ?? ''}\n${block.text}\n${fence}`;
+        }
+        case 'table': {
+          // Sempre uma célula por coluna do alinhamento: o parser descarta a
+          // mais e completa a menos, e o rascunho tem de sair igual de lá.
+          const fit = (cells: readonly string[]): string[] => block.align.map((_, column) => cells[column] ?? '');
+          return [
+            tableRow(fit(block.header)),
+            `| ${block.align.map((align) => DELIMITER[align ?? 'none']).join(' | ')} |`,
+            ...block.rows.map((row) => tableRow(fit(row))),
+          ].join('\n');
         }
         case 'img': {
           const alt = escapeImageText(block.alt, '\\]');

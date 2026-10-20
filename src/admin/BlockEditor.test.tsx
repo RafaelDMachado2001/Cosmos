@@ -81,3 +81,33 @@ describe('BlockEditor: inserir', () => {
     expect(next[0]?.id).toBe('b0');
   });
 });
+
+describe('BlockEditor: tabela', () => {
+  const TABLE = {
+    id: 't0',
+    type: 'table',
+    align: [null, null],
+    header: ['Nome', 'Valor'],
+    rows: [['a', '1']],
+  } as const;
+
+  it('adicionar coluna mantém uma célula por coluna em toda linha', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={[TABLE]} onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: '+ coluna' }));
+
+    expect(onChange.mock.calls[0]?.[0]).toEqual([
+      { ...TABLE, align: [null, null, null], header: ['Nome', 'Valor', ''], rows: [['a', '1', '']] },
+    ]);
+  });
+
+  it('o alinhamento gira entre padrão, esquerda, centro e direita', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={[TABLE]} onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Alinhamento da coluna 2/ }));
+
+    expect(onChange.mock.calls[0]?.[0]).toEqual([{ ...TABLE, align: [null, 'left'] }]);
+  });
+});

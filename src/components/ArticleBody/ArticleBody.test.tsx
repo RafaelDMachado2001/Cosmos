@@ -91,6 +91,18 @@ describe('ArticleBody', () => {
     expect(screen.getByText('clique aqui')).not.toBeNull();
   });
 
+  it('tabela sai com cabeçalho de coluna e alinhamento sem atributo de estilo', () => {
+    const { container } = render(
+      <ArticleBody markdown={['| Nome | Valor |', '| --- | ---: |', '| **a** | 1 |'].join('\n')} />,
+    );
+
+    const table = screen.getByRole('table');
+    expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual(['Nome', 'Valor']);
+    expect(screen.getByRole('cell', { name: '1' }).getAttribute('data-align')).toBe('right');
+    expect(table.querySelector('td strong')?.textContent).toBe('a');
+    expect(container.querySelector('[style]')).toBeNull();
+  });
+
   it('markdown vazio não desenha nada', () => {
     const { container } = render(<ArticleBody markdown="" />);
 
