@@ -11,7 +11,10 @@ permissions:
 
 jobs:
   revisao:
-    if: github.event.pull_request.draft == false
+    # Ligada pela variável REVISAO_ATIVA=true (Settings → Variables). Sem ela o
+    # job é pulado inteiro e não gasta minuto; um job que só pula os passos
+    # ainda é cobrado como um minuto a cada push na PR.
+    if: github.event.pull_request.draft == false && vars.REVISAO_ATIVA == 'true'
     runs-on: ubuntu-latest
     env:
       # Sem o segredo, o job passa sem revisar: o repositorio funciona antes de

@@ -1,9 +1,13 @@
 name: CI
 
+# Repositório privado: 2.000 min/mês no plano Free, e cada job é cobrado
+# arredondado para cima. Mudança só de texto não roda nada.
 on:
   pull_request:
+    paths-ignore: ['**.md', 'docs/**']
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -93,6 +97,10 @@ jobs:
 
   e2e:
     name: e2e
+    # Só na PR. O push na main repete o merge que a PR já testou e só existe
+    # para o Deploy esperar. Lá ficam frontend e backend, os baratos, que ainda
+    # pegam uma main que andou depois do último teste da PR.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -127,6 +135,8 @@ jobs:
 
   infra:
     name: infra
+    # Só na PR, como o e2e.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -143,6 +153,8 @@ jobs:
 
   producao:
     name: imagem de produção
+    # Só na PR, como o e2e.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     # A imagem que vai para o Cloud Run, contra um Postgres de verdade: sobe só
     # com a configuração de produção completa, e responde em cada host o que
@@ -207,6 +219,8 @@ jobs:
 
   integracao:
     name: integração
+    # Só na PR, como o e2e.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     # O job que prova a fase: publicar faz a URL responder 200 com o texto, sem
     # rebuild de imagem; apagar a devolve a 404.
