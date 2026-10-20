@@ -5,7 +5,7 @@ import type { Category } from '../../core/types';
 
 export interface CategoryThemeProps {
   readonly category: Category;
-  readonly className?: string;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
 }
 

@@ -275,3 +275,70 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* --- Aparência ------------------------------------------------------------ */
+.rangeField {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.rangeField input[type='range'] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
+.rangeField input:disabled {
+  opacity: 0.4;
+}
+
+.rangeHead {
+  display: flex;
+  justify-content: space-between;
+}
+
+.rangeValue {
+  font-family: var(--font-mono);
+  color: var(--color-text-ui);
+}
+
+.appearancePreview {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  align-content: end;
+  min-height: 150px;
+  margin-top: 6px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-elev);
+}
+
+.appearancePreview > :not(:first-child) {
+  position: relative;
+}
+
+.appearanceKicker {
+  color: color-mix(in oklch, var(--cat) 40%, var(--color-text-primary));
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+}
+
+.appearanceTitle {
+  color: var(--color-text-title);
+  font-size: 19px;
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.appearanceFilet {
+  height: 1px;
+  background: linear-gradient(90deg, var(--cat), var(--n2) 40%, transparent);
+  opacity: 0.6;
+}
