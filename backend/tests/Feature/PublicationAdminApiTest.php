@@ -12,6 +12,7 @@ use App\Modules\Content\Models\Tag;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PublicationAdminApiTest extends TestCase
@@ -151,6 +152,46 @@ class PublicationAdminApiTest extends TestCase
             'drafts' => [
                 'pt' => ['blocks' => [['id' => 'b0', 'type' => 'tabela', 'text' => 'x']]],
             ],
+        ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
+    }
+
+    public function test_autosave_grava_tabela_com_celula_vazia_como_texto(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $table = [
+            'id' => 'b0',
+            'type' => 'table',
+            'align' => ['left', null],
+            'header' => ['Nome', 'Valor'],
+            'rows' => [['a', ''], ['b', '2']],
+        ];
+
+        $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+            'drafts' => ['pt' => ['blocks' => [$table]]],
+        ])->assertOk()->assertJsonPath('data.drafts.pt.blocks.0.rows.0.1', '');
+
+        $this->assertEquals([$table], $publication->drafts()->where('locale', 'pt')->first()?->blocks);
+    }
+
+    /** @return iterable<string, array{array<string, mixed>}> */
+    public static function tabelasInvalidas(): iterable
+    {
+        $base = ['id' => 'b0', 'type' => 'table', 'align' => [null, null], 'header' => ['a', 'b'], 'rows' => [['1', '2']]];
+
+        yield 'sem colunas' => [['align' => [], 'header' => [], 'rows' => []] + $base];
+        yield 'alinhamento desconhecido' => [['align' => ['justify', null]] + $base];
+        yield 'linha com célula a menos' => [['rows' => [['1']]] + $base];
+        yield 'cabeçalho todo vazio' => [['header' => ['', '']] + $base];
+        yield 'célula que não é texto' => [['rows' => [['1', ['x']]]] + $base];
+    }
+
+    #[DataProvider('tabelasInvalidas')]
+    public function test_autosave_recusa_tabela_invalida(array $table): void
+    {
+        $publication = $this->publicationWithDrafts();
+
+        $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+            'drafts' => ['pt' => ['blocks' => [$table]]],
         ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
     }
 

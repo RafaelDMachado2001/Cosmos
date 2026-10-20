@@ -28,6 +28,8 @@ export function wordCount(blocks: readonly DraftBlock[]): number {
         return total + block.items.reduce((sum, item) => sum + words(item), 0);
       case 'img':
         return total + words(block.alt);
+      case 'table':
+        return total + [block.header, ...block.rows].flat().reduce((sum, cell) => sum + words(cell), 0);
       case 'code':
         return total;
     }
@@ -51,6 +53,12 @@ export function validateDraftBlock(block: DraftBlock): string | null {
     case 'list':
       if (block.items.length === 0) return 'Lista sem itens.';
       return block.items.some((item) => item.trim() === '') ? 'Item de lista vazio.' : null;
+    case 'table':
+      if (block.align.length === 0) return 'Tabela sem colunas.';
+      if (block.header.length !== block.align.length || block.rows.some((row) => row.length !== block.align.length)) {
+        return 'Toda linha precisa de uma célula por coluna.';
+      }
+      return block.header.every((cell) => cell.trim() === '') ? 'Tabela sem cabeçalho.' : null;
     case 'img':
       if (block.alt.trim() === '') return 'Imagem sem texto alternativo.';
       if (safeUrl(block.url) === null) return 'URL da imagem precisa ser http(s), raiz-relativo ou âncora.';

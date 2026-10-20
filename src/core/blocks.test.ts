@@ -314,3 +314,62 @@ describe('escape e cercas', () => {
     expect(inlineToMarkdown([text('*literal*')])).toBe('\\*literal\\*');
   });
 });
+
+describe('tabela', () => {
+  const text = (value: string) => [{ type: 'text', text: value }];
+
+  it('cabeçalho, alinhamento e linhas, no formato do GFM', () => {
+    const blocks = parseBlocks(
+      ['| Fase | Estado | Custo |', '| :--- | :---: | ---: |', '| 1 | **ok** | 10 |', '| 2 | `wip` | 20 |'].join('\n'),
+    );
+    expect(blocks).toEqual([
+      {
+        type: 'table',
+        align: ['left', 'center', 'right'],
+        header: [text('Fase'), text('Estado'), text('Custo')],
+        rows: [
+          [text('1'), [{ type: 'strong', children: text('ok') }], text('10')],
+          [text('2'), [{ type: 'code', text: 'wip' }], text('20')],
+        ],
+      },
+    ]);
+  });
+
+  it('sem barras nas pontas, e com célula a menos ou a mais', () => {
+    const [table] = parseBlocks(['a | b', '--- | ---', '| 1 |', '1 | 2 | 3'].join('\n'));
+    expect(table).toMatchObject({ type: 'table', align: [null, null] });
+    expect(table?.type === 'table' && table.rows).toEqual([
+      [text('1'), []],
+      [text('1'), text('2')],
+    ]);
+  });
+
+  it('barra escapada fica na célula, inclusive dentro de código', () => {
+    const [table] = parseBlocks(['| expr |', '| --- |', '| `a \\| b` e c \\| d |'].join('\n'));
+    expect(table?.type === 'table' && table.rows[0]).toEqual([
+      [{ type: 'code', text: 'a | b' }, { type: 'text', text: ' e c | d' }],
+    ]);
+  });
+
+  it('linha sem barra encerra a tabela, como uma linha em branco', () => {
+    // Mais conservador que o GFM, que a leria como mais uma linha: um
+    // parágrafo colado na tabela não some dentro dela.
+    expect(parseBlocks(['| a |', '| --- |', '| 1 |', 'texto'].join('\n')).map((block) => block.type)).toEqual([
+      'table',
+      'paragraph',
+    ]);
+  });
+
+  it('termina na linha em branco e interrompe um parágrafo', () => {
+    const blocks = parseBlocks(['Antes', '| a | b |', '|---|---|', '| 1 | 2 |', '', 'Depois'].join('\n'));
+    expect(blocks.map((block) => block.type)).toEqual(['paragraph', 'table', 'paragraph']);
+  });
+
+  it('cabeçalho e alinhamento com número de colunas diferente não é tabela', () => {
+    expect(parseBlocks(['| a | b |', '| --- |'].join('\n')).map((block) => block.type)).toEqual(['paragraph']);
+  });
+
+  it('barra solta num parágrafo continua parágrafo', () => {
+    expect(parseBlocks('isto | aquilo').map((block) => block.type)).toEqual(['paragraph']);
+  });
+});

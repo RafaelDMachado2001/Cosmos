@@ -18,7 +18,9 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class ValidDraftBlocks implements ValidationRule
 {
-    private const array TYPES = ['p', 'h2', 'h3', 'quote', 'list', 'code', 'img'];
+    private const array TYPES = ['p', 'h2', 'h3', 'quote', 'list', 'code', 'img', 'table'];
+
+    private const array ALIGNS = ['left', 'center', 'right'];
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -60,6 +62,7 @@ class ValidDraftBlocks implements ValidationRule
             'code' => $this->validateCode($attribute, $index, $block, $fail),
             'list' => $this->validateList($attribute, $index, $block, $fail),
             'img' => $this->validateImage($attribute, $index, $block, $fail),
+            'table' => $this->validateTable($attribute, $index, $block, $fail),
         };
     }
 
@@ -109,6 +112,61 @@ class ValidDraftBlocks implements ValidationRule
         }
     }
 
+    /**
+     * Uma célula por coluna em toda linha: o serializador completa e corta
+     * pelo alinhamento, e uma linha torta perderia texto em silêncio.
+     *
+     * @param  array<string, mixed>  $block
+     */
+    private function validateTable(string $attribute, int|string $index, array $block, Closure $fail): void
+    {
+        $align = $block['align'] ?? null;
+        if (! is_array($align) || $align === [] || ! array_is_list($align)) {
+            $fail("{$attribute}.{$index}.align precisa ter ao menos uma coluna.");
+
+            return;
+        }
+
+        foreach ($align as $value) {
+            if ($value !== null && ! in_array($value, self::ALIGNS, true)) {
+                $fail("{$attribute}.{$index}.align aceita left, center, right ou nulo.");
+
+                return;
+            }
+        }
+
+        $header = $block['header'] ?? null;
+        $rows = $block['rows'] ?? null;
+        if (! is_array($rows) || ! array_is_list($rows)) {
+            $fail("{$attribute}.{$index}.rows precisa ser uma lista de linhas.");
+
+            return;
+        }
+
+        foreach ([$header, ...$rows] as $row) {
+            if (! is_array($row) || count($row) !== count($align)) {
+                $fail("{$attribute}.{$index} precisa de uma célula por coluna em toda linha.");
+
+                return;
+            }
+
+            foreach ($row as $cell) {
+                // Nulo é a célula vazia depois do ConvertEmptyStringsToNull;
+                // `normalizeTables` a devolve como texto antes de gravar.
+                if ($cell !== null && ! is_string($cell)) {
+                    $fail("{$attribute}.{$index} só aceita texto nas células.");
+
+                    return;
+                }
+            }
+        }
+
+        /** @var list<string|null> $header */
+        if (trim(implode('', array_map(strval(...), $header))) === '') {
+            $fail("{$attribute}.{$index}.header não pode ser todo vazio.");
+        }
+    }
+
     /** @param array<string, mixed> $block */
     private function validateImage(string $attribute, int|string $index, array $block, Closure $fail): void
     {
@@ -148,6 +206,28 @@ class ValidDraftBlocks implements ValidationRule
         if (! isset($block[$field]) || ! is_string($block[$field]) || trim($block[$field]) === '') {
             $fail("{$attribute}.{$index}.{$field} é obrigatório.");
         }
+    }
+
+    /**
+     * Célula vazia de volta a `''`: o middleware global troca string vazia
+     * por nulo, e o editor (`DraftBlock` em TS) só conhece texto na célula.
+     *
+     * @param  array<int, array<string, mixed>>  $blocks
+     * @return array<int, array<string, mixed>>
+     */
+    public static function normalizeTables(array $blocks): array
+    {
+        return array_map(function (array $block): array {
+            if (($block['type'] ?? null) !== 'table') {
+                return $block;
+            }
+
+            $cells = fn (array $row): array => array_map(fn (mixed $cell): string => (string) $cell, $row);
+            $block['header'] = $cells($block['header']);
+            $block['rows'] = array_map($cells, $block['rows']);
+
+            return $block;
+        }, $blocks);
     }
 
     /** O mesmo allow-list de `safeUrl` em `src/core/blocks.ts`. */
