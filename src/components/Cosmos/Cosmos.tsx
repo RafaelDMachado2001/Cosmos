@@ -178,7 +178,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             data-active={marker.hasPublication}
             aria-hidden="true"
           >
-            {marker.january
+            {marker.withYear
               ? monthYearLabel(marker.timestamp, locale)
               : monthLabel(marker.timestamp, locale)}
           </div>

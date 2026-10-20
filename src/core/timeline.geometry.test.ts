@@ -186,17 +186,18 @@ describe('yearMarkers', () => {
 });
 
 describe('monthMarkers', () => {
-  it('marca todo mês de janeiro do primeiro ano até o mês da mais recente', () => {
+  it('marca todo mês, do da mais antiga até o da mais recente', () => {
     const stars = placeStars([
       { slug: 'a', publishedAt: '2024-03-10T12:00:00.000Z', category: 'artigo' },
       { slug: 'b', publishedAt: '2025-02-01T12:00:00.000Z', category: 'artigo' },
     ]);
     const months = monthMarkers(stars);
 
-    expect(months).toHaveLength(14);
-    expect(months[0]).toMatchObject({ year: 2024, month: 0, january: true, hasPublication: false });
+    expect(months).toHaveLength(12);
+    expect(months[0]).toMatchObject({ year: 2024, month: 2, january: false, withYear: true, hasPublication: true });
     expect(months.at(-1)).toMatchObject({ year: 2025, month: 1, hasPublication: true });
-    expect(months.filter((m) => m.january).map((m) => m.year)).toEqual([2024, 2025]);
+    expect(months.filter((m) => m.january).map((m) => m.year)).toEqual([2025]);
+    expect(months.filter((m) => m.withYear).map((m) => m.key)).toEqual(['2024-03', '2025-01']);
     expect(months.filter((m) => m.hasPublication).map((m) => m.key)).toEqual([
       '2024-03',
       '2025-02',
@@ -270,6 +271,18 @@ describe('panBucket', () => {
 });
 
 describe('panBounds e panForStar', () => {
+  it('centraliza um acervo que cabe inteiro na tela', () => {
+    const stars = placeStars([
+      { slug: 'a', publishedAt: '2026-10-10T12:00:00.000Z', category: 'artigo' },
+      { slug: 'b', publishedAt: '2026-10-19T12:00:00.000Z', category: 'projeto' },
+    ]);
+    const vw = 1440;
+    const bounds = panBounds(stars, vw);
+    const middle = ((stars[0]?.x ?? 0) + (stars[1]?.x ?? 0)) / 2;
+    expect(bounds.min).toBe(bounds.max);
+    expect(middle - bounds.min).toBeCloseTo(vw / 2, 9);
+  });
+
   it('mantém o alvo dentro dos limites e alcança a primeira e a última', () => {
     const stars = placeStars(spaced(30));
     const vw = 1280;
@@ -288,6 +301,19 @@ describe('panBounds e panForStar', () => {
     const extent = strandExtent(stars);
     expect(extent.maxX).toBeCloseTo((stars[stars.length - 1]?.x ?? 0) + TIMELINE.trailingPadPx, 9);
     expect(extent.widthPx).toBe(extent.maxX - extent.minX);
+  });
+
+  it('começa na primeira estrela mesmo longe da época', () => {
+    // Acervo que começa dois anos depois da época: o pan inicial é a
+    // primeira estrela, não o trecho vazio de 2024 e 2025.
+    const stars = placeStars([
+      { slug: 'a', publishedAt: '2026-10-10T12:00:00.000Z', category: 'artigo' },
+      { slug: 'b', publishedAt: '2026-10-19T12:00:00.000Z', category: 'projeto' },
+    ]);
+    const first = stars[0]?.x ?? 0;
+    expect(strandExtent(stars).minX).toBeCloseTo(first - TIMELINE.originX, 9);
+    expect(panBounds(stars, 320).min).toBeCloseTo(first - TIMELINE.originX, 9);
+    expect(yearMarkers(stars)[0]?.x).toBeCloseTo(monthMarkers(stars)[0]?.x ?? NaN, 9);
   });
 });
 
