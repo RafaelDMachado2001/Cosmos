@@ -190,4 +190,24 @@ describe('AdminApp', () => {
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     expect(api.publish).not.toHaveBeenCalled();
   });
+
+  it('Aparência: desligar "Herdar" grava o padrão, e o controle salva o valor', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.update.mockResolvedValue(publication());
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+
+    const motion = await screen.findByRole('checkbox', { name: 'Movimento' });
+    expect((motion as HTMLInputElement).disabled).toBe(true);
+
+    await user.click(screen.getByRole('checkbox', { name: 'Herdar da categoria' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Movimento' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => expect(api.update).toHaveBeenCalled());
+    const patch = api.update.mock.calls.at(-1)?.[1] as { appearance: unknown };
+    expect(patch.appearance).toEqual({ nebula: 0.3, motion: false });
+  });
 });
