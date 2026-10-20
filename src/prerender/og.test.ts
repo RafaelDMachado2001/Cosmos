@@ -15,7 +15,7 @@ describe('cartao de Open Graph', () => {
   it('pinta com os tokens reais: o fundo do site e a cor da categoria', async () => {
     const svg = await ogSvg(CARD);
     expect(svg).toContain('#05060b');
-    expect(svg).toContain('#6e7bff');
+    expect(svg).toContain('#707cff');
   });
 
   it('sem categoria, o acento e o roxo do site', async () => {

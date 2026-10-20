@@ -31,6 +31,7 @@ function publication(overrides: Partial<AdminPublication> = {}): AdminPublicatio
     indexable: true,
     status: 'draft',
     pendingChanges: false,
+    appearance: null,
     tags: [],
     references: [],
     drafts: {
