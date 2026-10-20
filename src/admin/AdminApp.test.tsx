@@ -30,6 +30,7 @@ function publication(overrides: Partial<AdminPublication> = {}): AdminPublicatio
     featured: false,
     indexable: true,
     status: 'draft',
+    pendingChanges: false,
     tags: [],
     references: [],
     drafts: {
@@ -149,6 +150,43 @@ describe('AdminApp', () => {
     await user.click(screen.getByRole('button', { name: 'Publicar' }));
 
     expect(await screen.findByText('Não foi possível publicar.')).not.toBeNull();
+    expect(api.publish).not.toHaveBeenCalled();
+  });
+
+  it('publicada: "Atualizar publicado" salva e republica, e acusa o que está pendente', async () => {
+    const live = publication({ status: 'published', pendingChanges: true });
+    api.list.mockResolvedValue([live]);
+    api.update.mockResolvedValue(live);
+    api.publish.mockResolvedValue({ ...live, pendingChanges: false });
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+
+    expect(await screen.findByText(/ainda não estão no ar/)).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull();
+
+    await user.type(await screen.findByDisplayValue('Code review sem atrito'), '!');
+    await user.click(screen.getByRole('button', { name: 'Atualizar publicado' }));
+
+    await waitFor(() => expect(api.publish).toHaveBeenCalledTimes(1));
+    expect(api.update.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      api.publish.mock.invocationCallOrder[0] ?? 0,
+    );
+    await waitFor(() => expect(screen.queryByText(/ainda não estão no ar/)).toBeNull());
+  });
+
+  it('"Salvar" manda o rascunho sem esperar o autosave', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.update.mockResolvedValue(publication());
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.type(await screen.findByDisplayValue('Code review sem atrito'), '!');
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     expect(api.publish).not.toHaveBeenCalled();
   });
 });

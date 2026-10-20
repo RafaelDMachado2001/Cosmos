@@ -46,6 +46,7 @@ test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', 
   // Sem esperar o autosave: publicar descarrega o salvamento pendente antes.
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByRole('button', { name: 'Despublicar' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Atualizar publicado' })).toBeVisible();
 
   const url = `/pt/publicacoes/${slug}`;
   await expect

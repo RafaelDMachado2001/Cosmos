@@ -26,15 +26,26 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const live = publication.status === 'published' || publication.status === 'scheduled';
+
   async function handlePublish(): Promise<void> {
     setBusy(true);
     setActionError(null);
     try {
       await editor.publish();
     } catch {
-      setActionError('Não foi possível publicar.');
+      setActionError(live ? 'Não foi possível atualizar o publicado.' : 'Não foi possível publicar.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleSave(): Promise<void> {
+    setActionError(null);
+    try {
+      await editor.saveNow();
+    } catch {
+      setActionError('Não foi possível salvar.');
     }
   }
 
@@ -77,6 +88,11 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           <span className={styles.savePill}>{STATUS_PILL_LABEL[editor.status]}</span>
         )}
       </div>
+      {live && publication.pendingChanges && (
+        <p className={styles.pendingNote} role="status">
+          Há alterações salvas que ainda não estão no ar.
+        </p>
+      )}
 
       <label className={styles.field}>
         <span className={styles.label}>Slug</span>
@@ -189,13 +205,36 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
       {actionError !== null && <p className={styles.actionError}>{actionError}</p>}
 
       <div className={styles.actions}>
-        {publication.status === 'published' || publication.status === 'scheduled' ? (
-          <button type="button" className={styles.secondaryButton} disabled={busy} onClick={() => void handleUnpublish()}>
-            Despublicar
+        <button
+          type="button"
+          className={styles.secondaryButton}
+          disabled={busy || editor.status === 'saving'}
+          onClick={() => void handleSave()}
+          title="Ctrl+S"
+        >
+          Salvar
+        </button>
+        {live ? (
+          <button
+            type="button"
+            className={styles.primaryButton}
+            // Habilitado mesmo sem pendência acusada: o autosave pode estar a
+            // caminho, e republicar o mesmo conteúdo é inofensivo.
+            disabled={busy}
+            onClick={() => void handlePublish()}
+          >
+            Atualizar publicado
           </button>
         ) : (
           <button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void handlePublish()}>
             Publicar
+          </button>
+        )}
+      </div>
+      <div className={styles.actionsSecondary}>
+        {live && (
+          <button type="button" className={styles.secondaryButton} disabled={busy} onClick={() => void handleUnpublish()}>
+            Despublicar
           </button>
         )}
         <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void handleDelete()}>
