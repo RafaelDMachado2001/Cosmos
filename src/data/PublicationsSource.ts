@@ -7,6 +7,8 @@
  * parâmetros da API planejada (`locale`, `category`, `q`, `before`, `limit`).
  */
 
+import { parseAppearance } from '../core/appearance';
+import type { Appearance } from '../core/appearance';
 import { matches } from '../core/filter';
 import type { Category, Locale, Publication, PublicationSummary } from '../core/types';
 import { LOCALES, isLocale } from '../core/types';
@@ -36,6 +38,8 @@ export interface PublicationDetail extends PublicationSummary {
    * `og:locale:alternate` só podem apontar para estes.
    */
   readonly locales: readonly Locale[];
+  /** Nula ou ausente herda o padrão (`core/appearance.ts`). */
+  readonly appearance?: Appearance | null;
 }
 
 export interface PublicationsSource {
@@ -139,6 +143,8 @@ interface ApiPublicationDetail extends ApiPublication {
    * o build — ausente, vale o padrão de antes (os dois idiomas).
    */
   readonly locales?: readonly string[];
+  /** Opcional pelo mesmo motivo de `locales`. */
+  readonly appearance?: unknown;
 }
 
 function fromApi(row: ApiPublication): PublicationSummary {
@@ -256,6 +262,7 @@ export function createHttpSource(
         ...fromApi(payload.data),
         body: payload.data.body,
         locales: payload.data.locales?.filter(isLocale) ?? LOCALES,
+        appearance: parseAppearance(payload.data.appearance),
         ...(payload.data.seo_title === null ? {} : { seoTitle: payload.data.seo_title }),
         ...(payload.data.seo_description === null
           ? {}

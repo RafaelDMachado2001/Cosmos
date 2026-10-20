@@ -81,6 +81,9 @@ class PublicationAdminController extends Controller
             'publishedAt' => ['sometimes', 'date'],
             'featured' => ['sometimes', 'boolean'],
             'indexable' => ['sometimes', 'boolean'],
+            'appearance' => ['sometimes', 'nullable', 'array'],
+            'appearance.nebula' => ['required_with:appearance', 'numeric', 'between:0,1.6'],
+            'appearance.motion' => ['required_with:appearance', 'boolean'],
             'tags' => ['sometimes', 'array'],
             'tags.*' => ['string', 'max:255', 'regex:'.self::SLUG_REGEX],
             'references' => ['sometimes', 'array'],
@@ -105,7 +108,18 @@ class PublicationAdminController extends Controller
             'published_at' => $data['publishedAt'] ?? null,
             'featured' => $data['featured'] ?? null,
             'indexable' => $data['indexable'] ?? null,
-        ], fn (mixed $value): bool => $value !== null))->save();
+        ], fn (mixed $value): bool => $value !== null));
+
+        // Nulo é um valor aqui ("herdar da categoria"), então não passa pelo
+        // filtro de cima: só a ausência da chave deixa a aparência como está.
+        if (array_key_exists('appearance', $data)) {
+            $publication->appearance = $data['appearance'] === null ? null : [
+                'nebula' => (float) $data['appearance']['nebula'],
+                'motion' => (bool) $data['appearance']['motion'],
+            ];
+        }
+
+        $publication->save();
 
         if (array_key_exists('tags', $data)) {
             $tagIds = array_map(
