@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BlockEditor } from './BlockEditor';
 import type * as apiModule from './api';
@@ -12,6 +12,8 @@ vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof apiModule>()),
   api: { uploadMedia },
 }));
+
+afterEach(cleanup);
 
 const IMAGE_BLOCK = { id: 'b0', type: 'img', url: '', mediaId: null, alt: '', caption: null } as const;
 
@@ -46,5 +48,36 @@ describe('BlockEditor: upload de imagem', () => {
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/20 MB/);
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('BlockEditor: inserir', () => {
+  const BLOCKS = [
+    { id: 'b0', type: 'p', text: 'Primeiro.' },
+    { id: 'b1', type: 'p', text: 'Segundo.' },
+    { id: 'b2', type: 'p', text: 'Terceiro.' },
+  ] as const;
+
+  it('sem bloco em foco, insere no fim', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={BLOCKS} onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: '+ Citação' }));
+
+    const next = onChange.mock.calls[0]?.[0] as { type: string }[];
+    expect(next.map((block) => block.type)).toEqual(['p', 'p', 'p', 'quote']);
+  });
+
+  it('insere logo depois do bloco em que se está, não no fim', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={BLOCKS} onChange={onChange} />);
+
+    await userEvent.click(screen.getByDisplayValue('Primeiro.'));
+    expect(screen.getByText('Inserir após o bloco 1')).not.toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: '+ Citação' }));
+
+    const next = onChange.mock.calls[0]?.[0] as { id: string; type: string }[];
+    expect(next.map((block) => block.type)).toEqual(['p', 'quote', 'p', 'p']);
+    expect(next[0]?.id).toBe('b0');
   });
 });

@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $featured
  * @property bool $indexable
  * @property string $status
+ * @property CarbonImmutable|null $content_published_at
  * @property-read Collection<int, PublicationTranslation> $translations
  * @property-read Collection<int, PublicationDraft> $drafts
  * @property-read Collection<int, Tag> $tags
@@ -58,6 +59,7 @@ class Publication extends Model
     {
         return [
             'published_at' => 'immutable_datetime',
+            'content_published_at' => 'immutable_datetime',
             'featured' => 'boolean',
             'indexable' => 'boolean',
         ];

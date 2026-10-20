@@ -288,6 +288,48 @@ class PublicationAdminApiTest extends TestCase
             ->assertJsonPath('data.status', Publication::STATUS_SCHEDULED);
     }
 
+    public function test_editar_o_rascunho_de_uma_publicada_acusa_alteracoes_pendentes(): void
+    {
+        $publication = $this->publicationWithDrafts(['published_at' => now()->subDay()]);
+        $publication->drafts()->where('locale', 'pt')->update([
+            'title' => 'Título PT',
+            'blocks' => [['id' => 'b0', 'type' => 'p', 'text' => 'Primeira versão.']],
+        ]);
+
+        $this->actingAs($this->admin())
+            ->postJson("/admin/api/publications/{$publication->id}/publish")
+            ->assertJsonPath('data.pendingChanges', false);
+
+        $this->travel(1)->minutes();
+        $this->actingAs($this->admin())
+            ->patchJson("/admin/api/publications/{$publication->id}", [
+                'drafts' => ['pt' => ['blocks' => [['id' => 'b0', 'type' => 'p', 'text' => 'Segunda versão.']]]],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.pendingChanges', true);
+
+        // A tradução no ar continua a anterior até atualizar.
+        $this->assertSame('Primeira versão.', $publication->translations()->where('locale', 'pt')->value('body'));
+
+        $this->travel(1)->minutes();
+        $this->actingAs($this->admin())
+            ->postJson("/admin/api/publications/{$publication->id}/publish")
+            ->assertOk()
+            ->assertJsonPath('data.status', Publication::STATUS_PUBLISHED)
+            ->assertJsonPath('data.pendingChanges', false);
+
+        $this->assertSame('Segunda versão.', $publication->translations()->where('locale', 'pt')->value('body'));
+    }
+
+    public function test_rascunho_nunca_tem_alteracoes_pendentes(): void
+    {
+        $publication = $this->publicationWithDrafts();
+
+        $this->actingAs($this->admin())
+            ->getJson("/admin/api/publications/{$publication->id}")
+            ->assertJsonPath('data.pendingChanges', false);
+    }
+
     public function test_despublicar_volta_para_rascunho(): void
     {
         $publication = $this->publicationWithDrafts(['status' => Publication::STATUS_PUBLISHED]);
