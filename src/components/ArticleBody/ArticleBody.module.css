@@ -1,4 +1,19 @@
 /*
+ * `--accent` é a cor da categoria quando há um tema por perto (`--cat`, de
+ * `CategoryTheme`) e o roxo do sistema quando não há — a pré-visualização do
+ * Studio e qualquer outro lugar sem tema.
+ */
+.heading2,
+.heading3,
+.highlight,
+.note,
+.flow,
+.codeFile,
+.inlineCode {
+  --accent: var(--cat, var(--color-accent));
+}
+
+/*
  * Tipografia dos seis tipos de bloco. Mesma escala do `.paragraph` que
  * `ArticlePage` e `ReaderView` já usavam antes de ganhar este componente —
  * só os tokens de `src/styles/tokens.css`, nenhuma cor nova.
@@ -198,4 +213,131 @@
 
 .table [data-align='right'] {
   text-align: right;
+}
+
+/* --- Destaque, nota e fluxo ---------------------------------------------- */
+.highlight {
+  margin: 8px 0 30px;
+  padding: 22px 26px;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--radius-panel) var(--radius-panel) 0;
+  background: linear-gradient(90deg, color-mix(in oklch, var(--accent) 12%, transparent), transparent 85%);
+  color: var(--color-text-primary);
+  font-size: 1.17em;
+  font-weight: 300;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.note {
+  margin: 0 0 28px;
+  padding: 18px 22px;
+  border: 1px solid color-mix(in oklch, var(--accent) 28%, transparent);
+  border-radius: var(--radius-panel);
+  background: color-mix(in oklch, var(--accent) 6%, var(--color-bg));
+}
+
+.noteTitle {
+  margin: 0 0 6px;
+  color: color-mix(in oklch, var(--accent) 45%, var(--color-text-primary));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-nav);
+  text-transform: uppercase;
+}
+
+.noteText {
+  margin: 0;
+  color: var(--color-text-lede);
+  font-size: 0.94em;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+/* Etapas em pílulas ligadas por traços; a primeira e a última preenchidas. */
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 0;
+  margin: 4px 0 30px;
+  padding: 0;
+  list-style: none;
+}
+
+.flowStep {
+  display: flex;
+  align-items: center;
+}
+
+.flowStep + .flowStep::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, color-mix(in oklch, var(--accent) 25%, transparent), var(--accent));
+}
+
+.flowPill {
+  padding: 7px 14px;
+  border: 1px solid color-mix(in oklch, var(--accent) 45%, transparent);
+  border-radius: var(--radius-round);
+  color: var(--color-text-ui);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.flowStep:first-child .flowPill,
+.flowStep:last-child .flowPill {
+  border-color: transparent;
+  background: color-mix(in oklch, var(--accent) 30%, transparent);
+  color: var(--color-text-primary);
+  box-shadow: 0 0 18px -4px color-mix(in oklch, var(--accent) 70%, transparent);
+}
+
+/* --- Código com nome de arquivo ------------------------------------------ */
+.codeFile {
+  margin: 0 0 26px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.codeFile .code {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.codeHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.codeDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px 1px color-mix(in oklch, var(--accent) 60%, transparent);
+}
+
+.codeFilename {
+  color: var(--color-text-ui);
+}
+
+.codeHeaderLang {
+  margin-left: auto;
+  color: var(--color-text-faint);
+  font-size: 10px;
+  letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
 }

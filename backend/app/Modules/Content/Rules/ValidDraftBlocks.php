@@ -18,7 +18,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class ValidDraftBlocks implements ValidationRule
 {
-    private const array TYPES = ['p', 'h2', 'h3', 'quote', 'list', 'code', 'img', 'table'];
+    private const array TYPES = ['p', 'h2', 'h3', 'quote', 'list', 'code', 'img', 'table', 'highlight', 'note', 'flow'];
 
     private const array ALIGNS = ['left', 'center', 'right'];
 
@@ -58,7 +58,9 @@ class ValidDraftBlocks implements ValidationRule
         }
 
         match ($type) {
-            'p', 'h2', 'h3', 'quote' => $this->requireNonEmptyString($attribute, $index, $block, 'text', $fail),
+            'p', 'h2', 'h3', 'quote', 'highlight' => $this->requireNonEmptyString($attribute, $index, $block, 'text', $fail),
+            'note' => $this->validateNote($attribute, $index, $block, $fail),
+            'flow' => $this->validateFlow($attribute, $index, $block, $fail),
             'code' => $this->validateCode($attribute, $index, $block, $fail),
             'list' => $this->validateList($attribute, $index, $block, $fail),
             'img' => $this->validateImage($attribute, $index, $block, $fail),
@@ -85,6 +87,56 @@ class ValidDraftBlocks implements ValidationRule
         // a cerca deixa de ser reconhecida e o código vira parágrafo.
         if (is_string($block['lang'] ?? null) && preg_match('/[\s`]/', trim($block['lang'])) === 1) {
             $fail("{$attribute}.{$index}.lang não pode ter espaços nem crases.");
+
+            return;
+        }
+
+        $this->optionalString($attribute, $index, $block, 'filename', 255, $fail);
+    }
+
+    /** @param array<string, mixed> $block */
+    private function validateNote(string $attribute, int|string $index, array $block, Closure $fail): void
+    {
+        $this->requireNonEmptyString($attribute, $index, $block, 'text', $fail);
+        $this->optionalString($attribute, $index, $block, 'title', 255, $fail);
+    }
+
+    /**
+     * Fluxo de uma etapa só não é fluxo: as pílulas ligadas por traços
+     * pedem ao menos duas.
+     *
+     * @param  array<string, mixed>  $block
+     */
+    private function validateFlow(string $attribute, int|string $index, array $block, Closure $fail): void
+    {
+        $steps = $block['steps'] ?? null;
+        if (! is_array($steps) || ! array_is_list($steps) || count($steps) < 2) {
+            $fail("{$attribute}.{$index}.steps precisa de ao menos duas etapas.");
+
+            return;
+        }
+
+        foreach ($steps as $stepIndex => $step) {
+            if (! is_string($step) || trim($step) === '') {
+                $fail("{$attribute}.{$index}.steps.{$stepIndex} precisa ser texto não vazio.");
+
+                return;
+            }
+        }
+    }
+
+    /** @param array<string, mixed> $block */
+    private function optionalString(
+        string $attribute,
+        int|string $index,
+        array $block,
+        string $field,
+        int $max,
+        Closure $fail,
+    ): void {
+        $value = $block[$field] ?? null;
+        if ($value !== null && (! is_string($value) || mb_strlen($value) > $max)) {
+            $fail("{$attribute}.{$index}.{$field} precisa ser texto de até {$max} caracteres ou nulo.");
         }
     }
 

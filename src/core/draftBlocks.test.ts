@@ -29,7 +29,7 @@ describe('blocksToDraftBlocks', () => {
       { id: 'b1', type: 'p', text: 'Um parágrafo com **negrito** e `código`.' },
       { id: 'b2', type: 'quote', text: 'Uma citação.' },
       { id: 'b3', type: 'list', ordered: false, items: ['Primeiro', 'Segundo'] },
-      { id: 'b4', type: 'code', lang: 'ts', text: "const x = 1;" },
+      { id: 'b4', type: 'code', lang: 'ts', filename: null, text: "const x = 1;" },
       {
         id: 'b5',
         type: 'img',
@@ -161,6 +161,29 @@ describe('fidelidade: rascunho -> Markdown -> leitura', () => {
     ]);
   });
 
+  it('destaque, nota, fluxo e código com arquivo voltam iguais', () => {
+    const blocks: DraftBlock[] = [
+      { id: 'b0', type: 'highlight', text: 'O que **importa**.' },
+      { id: 'b1', type: 'note', title: 'Atenção', text: 'Um `detalhe`.' },
+      { id: 'b2', type: 'note', title: null, text: 'Sem título.' },
+      { id: 'b3', type: 'flow', steps: ['- começa com hífen', 'Escrever', 'Publicar'] },
+      { id: 'b4', type: 'code', lang: 'ts', filename: 'src/"a"\\b.ts', text: 'const a = 1;' },
+      { id: 'b5', type: 'code', lang: null, filename: null, text: 'x' },
+      { id: 'b6', type: 'code', lang: null, filename: 'Makefile', text: 'all:' },
+    ];
+    expect(blocksToDraftBlocks(draftBlocksToMarkdown(blocks))).toEqual(blocks);
+  });
+
+  it('citação que começa com o marcador continua citação', () => {
+    const quote: DraftBlock = { id: 'b0', type: 'quote', text: '[!note] não é nota' };
+    expect(read([quote])).toEqual([{ type: 'quote', children: [{ type: 'text', text: '[!note] não é nota' }] }]);
+  });
+
+  it('código gravado antes do nome de arquivo existir sai sem título', () => {
+    const legacy = { id: 'b0', type: 'code', lang: 'ts', text: 'x' } as DraftBlock;
+    expect(draftBlocksToMarkdown([legacy])).toBe('```ts\nx\n```');
+  });
+
   it('parágrafo com linha em branco continua um parágrafo só', () => {
     expect(read([{ id: 'b0', type: 'p', text: 'Primeira.\n\nSegunda.' }])).toEqual([
       paragraph('Primeira. Segunda.'),
@@ -204,7 +227,7 @@ describe('fidelidade: rascunho -> Markdown -> leitura', () => {
         { id: 'b0', type: 'code', lang: 'md', text: code },
         { id: 'b1', type: 'p', text: 'Depois.' },
       ]),
-    ).toEqual<readonly Block[]>([{ type: 'code', code, language: 'md' }, paragraph('Depois.')]);
+    ).toEqual<readonly Block[]>([{ type: 'code', code, language: 'md', filename: null }, paragraph('Depois.')]);
   });
 
   it('imagem com colchete no alt, parêntese na URL e aspas na legenda', () => {
