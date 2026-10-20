@@ -97,6 +97,36 @@ function renderBlock(block: Block, key: string): ReactNode {
           <code className={styles.codeText}>{renderCode(block.code, block.language, key)}</code>
         </pre>
       );
+    case 'table':
+      // O alinhamento vai num `data-align`, não em `style`: o HTML do
+      // prerender passa pela CSP, que não aceita atributo de estilo.
+      return (
+        // A rolagem horizontal precisa ser alcançável pelo teclado.
+        <div key={key} className={styles.tableScroll} tabIndex={0}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                {block.header.map((cell, column) => (
+                  <th key={column} scope="col" data-align={block.align[column] ?? undefined}>
+                    {renderInline(cell, `${key}-h${String(column)}`)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {row.map((cell, column) => (
+                    <td key={column} data-align={block.align[column] ?? undefined}>
+                      {renderInline(cell, `${key}-${String(rowIndex)}-${String(column)}`)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
     case 'image':
       return (
         <figure key={key} className={styles.figure}>

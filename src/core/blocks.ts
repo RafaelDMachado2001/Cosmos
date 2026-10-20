@@ -7,10 +7,12 @@
  * (Node) quanto pelo cliente. Mesmo princípio do `core/seo.ts` na fase 9: o
  * Laravel só guarda e devolve a string crua.
  *
- * Deliberadamente não é Markdown completo: sem tabela, sem HTML embutido, sem
+ * Deliberadamente não é Markdown completo: sem HTML embutido, sem
  * lista aninhada, sem item de lista em múltiplas linhas. O acervo é de
  * artigos técnicos de um autor só, e cada recurso a mais é uma nova superfície
- * de parsing para manter e testar. Ver a spec da fase 11.
+ * de parsing para manter e testar. Ver a spec da fase 11. Tabela entrou
+ * depois, no formato do GFM (cabeçalho, linha de alinhamento, linhas), sem
+ * célula em múltiplas linhas.
  *
  * Nunca produz HTML: a árvore é renderizada como elementos React normais, e o
  * texto sai escapado pelo próprio React. O único vetor que resta é a URL de
@@ -24,6 +26,8 @@ export type InlineNode =
   | { readonly type: 'code'; readonly text: string }
   | { readonly type: 'link'; readonly href: string; readonly children: readonly InlineNode[] };
 
+export type TableAlign = 'left' | 'center' | 'right' | null;
+
 export type Block =
   | { readonly type: 'heading'; readonly level: 2 | 3; readonly children: readonly InlineNode[] }
   | { readonly type: 'paragraph'; readonly children: readonly InlineNode[] }
@@ -34,6 +38,13 @@ export type Block =
       readonly items: readonly (readonly InlineNode[])[];
     }
   | { readonly type: 'code'; readonly code: string; readonly language: string | null }
+  | {
+      readonly type: 'table';
+      readonly align: readonly TableAlign[];
+      readonly header: readonly (readonly InlineNode[])[];
+      /** Cada linha com exatamente uma célula por coluna do cabeçalho. */
+      readonly rows: readonly (readonly (readonly InlineNode[])[])[];
+    }
   | {
       readonly type: 'image';
       readonly src: string;
@@ -192,6 +203,42 @@ function isBlank(line: string): boolean {
   return line.trim() === '';
 }
 
+/**
+ * As células de uma linha de tabela. A barra vertical só separa quando não
+ * vem escapada (`\|`); o escape é desfeito antes do inline — inclusive dentro
+ * de código, como no GFM, que é o único jeito de pôr `|` numa célula.
+ */
+export function splitTableRow(line: string): readonly string[] | null {
+  let row = line.trim();
+  if (!/(?<!\\)\|/.test(row)) return null;
+  if (row.startsWith('|')) row = row.slice(1);
+  if (row.endsWith('|') && !row.endsWith('\\|')) row = row.slice(0, -1);
+  return row.split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, '|'));
+}
+
+const DELIMITER_CELL_RE = /^(:?)-+(:?)$/;
+
+function tableAlign(line: string): readonly TableAlign[] | null {
+  const cells = splitTableRow(line);
+  if (cells === null) return null;
+  const align: TableAlign[] = [];
+  for (const cell of cells) {
+    const match = DELIMITER_CELL_RE.exec(cell);
+    if (match === null) return null;
+    const left = match[1] === ':';
+    const right = match[2] === ':';
+    align.push(left && right ? 'center' : right ? 'right' : left ? 'left' : null);
+  }
+  return align;
+}
+
+/** Cabeçalho seguido da linha de alinhamento, com o mesmo número de colunas. */
+function tableStart(lines: readonly string[], index: number): readonly TableAlign[] | null {
+  const header = splitTableRow(lines[index] ?? '');
+  const align = tableAlign(lines[index + 1] ?? '');
+  return header !== null && align !== null && header.length === align.length ? align : null;
+}
+
 export function parseBlocks(markdown: string): readonly Block[] {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');
   const blocks: Block[] = [];
@@ -227,6 +274,22 @@ export function parseBlocks(markdown: string): readonly Block[] {
       const level = (heading[1]?.length ?? 2) as 2 | 3;
       blocks.push({ type: 'heading', level, children: parseInline(heading[2] ?? '') });
       index += 1;
+      continue;
+    }
+
+    const align = tableStart(lines, index);
+    if (align !== null) {
+      const header = (splitTableRow(line) ?? []).map(parseInline);
+      const rows: (readonly InlineNode[])[][] = [];
+      index += 2;
+      while (index < lines.length && !isBlank(lines[index] ?? '')) {
+        const cells = splitTableRow(lines[index] ?? '');
+        if (cells === null) break;
+        // Como no GFM: célula a menos vira vazia, célula a mais é ignorada.
+        rows.push(align.map((_, column) => parseInline(cells[column] ?? '')));
+        index += 1;
+      }
+      blocks.push({ type: 'table', align, header, rows });
       continue;
     }
 
@@ -285,7 +348,8 @@ export function parseBlocks(markdown: string): readonly Block[] {
       !QUOTE_RE.test(lines[index] ?? '') &&
       !CODE_FENCE_RE.test(lines[index] ?? '') &&
       !UNORDERED_ITEM_RE.test(lines[index] ?? '') &&
-      !ORDERED_ITEM_RE.test(lines[index] ?? '')
+      !ORDERED_ITEM_RE.test(lines[index] ?? '') &&
+      tableStart(lines, index) === null
     ) {
       paragraphLines.push((lines[index] ?? '').trim());
       index += 1;

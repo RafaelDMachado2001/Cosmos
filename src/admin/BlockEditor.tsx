@@ -4,6 +4,7 @@ import { validateDraftBlock } from '../core/draftValidation';
 import type { DraftBlock } from '../core/draftBlocks';
 import styles from './BlockEditor.module.css';
 import { PayloadTooLargeError, ValidationError, api } from './api';
+import { TableFields } from './TableFields';
 
 /** O `max:20480` do MediaController (KB). */
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -37,6 +38,8 @@ function blankBlock(type: DraftBlock['type']): DraftBlock {
       return { id: newId(), type, ordered: false, items: [''] };
     case 'img':
       return { id: newId(), type, url: '', mediaId: null, alt: '', caption: null };
+    case 'table':
+      return { id: newId(), type, align: [null, null], header: ['', ''], rows: [['', '']] };
   }
 }
 
@@ -48,6 +51,7 @@ const TYPE_LABEL: Record<DraftBlock['type'], string> = {
   list: 'Lista',
   code: 'Código',
   img: 'Imagem',
+  table: 'Tabela',
 };
 
 /**
@@ -227,6 +231,8 @@ function BlockFields({
       return <ListFields block={block} onChange={onChange} />;
     case 'img':
       return <ImageFields block={block} onChange={onChange} />;
+    case 'table':
+      return <TableFields block={block} onChange={onChange} />;
   }
 }
 
