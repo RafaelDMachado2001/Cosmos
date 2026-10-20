@@ -16,16 +16,23 @@
   background: var(--color-bg-elev);
   opacity: 0;
   transform: scale(1.06);
-  will-change: opacity, transform;
+  /* Só opacity: `will-change: transform`, como o próprio transform, faria do
+     overlay o contêiner dos `position: fixed` de dentro (ver useCosmosEngine). */
+  will-change: opacity;
   /* Reverte a nave do palco (App.module.css): ler texto com um cursor que
      não é de texto atrapalha mais do que ambienta. */
   cursor: auto;
 
-  /* Escala da leitura, lida por ArticleBody. */
-  --reading-size: clamp(18px, 1.15vw, 22px);
-  --reading-leading: 1.8;
-  --reading-h2: 28px;
-  --reading-measure: 46em;
+  /* Escala da leitura, lida por ArticleBody. 18px fixos no corpo: a escala
+     fluida até 22px parecia zoom numa tela grande. Sem medida por
+     parágrafo: o texto ocupa a coluna, e quem limita é `.inner`. */
+  --reading-size: 18px;
+  --reading-leading: 1.75;
+  --reading-h2: 24px;
+  --reading-measure: none;
+  /* O respiro lateral da coluna: o mesmo dos dois lados, medido até a
+     borda da tela — o X fica por cima, não reserva espaço. */
+  --reading-gutter: clamp(32px, 5vw, 96px);
 }
 
 /* --- Painel da esquerda --------------------------------------------------
@@ -347,12 +354,31 @@
   border-color: var(--cat);
 }
 
-/* --- Coluna do artigo ----------------------------------------------------- */
+/* --- Coluna do artigo -----------------------------------------------------
+ * A célula inteira da grade é o fundo (estrelas, nebulosa, X); o texto fica
+ * em `.inner`, centrado e com o mesmo respiro dos dois lados. */
 .article {
   position: relative;
-  width: 100%;
-  max-width: 1400px;
-  padding: clamp(96px, 14vh, 150px) clamp(80px, 6vw, 128px) 160px clamp(32px, 6vw, 112px);
+  min-width: 0;
+  min-height: 100vh;
+}
+
+/* Presas à tela enquanto o texto rola: uma faixa da altura da viewport que
+   não ocupa espaço (margem negativa do mesmo tamanho). */
+.starfield {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  margin-bottom: -100vh;
+  pointer-events: none;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  max-width: calc(1180px + 2 * var(--reading-gutter));
+  margin: 0 auto;
+  padding: clamp(88px, 12vh, 132px) var(--reading-gutter) 140px;
 }
 
 .header {
@@ -360,21 +386,16 @@
   margin-bottom: 8px;
 }
 
-/* A nebulosa só atrás do cabeçalho, e some antes do texto. */
+/* A nebulosa só atrás do cabeçalho, de borda a borda da coluna, e some
+   antes do texto. */
 .headerNebula {
-  inset: calc(clamp(96px, 14vh, 150px) * -1) calc(clamp(80px, 6vw, 128px) * -1) auto calc(clamp(32px, 6vw, 112px) * -1);
+  inset: 0 0 auto;
   height: 640px;
   mask-image: linear-gradient(180deg, #000000 35%, transparent 100%);
-  z-index: 0;
-}
-
-.header > :not(.headerNebula) {
-  position: relative;
-  z-index: 1;
 }
 
 .close {
-  position: fixed;
+  position: absolute;
   top: 24px;
   right: 28px;
   z-index: 3;
@@ -432,9 +453,9 @@
   max-width: 18em;
   margin: 0 0 26px;
   color: var(--color-text-title);
-  font-size: clamp(40px, 4.4vw, 84px);
+  font-size: clamp(34px, 3vw, 54px);
   font-weight: 300;
-  line-height: 1.08;
+  line-height: 1.1;
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
@@ -443,7 +464,7 @@
   max-width: 900px;
   margin: 0 0 40px;
   color: var(--color-text-lede);
-  font-size: clamp(20px, 1.35vw, 26px);
+  font-size: clamp(18px, 1.05vw, 20px);
   font-weight: 300;
   line-height: 1.6;
   text-wrap: pretty;
@@ -465,7 +486,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  max-width: var(--reading-measure);
   margin-top: 64px;
   padding-top: 22px;
   border-top: 1px solid var(--color-border);
@@ -497,18 +517,6 @@
   color: #ffffff;
 }
 
-/* --- Telas médias: menos respiro lateral ---------------------------------- */
-@media (max-width: 1100px) {
-  .article {
-    padding-right: 56px;
-    padding-left: 40px;
-  }
-
-  .headerNebula {
-    inset: calc(clamp(96px, 14vh, 150px) * -1) -56px auto -40px;
-  }
-}
-
 /* --- Mobile --------------------------------------------------------------
  * Uma coluna: o planeta vira faixa de abertura e rola com a página, o
  * sumário sai (o texto inteiro está a um polegar) e o progresso fica numa
@@ -516,8 +524,9 @@
 @media (max-width: 779px) {
   .overlay {
     display: block;
-    --reading-size: 17.5px;
-    --reading-h2: 23px;
+    --reading-size: 17px;
+    --reading-h2: 22px;
+    --reading-gutter: 22px;
   }
 
   .aside {
@@ -557,23 +566,30 @@
   }
 
   .article {
-    padding: 32px 22px 96px;
+    min-height: 0;
+  }
+
+  .inner {
+    padding-top: 32px;
+    padding-bottom: 96px;
   }
 
   .headerNebula {
-    inset: -32px -22px auto -22px;
     height: 420px;
   }
 
   .title {
-    font-size: clamp(32px, 9vw, 44px);
+    font-size: clamp(30px, 8vw, 40px);
   }
 
   .lede {
-    font-size: 18px;
+    font-size: 17px;
   }
 
+  /* No celular o X fica preso à tela: lá não há painel ao lado com o
+     caminho de volta, e o botão sumiria ao rolar. */
   .close {
+    position: fixed;
     top: 14px;
     right: 14px;
   }
