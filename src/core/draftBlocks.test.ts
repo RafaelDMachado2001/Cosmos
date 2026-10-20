@@ -143,6 +143,24 @@ describe('fidelidade: rascunho -> Markdown -> leitura', () => {
     expect(read([{ id: 'b0', type: 'p', text: value }])).toEqual([paragraph(value)]);
   });
 
+  it('tabela: alinhamento, barra e quebra de linha nas células, linha torta', () => {
+    const table: DraftBlock = {
+      id: 'b0',
+      type: 'table',
+      align: ['left', null, 'right'],
+      header: ['Nome', 'Expressão', 'Valor'],
+      rows: [
+        ['a', '`x | y`', '1'],
+        ['quebra\nde linha', 'c | d', ''],
+      ],
+    };
+    const [back] = read([table]);
+    expect(back?.type).toBe('table');
+    expect(blocksToDraftBlocks(draftBlocksToMarkdown([table]))).toEqual([
+      { ...table, rows: [['a', '`x | y`', '1'], ['quebra de linha', 'c | d', '']] },
+    ]);
+  });
+
   it('parágrafo com linha em branco continua um parágrafo só', () => {
     expect(read([{ id: 'b0', type: 'p', text: 'Primeira.\n\nSegunda.' }])).toEqual([
       paragraph('Primeira. Segunda.'),

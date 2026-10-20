@@ -137,7 +137,7 @@ class PublicationAdminController extends Controller
                     array_filter([
                         'title' => $draft['title'] ?? null,
                         'subtitle' => $draft['subtitle'] ?? null,
-                        'blocks' => $draft['blocks'] ?? null,
+                        'blocks' => isset($draft['blocks']) ? ValidDraftBlocks::normalizeTables($draft['blocks']) : null,
                         'seo_title' => $draft['seoTitle'] ?? null,
                         'seo_description' => $draft['seoDescription'] ?? null,
                     ], fn (mixed $value): bool => $value !== null),
