@@ -163,6 +163,7 @@ export async function prerenderPages(
         body: markup(
           locale,
           <ArticlePage
+            category={detail.category}
             categoryLabel={meta.categoryLabel}
             dateLabel={monthYearLabel(Date.parse(detail.publishedAt), locale)}
             title={detail.title}
