@@ -29,8 +29,6 @@ import {
   mounted,
   open as openReaderState,
   settled,
-  timelineLabel,
-  timelinePosition,
 } from './core/reader';
 import type { HoverSide, ReaderState } from './core/reader';
 import { articlePath, closeTarget, homePath, parseRoute } from './core/routing';
@@ -445,20 +443,18 @@ function Shell({ route }: { route: Route }) {
     if (detail.slug !== reader.slug) return null;
 
     const date = dateLabel(Date.parse(detail.publishedAt));
-    const position = timelinePosition(detail.slug, stars);
 
     return {
       slug: detail.slug,
       category: detail.category,
       categoryLabel: t.categories[detail.category],
       dateLabel: date,
-      timelineLabel: position === null ? date : timelineLabel(position, date),
       title: detail.title,
       summary: detail.summary,
       body: detail.body,
       appearance: resolveAppearance(detail.appearance),
     };
-  }, [reader, article, stars, dateLabel, t]);
+  }, [reader, article, dateLabel, t]);
 
   /**
    * O que o `<head>` descreve agora.
