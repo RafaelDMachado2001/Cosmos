@@ -53,6 +53,13 @@ export const pt = {
   reader: {
     back: 'VOLTAR À CONSTELAÇÃO',
     close: 'Fechar e voltar à constelação',
+    /** O link do topo do painel; a seta é decorativa. */
+    constellation: 'Constelação',
+    inThisArticle: 'Neste artigo',
+    /** Depois do número: `7 min de leitura`. */
+    minutes: 'min de leitura',
+    progress: 'Progresso da leitura',
+    resume: 'Continuar de onde parou',
   },
   categories: {
     filterBy: 'FILTRAR POR CATEGORIA',

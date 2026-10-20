@@ -1,5 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
+import { categoryThemeStyle } from './themeStyle';
 import type { Category } from '../../core/types';
 
 export interface CategoryThemeProps {
@@ -15,16 +16,8 @@ export interface CategoryThemeProps {
  * `tokens.css`, a única fonte das cores.
  */
 export function CategoryTheme({ category, className, children }: CategoryThemeProps) {
-  const style = {
-    '--cat': `var(--color-cat-${category})`,
-    '--n1': `var(--color-cat-${category}-n1)`,
-    '--n2': `var(--color-cat-${category}-n2)`,
-    '--n3': `var(--color-cat-${category}-n3)`,
-    '--warm': `var(--color-cat-${category}-warm)`,
-  } as CSSProperties;
-
   return (
-    <div className={className} style={style} data-category={category}>
+    <div className={className} style={categoryThemeStyle(category)} data-category={category}>
       {children}
     </div>
   );

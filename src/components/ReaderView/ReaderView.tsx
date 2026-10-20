@@ -1,13 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
 
 import styles from './ReaderView.module.css';
 import { ArticleBody } from '../ArticleBody/ArticleBody';
+import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
+import { Nebula } from '../Nebula/Nebula';
+import type { Appearance } from '../../core/appearance';
+import { parseBlocks } from '../../core/blocks';
+import { outline } from '../../core/outline';
+import { readingMinutes } from '../../core/readingTime';
 import type { Category } from '../../core/types';
+import { useActiveHeading } from '../../hooks/useActiveHeading';
+import { useReadingProgress } from '../../hooks/useReadingProgress';
 import { useLocale } from '../../i18n/useLocale';
 
 /** O artigo já formatado. Montado por quem tem o idioma e o acervo em mãos. */
 export interface ReaderCard {
+  readonly slug: string;
   readonly category: Category;
   readonly categoryLabel: string;
   readonly dateLabel: string;
@@ -17,6 +26,8 @@ export interface ReaderCard {
   readonly summary: string;
   /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
   readonly body: string;
+  /** Já resolvida: o padrão global quando a publicação não grava nenhuma. */
+  readonly appearance: Appearance;
 }
 
 export interface ReaderViewProps {
@@ -33,6 +44,13 @@ const TITLE_ID = 'leitura-titulo';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** A folga do sumário: o intertítulo para abaixo do botão de fechar. */
+const TOC_OFFSET_PX = 80;
+
+function prefersReducedMotion(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 /**
  * A vista de leitura.
  *
@@ -40,13 +58,25 @@ const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1
  * estrelas já é o definitivo e continua valendo para crawler e para Tab — aqui
  * o clique apenas foi interceptado.
  *
- * A constelação continua montada atrás, com suas estrelas focáveis, então o
- * foco precisa ser preso: sem isso o Tab sairia do artigo para links invisíveis
- * sob o overlay.
+ * O overlay é o contêiner de rolagem; o painel da esquerda fica preso a ele
+ * (`sticky`) com o planeta, o sumário e o progresso. A constelação continua
+ * montada atrás, com suas estrelas focáveis, então o foco precisa ser preso:
+ * sem isso o Tab sairia do artigo para links invisíveis sob o overlay.
  */
 export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
   const { t } = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const barRef = useRef<HTMLSpanElement>(null);
+  const percentRef = useRef<HTMLSpanElement>(null);
+  const orbRef = useRef<HTMLDivElement>(null);
+
+  const blocks = useMemo(() => parseBlocks(card.body), [card.body]);
+  const entries = useMemo(() => outline(blocks), [blocks]);
+  const ids = useMemo(() => entries.map((entry) => entry.id), [entries]);
+  const minutes = useMemo(() => readingMinutes(blocks), [blocks]);
+
+  const active = useActiveHeading(ids, overlayRef);
+  const resumeAt = useReadingProgress(overlayRef, card.slug, { bar: barRef, label: percentRef });
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -77,6 +107,45 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
     };
   }, [overlayRef]);
 
+  function scrollToTop(top: number): void {
+    overlayRef.current?.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  }
+
+  function goToHeading(id: string): void {
+    const overlay = overlayRef.current;
+    const heading = overlay?.querySelector<HTMLElement>(`[id="${id}"]`);
+    if (!overlay || !heading) return;
+    const top = heading.getBoundingClientRect().top - overlay.getBoundingClientRect().top + overlay.scrollTop;
+    scrollToTop(top - TOC_OFFSET_PX);
+  }
+
+  function resume(): void {
+    const overlay = overlayRef.current;
+    if (!overlay || resumeAt === null) return;
+    scrollToTop(resumeAt * (overlay.scrollHeight - overlay.clientHeight));
+  }
+
+  /**
+   * O planeta acompanha o ponteiro: escrito direto no estilo, como tudo que
+   * muda a cada movimento. Sem ponteiro fino (toque), fica parado.
+   */
+  function tiltOrb(event: React.PointerEvent<HTMLElement>): void {
+    const orb = orbRef.current;
+    if (!orb || event.pointerType !== 'mouse') return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - box.left) / box.width - 0.5;
+    const y = (event.clientY - box.top) / box.height - 0.5;
+    orb.style.setProperty('--tilt-x', x.toFixed(3));
+    orb.style.setProperty('--tilt-y', y.toFixed(3));
+  }
+
+  function resetOrb(): void {
+    orbRef.current?.style.setProperty('--tilt-x', '0');
+    orbRef.current?.style.setProperty('--tilt-y', '0');
+  }
+
+  const meta = `${card.dateLabel} · ${String(minutes)} ${t.reader.minutes}`;
+
   return (
     <div
       ref={overlayRef}
@@ -84,7 +153,7 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby={TITLE_ID}
-      style={{ ['--star-color' as string]: `var(--color-cat-${card.category})` }}
+      style={categoryThemeStyle(card.category)}
     >
       <button
         ref={closeRef}
@@ -97,25 +166,91 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
         <span aria-hidden="true">&#10005;</span>
       </button>
 
-      {/* A estrela ampliada não acrescenta informação: o artigo já traz título,
-          categoria, data e posição escritos. */}
-      <aside className={styles.aside} aria-hidden="true">
-        <span className={styles.aura} />
-        <span className={styles.halo} />
-        <span className={styles.core} />
-        <span className={styles.ring} />
-        <span className={styles.asideMeta}>
-          <span className={styles.asideDate}>{card.dateLabel}</span>
-          <span className={styles.asidePosition}>{card.timelineLabel}</span>
-        </span>
+      <aside className={styles.aside} onPointerMove={tiltOrb} onPointerLeave={resetOrb}>
+        <Nebula
+          seed={card.slug}
+          variant="tall"
+          intensity={card.appearance.nebula}
+          motion={card.appearance.motion}
+        />
+
+        <button type="button" className={styles.backLink} onClick={onClose}>
+          <span aria-hidden="true">←</span> {t.reader.constellation}
+        </button>
+
+        {/* O planeta não acrescenta informação: o artigo já traz título,
+            categoria, data e posição escritos. */}
+        <div ref={orbRef} className={styles.orb} aria-hidden="true">
+          <span className={styles.aura} />
+          <span className={styles.halo} />
+          <span className={styles.ring} />
+          <span className={styles.core} />
+          <span className={styles.glint} />
+        </div>
+
+        <div className={styles.asideMeta}>
+          <p className={styles.asideCategory}>
+            <span className={styles.dot} aria-hidden="true" />
+            {card.categoryLabel}
+          </p>
+          <p className={styles.asideDate}>{meta}</p>
+          <p className={styles.asidePosition}>{card.timelineLabel}</p>
+        </div>
+
+        {entries.length > 0 && (
+          <nav className={styles.toc} aria-label={t.reader.inThisArticle}>
+            <p className={styles.tocTitle}>{t.reader.inThisArticle}</p>
+            <ol className={styles.tocList}>
+              {entries.map((entry) => (
+                <li key={entry.id} data-level={entry.level}>
+                  <a
+                    href={`#${entry.id}`}
+                    className={styles.tocLink}
+                    aria-current={entry.id === active ? 'location' : undefined}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToHeading(entry.id);
+                    }}
+                  >
+                    {entry.label}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+
+        <div className={styles.progress}>
+          <div className={styles.progressHead}>
+            <span>{t.reader.progress}</span>
+            <span ref={percentRef} className={styles.progressValue}>
+              0%
+            </span>
+          </div>
+          <span className={styles.progressTrack} aria-hidden="true">
+            <span ref={barRef} className={styles.progressBar} />
+          </span>
+          {resumeAt !== null && (
+            <button type="button" className={styles.resume} onClick={resume}>
+              {t.reader.resume} · {Math.round(resumeAt * 100)}%
+            </button>
+          )}
+        </div>
       </aside>
 
       <article className={styles.article}>
-        <div className={styles.measure}>
+        <header className={styles.header}>
+          <Nebula
+            className={styles.headerNebula}
+            seed={card.slug}
+            variant="wide"
+            intensity={card.appearance.nebula * 0.85}
+            motion={card.appearance.motion}
+          />
           <p className={styles.meta}>
             <span className={styles.dot} aria-hidden="true" />
             {card.categoryLabel}
-            <span className={styles.metaDate}>/ {card.dateLabel}</span>
+            <span className={styles.metaDate}>/ {meta}</span>
           </p>
 
           <h1 id={TITLE_ID} className={styles.title}>
@@ -123,16 +258,18 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
           </h1>
           <p className={styles.lede}>{card.summary}</p>
           <div className={styles.filet} aria-hidden="true" />
+        </header>
 
+        <div className={styles.body}>
           <ArticleBody markdown={card.body} />
-
-          <footer className={styles.footer}>
-            <span className={styles.position}>{card.timelineLabel}</span>
-            <button type="button" className={styles.back} onClick={onClose}>
-              {t.reader.back}
-            </button>
-          </footer>
         </div>
+
+        <footer className={styles.footer}>
+          <span className={styles.position}>{card.timelineLabel}</span>
+          <button type="button" className={styles.back} onClick={onClose}>
+            {t.reader.back}
+          </button>
+        </footer>
       </article>
     </div>
   );
