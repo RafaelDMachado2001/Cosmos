@@ -71,12 +71,23 @@ resource "google_artifact_registry_repository" "images" {
   location      = var.region
 
   # Só as três últimas: cada merge na main empurra uma, e 0,5 GB é o que o
-  # Artifact Registry dá de graça. Três ainda cobrem um rollback.
+  # Artifact Registry dá de graça. Três ainda cobrem um rollback. A política
+  # KEEP sozinha não apaga nada: ela só abre exceção numa DELETE. Sem a
+  # segunda, toda imagem empurrada ficava para sempre.
   cleanup_policies {
     id     = "manter-tres"
     action = "KEEP"
     most_recent_versions {
       keep_count = 3
+    }
+  }
+
+  cleanup_policies {
+    id     = "apagar-antigas"
+    action = "DELETE"
+    condition {
+      tag_state  = "ANY"
+      older_than = "86400s"
     }
   }
 
