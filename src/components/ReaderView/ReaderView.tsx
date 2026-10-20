@@ -20,8 +20,6 @@ export interface ReaderCard {
   readonly category: Category;
   readonly categoryLabel: string;
   readonly dateLabel: string;
-  /** `3 / 14  ·  MAI 2025`. */
-  readonly timelineLabel: string;
   readonly title: string;
   readonly summary: string;
   /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
@@ -148,8 +146,6 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
     orbRef.current?.style.setProperty('--tilt-y', '0');
   }
 
-  const meta = `${card.dateLabel} · ${String(minutes)} ${t.reader.minutes}`;
-
   return (
     <div
       ref={overlayRef}
@@ -186,8 +182,10 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
             <span className={styles.dot} aria-hidden="true" />
             {card.categoryLabel}
           </p>
-          <p className={styles.asideDate}>{meta}</p>
-          <p className={styles.asidePosition}>{card.timelineLabel}</p>
+          <p className={styles.asideDate}>
+            {minutes} {t.reader.minutes}
+          </p>
+          <p className={styles.asidePosition}>{card.dateLabel}</p>
         </div>
 
         {entries.length > 0 && (
@@ -264,11 +262,6 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
 
         <div className={styles.inner}>
           <header className={styles.header}>
-            <p className={styles.meta}>
-              <span className={styles.dot} aria-hidden="true" />
-              {card.categoryLabel}
-              <span className={styles.metaDate}>/ {meta}</span>
-            </p>
 
             <h1 id={TITLE_ID} className={styles.title}>
               {card.title}
@@ -282,7 +275,6 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
           </div>
 
           <footer className={styles.footer}>
-            <span className={styles.position}>{card.timelineLabel}</span>
             <button type="button" className={styles.back} onClick={onClose}>
               {t.reader.back}
             </button>

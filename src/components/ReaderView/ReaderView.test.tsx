@@ -13,7 +13,6 @@ const CARD: ReaderCard = {
   category: 'estudo',
   categoryLabel: 'Estudo',
   dateLabel: 'FEV 2024',
-  timelineLabel: '1 / 14 · FEV 2024',
   title: 'Fundamentos de índices',
   summary: 'Quando um índice ajuda.',
   body: ['## Como o planejador decide', 'Texto.', '### Seletividade', 'Mais texto.', '## Conclusão', 'Fim.'].join('\n\n'),
@@ -44,9 +43,12 @@ describe('ReaderView', () => {
     }
   });
 
-  it('mostra o tempo de leitura derivado do corpo', () => {
+  it('tempo de leitura e data só no painel; o artigo fica só com o texto', () => {
     mount();
-    expect(screen.getAllByText(/1 min de leitura/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('1 min de leitura')).toHaveLength(1);
+    expect(screen.getAllByText('FEV 2024')).toHaveLength(1);
+    const article = screen.getByRole('article');
+    expect(article.textContent).not.toMatch(/FEV 2024|min de leitura|Estudo/);
   });
 
   it('oferece continuar de onde parou só no meio do caminho', () => {
