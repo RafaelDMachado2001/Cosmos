@@ -23,6 +23,44 @@ The project is being built as an experiment in expressive interfaces: a place wh
 
 Laravel 13 rather than 11: every Laravel 11 release still available carries open security advisories, and Composer refuses to install them. Filament 3 does not run on Laravel 13, hence Filament 5.
 
+## If you're here for the engineering
+If you got here from the published site and want to know what is behind it, this half of the README is for you. Nothing below requires reading the code, but every claim points to where it lives, in case you do.
+
+### The short version
+If you only have a minute, these are the five decisions everything else follows from:
+
+1. **Readers never wait on a server.** The site is static HTML on a CDN. The backend only exists for the person writing and for the build that regenerates the site.
+2. **The domain is plain TypeScript.** Time, positions, routes, the Markdown parser and the camera live in `src/core/`, with no DOM, React or Three.js. That is where most of the tests are, and it is why the browser, the prerender and the editor's preview can share the same code.
+3. **One parser, one renderer.** Content is stored as a small Markdown subset, parsed by hand into a tree, and drawn by a single component. No HTML string ever crosses the system.
+4. **Nothing is stored that can be derived.** A star's place in the sky, the reading time and the table of contents are all computed from the content. Publishing something new cannot move what already exists.
+5. **Production differs from development by environment variables, never by code.** The same request that regenerates the site locally triggers a Vercel build in production.
+
+### Where things live
+
+| Path | What you'll find |
+|---|---|
+| `src/core/` | The domain in pure TypeScript, with most of the test suite |
+| `src/three/` | The WebGL scene and its shaders, outside React |
+| `src/components/`, `src/hooks/` | The React interface, each component next to its CSS Module |
+| `src/prerender/` | The Node step that writes one HTML file per route |
+| `src/admin/` | The RDM Studio, the editor the author writes in |
+| `backend/app/Modules/` | The Laravel modules: Content, Identity, Activity |
+| `e2e/` | Playwright tests against the real Nginx and the full stack |
+| `docker/` | Development images and the production image |
+| `infra/` | Terraform for Google Cloud, Cloudflare and GitHub, plus the edge Worker |
+| `docs/architecture.md` | The longer write-up, with the trade-offs |
+
+### Running it
+Everything runs in Docker, so you don't need Node or PHP on your machine:
+
+```sh
+docker compose up node                                  # the site on :5174, with hot reload
+docker compose run --rm node npm run check              # typecheck, lint and tests
+docker compose --profile backend up -d db app queue scheduler web   # API, admin and Nginx on :8080
+```
+
+Without the backend, the site reads a seeded archive bundled with the code, so the first command alone is enough to explore the interface.
+
 ## System overview
 
 ```mermaid
@@ -99,7 +137,11 @@ Opening a publication from the constellation pushes a history entry. Closing it 
 Each build writes, per route, the title and description, the canonical URL, `hreflang` for both languages, Open Graph tags with a 1200×630 card drawn from the real design tokens, and JSON-LD. It also writes the sitemap, `robots.txt`, an RSS feed per language and the 404 page.
 
 ### Reading content
-The body of a publication is Markdown, limited on purpose to headings, paragraphs, quotes, lists, code, images and inline formatting. The parser is written by hand, produces a tree and never an HTML string, and `ArticleBody` is the only component that draws it. React escapes every piece of text; the one remaining injection vector, URLs, is allowlisted by protocol. Syntax highlighting follows the same rule: tokens, never markup.
+The body of a publication is Markdown, limited on purpose to headings, paragraphs, quotes, lists, code, images, tables and inline formatting. Highlights, notes and step-by-step flows are quotes with a marker on the first line (`> [!note] Title`), in the style of GitHub's alerts, so they stay readable as plain text. The parser is written by hand, produces a tree and never an HTML string, and `ArticleBody` is the only component that draws it. React escapes every piece of text; the one remaining injection vector, URLs, is allowlisted by protocol. Syntax highlighting follows the same rule: tokens, never markup.
+
+Why write a parser instead of using a library? Because the subset is small and closed, and owning it means the site, the prerender and the editor's preview can never disagree about what a piece of text means.
+
+The reading view opens over the sky rather than on a separate page. Each category has its own palette, taken from the same design tokens, and the side panel follows your scroll with progress and a table of contents.
 
 ### The constellation as a navigation model
 The homepage is designed as a constellation rather than a feed. Publications are placed in time and space, and filters narrow the visible set without pushing the reader into a dashboard.
@@ -165,17 +207,19 @@ At this scale the whole system costs about US$ 0.30 a month, all of it Secret Ma
 ## Quality
 Every pull request runs:
 
-- **frontend**: environment check, typecheck, lint, about 590 Vitest tests (including the shell in jsdom and a 500/1000-publication scale budget) and the build with prerender;
-- **backend**: Pint, PHPStan at level 8 with no baseline, Deptrac, and the suite against a real Postgres, twice: once as in development and once with the connection settings production needs;
+- **frontend**: environment check, typecheck, lint, about 650 Vitest tests (including the shell in jsdom and a 500/1000-publication scale budget) and the build with prerender;
+- **backend**: Pint, PHPStan at level 8 with no baseline, Deptrac, and about 190 tests against a real Postgres, twice: once as in development and once with the connection settings production needs;
 - **e2e**: Playwright against the build served by the real Nginx, including a CSP check that fails on any violation;
 - **integration**: the full stack. Publishing makes the article answer 200 from disk and deleting it brings back a 404; a seeded admin session drives the RDM Studio through writing, publishing, reading and unpublishing;
 - **production image**: the real image refuses an incomplete configuration, and each host answers only what belongs to it;
 - **infrastructure**: Terraform formatting and validation, and the edge Worker's tests.
 
+After the merge, `main` runs only the frontend and backend jobs before deploying: the pull request has already run the rest against the same code, and CI minutes are the tightest budget a private repository has. Changes that only touch documentation run nothing at all.
+
 The backend suite refuses to run unless the database name ends in `_test`. That guard exists because it once mattered.
 
 ## Project status
-Implemented: the interactive site and the Three.js scene, translated routing, prerendering and SEO, the API, the admin panel and the RDM Studio, live publishing, the production infrastructure, and the backend for reader accounts.
+Implemented: the interactive site and the Three.js scene, translated routing, prerendering and SEO, the API, the admin panel and the RDM Studio, live publishing, tables and callouts, the reading view with per-category themes, the production infrastructure, and the backend for reader accounts.
 
 Next: the reader sign-in interface and the privacy page, then comments and sharing, monitoring before opening to the public, and gamification as a projection over the activity log.
 
