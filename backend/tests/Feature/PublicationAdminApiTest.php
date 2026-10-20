@@ -195,6 +195,46 @@ class PublicationAdminApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
     }
 
+    public function test_autosave_grava_destaque_nota_fluxo_e_codigo_com_arquivo(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $blocks = [
+            ['id' => 'b0', 'type' => 'highlight', 'text' => 'O que importa.'],
+            ['id' => 'b1', 'type' => 'note', 'title' => 'Atenção', 'text' => 'Um detalhe.'],
+            ['id' => 'b2', 'type' => 'note', 'title' => null, 'text' => 'Sem título.'],
+            ['id' => 'b3', 'type' => 'flow', 'steps' => ['Ler', 'Escrever', 'Publicar']],
+            ['id' => 'b4', 'type' => 'code', 'lang' => 'ts', 'filename' => 'src/app.ts', 'text' => 'const a = 1;'],
+        ];
+
+        $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+            'drafts' => ['pt' => ['blocks' => $blocks]],
+        ])->assertOk();
+
+        $this->assertEquals($blocks, $publication->drafts()->where('locale', 'pt')->first()?->blocks);
+    }
+
+    /** @return iterable<string, array{array<string, mixed>}> */
+    public static function blocosNovosInvalidos(): iterable
+    {
+        yield 'destaque vazio' => [['id' => 'b0', 'type' => 'highlight', 'text' => ' ']];
+        yield 'nota sem texto' => [['id' => 'b0', 'type' => 'note', 'title' => 'Só título']];
+        yield 'nota com título que não é texto' => [['id' => 'b0', 'type' => 'note', 'title' => ['x'], 'text' => 'a']];
+        yield 'fluxo de uma etapa' => [['id' => 'b0', 'type' => 'flow', 'steps' => ['Só']]];
+        yield 'fluxo com etapa vazia' => [['id' => 'b0', 'type' => 'flow', 'steps' => ['Ler', '']]];
+        yield 'fluxo sem lista' => [['id' => 'b0', 'type' => 'flow', 'steps' => 'Ler, Escrever']];
+        yield 'nome de arquivo longo demais' => [['id' => 'b0', 'type' => 'code', 'lang' => null, 'filename' => str_repeat('a', 256), 'text' => 'x']];
+    }
+
+    #[DataProvider('blocosNovosInvalidos')]
+    public function test_autosave_recusa_bloco_novo_invalido(array $block): void
+    {
+        $publication = $this->publicationWithDrafts();
+
+        $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+            'drafts' => ['pt' => ['blocks' => [$block]]],
+        ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
+    }
+
     public function test_autosave_recusa_imagem_sem_alt(): void
     {
         $publication = $this->publicationWithDrafts();

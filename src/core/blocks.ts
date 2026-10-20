@@ -14,6 +14,11 @@
  * depois, no formato do GFM (cabeçalho, linha de alinhamento, linhas), sem
  * célula em múltiplas linhas.
  *
+ * Destaque, nota e fluxo são citações com um marcador na primeira linha, no
+ * estilo dos alertas do GitHub (`> [!note] Título`): fora daqui, o mesmo texto
+ * ainda se lê como uma citação comum. O código aceita `title="arquivo"` na
+ * cerca de abertura, como as ferramentas de documentação.
+ *
  * Nunca produz HTML: a árvore é renderizada como elementos React normais, e o
  * texto sai escapado pelo próprio React. O único vetor que resta é a URL de
  * link e imagem — por isso `safeUrl` existe.
@@ -37,7 +42,19 @@ export type Block =
       readonly ordered: boolean;
       readonly items: readonly (readonly InlineNode[])[];
     }
-  | { readonly type: 'code'; readonly code: string; readonly language: string | null }
+  | { readonly type: 'highlight'; readonly children: readonly InlineNode[] }
+  | {
+      readonly type: 'note';
+      readonly title: readonly InlineNode[] | null;
+      readonly children: readonly InlineNode[];
+    }
+  | { readonly type: 'flow'; readonly steps: readonly (readonly InlineNode[])[] }
+  | {
+      readonly type: 'code';
+      readonly code: string;
+      readonly language: string | null;
+      readonly filename: string | null;
+    }
   | {
       readonly type: 'table';
       readonly align: readonly TableAlign[];
@@ -194,7 +211,9 @@ const QUOTE_RE = /^>\s?(.*)$/;
  * um bloco de código conter ```` ``` ```` — `core/draftBlocks.ts` abre com uma
  * cerca maior que qualquer uma de dentro.
  */
-const CODE_FENCE_RE = /^(`{3,})\s*([^\s`]*)\s*$/;
+const CODE_FENCE_RE = /^(`{3,})\s*((?!title=)[^\s`]*)(?:\s+title="((?:\\.|[^"\\])*)")?\s*$/;
+/** O marcador de citação especial: `[!note] Título opcional`. */
+const CALLOUT_RE = /^\[!(highlight|note|flow)\](?:\s+(.*))?$/i;
 const CLOSING_FENCE_RE = /^(`{3,})\s*$/;
 const UNORDERED_ITEM_RE = /^[-*]\s+(.*)$/;
 const ORDERED_ITEM_RE = /^\d+\.\s+(.*)$/;
@@ -239,6 +258,33 @@ function tableStart(lines: readonly string[], index: number): readonly TableAlig
   return header !== null && align !== null && header.length === align.length ? align : null;
 }
 
+/**
+ * Uma citação, ou o bloco especial que o marcador da primeira linha pede.
+ * O fluxo tem uma etapa por linha (o `- ` é opcional); destaque e nota
+ * refluem as linhas num texto só, como a citação.
+ */
+function quoteBlock(quoteLines: readonly string[]): Block {
+  const [first = '', ...rest] = quoteLines;
+  const callout = CALLOUT_RE.exec(first.trim());
+  if (callout === null) return { type: 'quote', children: parseInline(quoteLines.join(' ').trim()) };
+
+  const kind = (callout[1] ?? '').toLowerCase();
+  const inline = (callout[2] ?? '').trim();
+  const body = rest.join(' ').trim();
+  if (kind === 'flow') {
+    const steps = rest
+      .map((line) => line.trim().replace(/^[-*]\s+/, ''))
+      .filter((line) => line !== '')
+      .map((line) => parseInline(line));
+    return { type: 'flow', steps };
+  }
+  if (kind === 'note') {
+    return { type: 'note', title: inline === '' ? null : parseInline(inline), children: parseInline(body) };
+  }
+  // Destaque não tem título: texto na linha do marcador é começo do texto.
+  return { type: 'highlight', children: parseInline([inline, body].filter((part) => part !== '').join(' ')) };
+}
+
 export function parseBlocks(markdown: string): readonly Block[] {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');
   const blocks: Block[] = [];
@@ -265,7 +311,8 @@ export function parseBlocks(markdown: string): readonly Block[] {
         index += 1;
       }
       index += 1; // consome a cerca de fechamento, se houver
-      blocks.push({ type: 'code', code: codeLines.join('\n'), language });
+      const filename = fence[3] === undefined || fence[3].trim() === '' ? null : unescapeMarkdown(fence[3]);
+      blocks.push({ type: 'code', code: codeLines.join('\n'), language, filename });
       continue;
     }
 
@@ -318,7 +365,7 @@ export function parseBlocks(markdown: string): readonly Block[] {
         quoteLines.push(match[1] ?? '');
         index += 1;
       }
-      blocks.push({ type: 'quote', children: parseInline(quoteLines.join(' ').trim()) });
+      blocks.push(quoteBlock(quoteLines));
       continue;
     }
 

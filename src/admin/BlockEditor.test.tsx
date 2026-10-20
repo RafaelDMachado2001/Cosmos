@@ -111,3 +111,25 @@ describe('BlockEditor: tabela', () => {
     expect(onChange.mock.calls[0]?.[0]).toEqual([{ ...TABLE, align: [null, 'left'] }]);
   });
 });
+
+describe('BlockEditor: fluxo', () => {
+  const FLOW = { id: 'f0', type: 'flow', steps: ['Ler', 'Escrever', 'Publicar'] } as const;
+
+  it('desce uma etapa', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={[FLOW]} onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Descer etapa 1' }));
+
+    expect(onChange.mock.calls[0]?.[0]).toEqual([{ ...FLOW, steps: ['Escrever', 'Ler', 'Publicar'] }]);
+  });
+
+  it('código ganha o campo de nome do arquivo', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={[{ id: 'c0', type: 'code', lang: 'ts', text: 'x' }]} onChange={onChange} />);
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nome do arquivo' }), 'a');
+
+    expect(onChange.mock.calls[0]?.[0]).toEqual([{ id: 'c0', type: 'code', lang: 'ts', filename: 'a', text: 'x' }]);
+  });
+});
