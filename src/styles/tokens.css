@@ -51,10 +51,31 @@
 
   /* --- Categorias --------------------------------------------------------
    * Sinal de navegação e classificação apenas: o roxo é que domina. */
-  --color-cat-artigo: #6e7bff;
+  --color-cat-artigo: #707cff;
   --color-cat-projeto: #ff8a3d;
-  --color-cat-estudo: #4ade9b;
-  --color-cat-rotina: #ff4d7e;
+  --color-cat-estudo: #34d399;
+  --color-cat-rotina: #f43f6e;
+
+  /* Paleta de cada categoria na tela de leitura (`CategoryTheme`): n1 é o
+   * mesmo tom mais fundo, n2 e n3 os vizinhos, warm o contraponto quente.
+   * Só a nebulosa e os acentos da leitura as usam; a constelação fica na
+   * cor base acima. */
+  --color-cat-artigo-n1: #4f6bff;
+  --color-cat-artigo-n2: #8b5cf6;
+  --color-cat-artigo-n3: #38bdf8;
+  --color-cat-artigo-warm: #d9825b;
+  --color-cat-projeto-n1: #ff6a2b;
+  --color-cat-projeto-n2: #e0466b;
+  --color-cat-projeto-n3: #ffc06b;
+  --color-cat-projeto-warm: #7c5cff;
+  --color-cat-estudo-n1: #10b981;
+  --color-cat-estudo-n2: #22d3ee;
+  --color-cat-estudo-n3: #a3e635;
+  --color-cat-estudo-warm: #6f7cff;
+  --color-cat-rotina-n1: #e11d48;
+  --color-cat-rotina-n2: #c026d3;
+  --color-cat-rotina-n3: #fb7185;
+  --color-cat-rotina-warm: #ff9a5a;
 
   /* --- Tipografia -------------------------------------------------------- */
   --font-sans: 'Roboto', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;

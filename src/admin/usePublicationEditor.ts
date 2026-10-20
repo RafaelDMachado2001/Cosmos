@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import type { Appearance } from '../core/appearance';
 import type { DraftBlock } from '../core/draftBlocks';
 import { slugify } from '../core/slug';
 import { LOCALES } from '../core/types';
@@ -65,6 +66,7 @@ export function usePublicationEditor(
   const [publishedAt, setPublishedAt] = useState(publication.publishedAt);
   const [featured, setFeatured] = useState(publication.featured);
   const [indexable, setIndexable] = useState(publication.indexable);
+  const [appearance, setAppearance] = useState<Appearance | null>(publication.appearance);
   const [tags, setTags] = useState<readonly string[]>(publication.tags);
   const [references, setReferences] = useState<readonly AdminReference[]>(publication.references);
   const [drafts, setDrafts] = useState<DraftsByLocale>(() => draftsFrom(publication));
@@ -134,6 +136,7 @@ export function usePublicationEditor(
         publishedAt,
         featured,
         indexable,
+        appearance,
         tags,
         references: references.map((reference) => ({ title: reference.title, url: reference.url })),
         drafts: draftPatches,
@@ -165,7 +168,7 @@ export function usePublicationEditor(
       if (timer.current !== null) clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- publication.id/onUpdated são estáveis por seleção; o efeito reage ao conteúdo editado.
-  }, [slug, category, publishedAt, featured, indexable, tags, references, drafts]);
+  }, [slug, category, publishedAt, featured, indexable, appearance, tags, references, drafts]);
 
   const currentDraft = useMemo(() => drafts[locale], [drafts, locale]);
 
@@ -235,6 +238,8 @@ export function usePublicationEditor(
     setFeatured,
     indexable,
     setIndexable,
+    appearance,
+    setAppearance,
     tags,
     setTags,
     references,
