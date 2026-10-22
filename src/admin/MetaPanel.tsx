@@ -8,7 +8,7 @@ import { CategoryTheme } from '../components/CategoryTheme/CategoryTheme';
 import { Nebula } from '../components/Nebula/Nebula';
 import { CATEGORY_LABEL, STATUS_LABEL } from './categoryLabels';
 import styles from './MetaPanel.module.css';
-import { siteHost } from './site';
+import { siteHost, siteOrigin } from './site';
 import { TagInput } from './TagInput';
 import type { AdminPublication } from './api';
 import type { PublicationEditorState, SaveStatus } from './usePublicationEditor';
@@ -45,15 +45,6 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
     }
   }
 
-  async function handleSave(): Promise<void> {
-    setActionError(null);
-    try {
-      await editor.saveNow();
-    } catch {
-      setActionError('Não foi possível salvar.');
-    }
-  }
-
   async function handleUnpublish(): Promise<void> {
     setBusy(true);
     setActionError(null);
@@ -84,10 +75,11 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
   const seoTitle = editor.currentDraft.seoTitle !== '' ? editor.currentDraft.seoTitle : editor.currentDraft.title;
   const seoDescription =
     editor.currentDraft.seoDescription !== '' ? editor.currentDraft.seoDescription : editor.currentDraft.subtitle;
-  const host = siteHost(
-    document.querySelector('meta[name="site-url"]')?.getAttribute('content') ?? null,
-    window.location.host,
-  );
+  const siteUrl = document.querySelector('meta[name="site-url"]')?.getAttribute('content') ?? null;
+  const host = siteHost(siteUrl, window.location.host);
+  // Data futura e ainda fora do ar: o mesmo `publish` agenda em vez de
+  // publicar (o servidor marca `scheduled`), e o botão diz isso.
+  const schedules = !live && Date.parse(editor.publishedAt) > Date.now();
 
   return (
     <div className={styles.column}>
@@ -214,20 +206,17 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
             <span className={styles.cardMetaDescription}>{seoDescription === '' ? '(sem descrição)' : seoDescription}</span>
           </div>
         </div>
+        <ShareRow
+          enabled={publication.status === 'published'}
+          url={`${siteOrigin(siteUrl, window.location.origin)}${articlePath(editor.locale, editor.slug)}`}
+          title={seoTitle}
+          text={seoDescription}
+        />
       </div>
 
       {actionError !== null && <p className={styles.actionError}>{actionError}</p>}
 
       <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.secondaryButton}
-          disabled={busy || editor.status === 'saving'}
-          onClick={() => void handleSave()}
-          title="Ctrl+S"
-        >
-          Salvar
-        </button>
         {live ? (
           <button
             type="button"
@@ -241,7 +230,7 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           </button>
         ) : (
           <button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void handlePublish()}>
-            Publicar
+            {schedules ? 'Agendar' : 'Publicar'}
           </button>
         )}
       </div>
@@ -255,6 +244,70 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           {armedDelete ? 'Confirmar exclusão' : 'Apagar'}
         </button>
       </div>
+    </div>
+  );
+}
+
+type ShareFeedback = 'idle' | 'copied' | 'failed';
+
+/**
+ * O link do artigo, para mandar adiante. O card não vai junto como arquivo:
+ * quem desenha a prévia é a rede social, lendo o `og:image` da página — o
+ * mesmo cartão que a prévia acima imita. Só com a publicação no ar: agendada,
+ * o link ainda daria 404.
+ */
+function ShareRow({
+  enabled,
+  url,
+  title,
+  text,
+}: {
+  readonly enabled: boolean;
+  readonly url: string;
+  readonly title: string;
+  readonly text: string;
+}): React.JSX.Element {
+  const [feedback, setFeedback] = useState<ShareFeedback>('idle');
+  // A folha de compartilhamento do sistema só existe em parte dos navegadores
+  // (e só em contexto seguro); sem ela, copiar o link é o caminho.
+  const canShare = typeof navigator.share === 'function';
+
+  async function copy(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(url);
+      setFeedback('copied');
+    } catch {
+      setFeedback('failed');
+    }
+  }
+
+  async function share(): Promise<void> {
+    try {
+      await navigator.share({ url, title, text });
+    } catch {
+      // Fechar a folha sem escolher nada também rejeita; não é erro.
+    }
+  }
+
+  return (
+    <div className={styles.shareRow}>
+      {canShare && (
+        <button type="button" className={styles.secondaryButton} disabled={!enabled} onClick={() => void share()}>
+          Compartilhar
+        </button>
+      )}
+      <button type="button" className={styles.secondaryButton} disabled={!enabled} onClick={() => void copy()}>
+        Copiar link
+      </button>
+      <span className={styles.shareNote} role="status">
+        {!enabled
+          ? 'Disponível com a publicação no ar.'
+          : feedback === 'copied'
+            ? 'Link copiado.'
+            : feedback === 'failed'
+              ? url
+              : ''}
+      </span>
     </div>
   );
 }

@@ -187,6 +187,24 @@
   color: var(--color-text-title);
 }
 
+.shareRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.shareNote {
+  flex-basis: 100%;
+  color: var(--color-text-faint);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.shareNote:empty {
+  display: none;
+}
+
 .cardMeta {
   display: flex;
   flex-direction: column;
