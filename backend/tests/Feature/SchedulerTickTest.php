@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Modules\Content\Models\Publication;
 use Firebase\JWT\JWT;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use OpenSSLAsymmetricKey;
@@ -122,7 +123,13 @@ class SchedulerTickTest extends TestCase
             'status' => Publication::STATUS_SCHEDULED,
         ]);
 
+        // Pelo Artisan, o tick falhava em produção: o comando do módulo só é
+        // registrado no console, e a suíte roda em console (ver ScheduledPublisher).
+        Artisan::spy();
+
         $this->tick($this->token())->assertOk()->assertJsonStructure(['rebuilt']);
+
+        Artisan::shouldNotHaveReceived('call');
 
         $this->assertSame(Publication::STATUS_PUBLISHED, $publication->refresh()->status);
     }
