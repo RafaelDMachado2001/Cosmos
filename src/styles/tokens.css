@@ -120,7 +120,7 @@
   --star-core-hover-growth: 10px;
   --star-ring: 58px;
   --star-ring-featured: 78px;
-  --star-label-width: 180px;
+  --star-label-width: 180px; /* TIMELINE.minGapPx (200) depende desta largura */
   --star-label-gap: 22px; /* da borda do núcleo ao rótulo */
   --hover-panel-offset: 58px; /* da estrela ao cartão */
   --hover-panel-width: 330px;
