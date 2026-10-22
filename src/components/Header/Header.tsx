@@ -42,7 +42,6 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header(
           <span aria-hidden="true">← </span>
           {t.nav.home}
         </button>
-        <span className={styles.navItem}>{t.nav.cosmos}</span>
         <button
           type="button"
           className={styles.navButton}
@@ -52,7 +51,6 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header(
         >
           {t.nav.categories}
         </button>
-        <span className={styles.navItem}>{t.nav.portfolio}</span>
       </nav>
 
       {/* A busca só age no cosmos: no hero não há constelação para filtrar. */}
