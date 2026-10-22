@@ -89,6 +89,9 @@ class PublicationController extends Controller
         // DOM renderizado apontava para uma tradução que dava 404.
         $translated = PublicationTranslation::where('publication_id', $publication->id)->pluck('locale')->all();
         $publication->setAttribute('locales', array_values(array_intersect(config('publications.locales'), $translated)));
+        // Em ordem alfabética: o pivô não guarda a ordem em que foram dadas, e
+        // uma ordem que muda entre builds mudaria o HTML gravado sem motivo.
+        $publication->setAttribute('tags', $publication->tags()->orderBy('tags.slug')->pluck('tags.slug')->all());
 
         return new PublicationDetailResource($publication);
     }

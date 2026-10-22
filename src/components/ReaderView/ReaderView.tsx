@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 
 import styles from './ReaderView.module.css';
 import { ArticleBody } from '../ArticleBody/ArticleBody';
+import { ArticleTags } from '../ArticleTags/ArticleTags';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
 import { Nebula } from '../Nebula/Nebula';
 import type { Appearance } from '../../core/appearance';
@@ -26,6 +27,7 @@ export interface ReaderCard {
   readonly body: string;
   /** Já resolvida: o padrão global quando a publicação não grava nenhuma. */
   readonly appearance: Appearance;
+  readonly tags: readonly string[];
 }
 
 export interface ReaderViewProps {
@@ -267,6 +269,7 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
               {card.title}
             </h1>
             <p className={styles.lede}>{card.summary}</p>
+            <ArticleTags tags={card.tags} className={styles.tags} />
             <div className={styles.filet} aria-hidden="true" />
           </header>
 

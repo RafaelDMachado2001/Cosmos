@@ -126,7 +126,7 @@ describe('prerenderPages', () => {
       get: (slug, locale) =>
         Promise.resolve(
           locale === 'pt' && slug === soEmPortugues.slug
-            ? { ...soEmPortugues, body: 'Paragrafo.', locales: ['pt'] as const }
+            ? { ...soEmPortugues, body: 'Paragrafo.', locales: ['pt'] as const, tags: [] }
             : null,
         ),
     };

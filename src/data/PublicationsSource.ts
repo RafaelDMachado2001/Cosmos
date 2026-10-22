@@ -40,6 +40,8 @@ export interface PublicationDetail extends PublicationSummary {
   readonly locales: readonly Locale[];
   /** Nula ou ausente herda o padrão (`core/appearance.ts`). */
   readonly appearance?: Appearance | null;
+  /** Slugs, em ordem alfabética. O acervo semente não tem nenhuma. */
+  readonly tags: readonly string[];
 }
 
 export interface PublicationsSource {
@@ -107,6 +109,7 @@ export function createStaticSource(publications: readonly Publication[]): Public
         ...toSummary(publication, locale),
         body: publication.content[locale].body,
         locales: LOCALES,
+        tags: [],
       });
     },
   };
@@ -145,6 +148,8 @@ interface ApiPublicationDetail extends ApiPublication {
   readonly locales?: readonly string[];
   /** Opcional pelo mesmo motivo de `locales`. */
   readonly appearance?: unknown;
+  /** Opcional pelo mesmo motivo de `locales`. */
+  readonly tags?: readonly unknown[];
 }
 
 function fromApi(row: ApiPublication): PublicationSummary {
@@ -263,6 +268,7 @@ export function createHttpSource(
         body: payload.data.body,
         locales: payload.data.locales?.filter(isLocale) ?? LOCALES,
         appearance: parseAppearance(payload.data.appearance),
+        tags: (payload.data.tags ?? []).filter((tag): tag is string => typeof tag === 'string'),
         ...(payload.data.seo_title === null ? {} : { seoTitle: payload.data.seo_title }),
         ...(payload.data.seo_description === null
           ? {}

@@ -25,6 +25,7 @@ class PublicationDetailResource extends PublicationResource
             'seo_title' => $this->resource->seo_title,
             'seo_description' => $this->resource->seo_description,
             'locales' => $this->resource->locales,
+            'tags' => $this->resource->getAttribute('tags'),
             // Nula herda o padrão (`core/appearance.ts`); só o detalhe a traz,
             // a lista da constelação não desenha nebulosa nenhuma.
             'appearance' => $this->resource->appearance,

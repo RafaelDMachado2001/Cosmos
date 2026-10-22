@@ -17,6 +17,7 @@ const CARD: ReaderCard = {
   summary: 'Quando um índice ajuda.',
   body: ['## Como o planejador decide', 'Texto.', '### Seletividade', 'Mais texto.', '## Conclusão', 'Fim.'].join('\n\n'),
   appearance: DEFAULT_APPEARANCE,
+  tags: [],
 };
 
 function mount(card: ReaderCard = CARD) {
@@ -49,6 +50,21 @@ describe('ReaderView', () => {
     expect(screen.getAllByText('FEV 2024')).toHaveLength(1);
     const article = screen.getByRole('article');
     expect(article.textContent).not.toMatch(/FEV 2024|min de leitura|Estudo/);
+  });
+
+  it('as tags ficam entre o subtítulo e o filete, e somem quando não há', () => {
+    mount({ ...CARD, tags: ['postgresql', 'indices'] });
+    const list = screen.getByRole('list', { name: 'Tags' });
+    expect(Array.from(list.querySelectorAll('li')).map((item) => item.textContent)).toEqual([
+      '#postgresql',
+      '#indices',
+    ]);
+    expect(list.previousElementSibling?.textContent).toBe('Quando um índice ajuda.');
+    expect(list.nextElementSibling?.getAttribute('aria-hidden')).toBe('true');
+    cleanup();
+
+    mount();
+    expect(screen.queryByRole('list', { name: 'Tags' })).toBeNull();
   });
 
   it('oferece continuar de onde parou só no meio do caminho', () => {
