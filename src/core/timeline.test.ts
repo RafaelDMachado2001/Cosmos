@@ -119,9 +119,9 @@ describe('placeStars', () => {
   });
 
   it('não empurra ninguém quando as datas são esparsas', () => {
-    // Com gap 4.6 px/dia e o minGap atual, 30 dias já bastam para nunca colidir.
+    // Com gap 4.6 px/dia e o minGap atual (200), 45 dias já bastam para nunca colidir.
     const items = Array.from({ length: 40 }, (_, i) =>
-      at(`sparse-${i}`, new Date(Date.UTC(2024, 0, 1 + i * 30)).toISOString().slice(0, 10)),
+      at(`sparse-${i}`, new Date(Date.UTC(2024, 0, 1 + i * 45)).toISOString().slice(0, 10)),
     );
     const stars = placeStars(items);
     for (const star of stars) expect(star.pushPx).toBe(0);
@@ -203,7 +203,7 @@ describe('placeStars', () => {
     // datas repetidas as duas divergem, e o teste ficaria intermitente.
     // Conjunto folgado de propósito: num acervo denso não existe reset, e
     // aí a paginação por janela simplesmente não é recortável.
-    const items = makeDataset(makeRandom(67), { count: 60, spanDays: 1500 });
+    const items = makeDataset(makeRandom(67), { count: 60, spanDays: 4000 });
     const all = placeStars(items);
     const asInput = (star: (typeof all)[number]): PublicationInput => ({
       slug: star.slug,
@@ -237,11 +237,12 @@ describe('layoutHealth', () => {
 
   it('reporta zero empurrão e largura coerente num conjunto folgado', () => {
     // Espaçamento garantido, não sorteado: 20 datas aleatórias em 900 dias
-    // colidem por aniversário e o conjunto deixaria de ser folgado.
+    // colidem por aniversário e o conjunto deixaria de ser folgado. 45 dias
+    // passam dos 200px de minGapPx na escala de 4.6 px/dia.
     const folgado = placeStars(
       Array.from({ length: 20 }, (_, i) => ({
         slug: `folgado-${i}`,
-        publishedAt: new Date(Date.UTC(2024, 0, 1 + i * 30)).toISOString(),
+        publishedAt: new Date(Date.UTC(2024, 0, 1 + i * 45)).toISOString(),
         category: 'estudo' as const,
       })),
     );

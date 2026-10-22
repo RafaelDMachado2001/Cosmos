@@ -173,6 +173,10 @@ export function useCosmosEngine(
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
 
+  useEffect(() => {
+    Object.assign(state.current, camera.settle(state.current, bounds));
+  }, [bounds]);
+
   const lambda = useMemo(() => lambdas(reducedMotion), [reducedMotion]);
 
   // -- Entradas -------------------------------------------------------------
