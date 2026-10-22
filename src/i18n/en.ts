@@ -10,16 +10,15 @@ export const en: Dictionary = {
   },
   hero: {
     kicker: 'RDM LABS / COSMOS',
-    title: 'Enter my universe',
-    subtitle: 'Articles, studies, projects and field notes arranged as a timeline constellation.',
+    title: 'Welcome to my Cosmos!',
+    subtitle:
+      'This is where I keep what I think, learn, and build. Pull up a chair, look up, and wander through the constellations.',
     scrollHint: 'Scroll to pass through',
   },
   nav: {
     brand: 'RDM LABS',
     home: 'START',
-    cosmos: 'CONSTELLATION',
     categories: 'CATEGORIES',
-    portfolio: 'PORTFOLIO',
     /** Distingue este landmark dos outros `nav` da página. */
     primaryLabel: 'Main navigation',
     skipToContent: 'Skip to content',

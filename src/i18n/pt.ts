@@ -13,9 +13,9 @@ export const pt = {
   },
   hero: {
     kicker: 'RDM LABS / COSMOS',
-    title: 'Entre no meu universo',
+    title: 'Bem-vindo ao meu Cosmos!',
     subtitle:
-      'Artigos, estudos, projetos e registros de rotina organizados como uma constelação temporal.',
+      'Este é o lugar onde guardo o que penso, estudo e construo. Puxe uma cadeira, olhe para cima e navegue pelas constelações.',
     /** Nome acessível do botão de entrada: não é mais renderizado na tela. */
     scrollHint: 'Role para atravessar',
   },
@@ -23,9 +23,7 @@ export const pt = {
     brand: 'RDM LABS',
     /** Volta à entrada pelo caminho da travessia. A seta é decorativa. */
     home: 'INÍCIO',
-    cosmos: 'CONSTELAÇÃO',
     categories: 'CATEGORIAS',
-    portfolio: 'PORTFÓLIO',
     /** Distingue este landmark dos outros `nav` da página. */
     primaryLabel: 'Navegação principal',
     skipToContent: 'Pular para o conteúdo',
