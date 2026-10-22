@@ -65,15 +65,6 @@
   pointer-events: auto;
 }
 
-.navItem {
-  padding: 6px 10px;
-  border-radius: var(--radius-menu);
-  color: var(--color-text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: var(--tracking-nav);
-}
-
 .navButton {
   padding: 6px 10px;
   border: 0;
