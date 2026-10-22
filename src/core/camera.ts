@@ -104,3 +104,23 @@ export function closeReader<S extends CameraState>(
   if (originPan === null) return stopped;
   return { ...stopped, pan: clamp(originPan, bounds) };
 }
+
+/**
+ * Traz o pan para dentro dos limites quando eles mudam: o acervo chega depois
+ * do primeiro quadro, e o pan inicial (0) fica longe da faixa, que começa na
+ * primeira estrela. Sem isto a constelação abria num trecho vazio do eixo.
+ *
+ * Enquanto a travessia não termina, o suavizado salta junto — deslizar dali
+ * encenaria uma viagem de milhares de pixels por cima do portal. Com a
+ * constelação já assentada (um resize, um acervo novo), só o alvo muda e o
+ * `damp` leva até lá.
+ */
+export function settle<S extends CameraState>(state: S, bounds: PanBounds): S {
+  const pan = clamp(state.pan, bounds);
+  if (pan === state.pan) return state;
+  const crossed = state.enterS >= SETTLED_ENTER;
+  return { ...state, pan, panS: crossed ? state.panS : pan, velocity: 0 };
+}
+
+/** Daqui para cima a travessia do portal conta como concluída. */
+const SETTLED_ENTER = 0.99;

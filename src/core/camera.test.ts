@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { closeReader, goHome, jumpTo, openStar, slideTo } from './camera';
+import { closeReader, goHome, jumpTo, openStar, settle, slideTo } from './camera';
 import type { CameraState } from './camera';
 
 function base(overrides: Partial<CameraState> = {}): CameraState {
@@ -73,5 +73,25 @@ describe('camera', () => {
   it('deslizar ate a estrela muda o alvo sem abrir nada', () => {
     const deslizou = slideTo(base({ enter: 0, pan: 0, velocity: 5, zoomS: 0 }), 700);
     expect(deslizou).toEqual(base({ enter: 1, pan: 700, velocity: 0 }));
+  });
+
+  it('na entrada, traz o pan inicial para a faixa sem encenar a viagem', () => {
+    // O acervo começa em 2026 (x≈5000) e o pan nasce em 0.
+    const bounds = { min: 4700, max: 4700 };
+    expect(settle(base({ enter: 0, enterS: 0, velocity: 2 }), bounds)).toEqual(
+      base({ enter: 0, enterS: 0, pan: 4700, panS: 4700, velocity: 0 }),
+    );
+  });
+
+  it('com a constelação assentada, muda só o alvo e deixa o damp deslizar', () => {
+    const bounds = { min: 0, max: 800 };
+    expect(settle(base({ pan: 1200, panS: 1200 }), bounds)).toEqual(
+      base({ pan: 800, panS: 1200 }),
+    );
+  });
+
+  it('não toca no estado quando o pan já está dentro dos limites', () => {
+    const state = base({ pan: 300, panS: 280, velocity: 3 });
+    expect(settle(state, { min: 0, max: 800 })).toBe(state);
   });
 });
