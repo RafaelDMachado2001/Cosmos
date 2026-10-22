@@ -1,5 +1,6 @@
 import styles from './ArticlePage.module.css';
 import { ArticleBody } from '../ArticleBody/ArticleBody';
+import { ArticleTags } from '../ArticleTags/ArticleTags';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
 import { parseBlocks } from '../../core/blocks';
 import { readingMinutes } from '../../core/readingTime';
@@ -19,6 +20,7 @@ export interface ArticlePageProps {
   readonly summary: string;
   /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
   readonly body: string;
+  readonly tags: readonly string[];
   readonly homeHref: string;
   /**
    * O mesmo artigo no outro idioma — o par que o `hreflang` anuncia.
@@ -52,6 +54,7 @@ export function ArticlePage({
   title,
   summary,
   body,
+  tags,
   homeHref,
   otherLocaleHref,
   index,
@@ -89,6 +92,7 @@ export function ArticlePage({
         </p>
         <h1 className={styles.title}>{title}</h1>
         <p className={styles.lede}>{summary}</p>
+        <ArticleTags tags={tags} className={styles.tags} />
         <div className={styles.filet} aria-hidden="true" />
 
         <ArticleBody markdown={body} />

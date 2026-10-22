@@ -453,6 +453,7 @@ function Shell({ route }: { route: Route }) {
       summary: detail.summary,
       body: detail.body,
       appearance: resolveAppearance(detail.appearance),
+      tags: detail.tags,
     };
   }, [reader, article, dateLabel, t]);
 

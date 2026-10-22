@@ -60,6 +60,7 @@ export const pt = {
     minutes: 'min de leitura',
     progress: 'Progresso da leitura',
     resume: 'Continuar de onde parou',
+    tags: 'Tags',
   },
   categories: {
     filterBy: 'FILTRAR POR CATEGORIA',
