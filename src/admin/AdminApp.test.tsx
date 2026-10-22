@@ -177,7 +177,7 @@ describe('AdminApp', () => {
     await waitFor(() => expect(screen.queryByText(/ainda não estão no ar/)).toBeNull());
   });
 
-  it('"Salvar" manda o rascunho sem esperar o autosave', async () => {
+  it('Ctrl+S manda o rascunho sem esperar o autosave', async () => {
     api.list.mockResolvedValue([publication()]);
     api.update.mockResolvedValue(publication());
     const user = userEvent.setup();
@@ -185,10 +185,41 @@ describe('AdminApp', () => {
     render(<AdminApp />);
     await user.click(await screen.findByText('Code review sem atrito'));
     await user.type(await screen.findByDisplayValue('Code review sem atrito'), '!');
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     expect(api.publish).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull();
+  });
+
+  it('data futura fora do ar: o botão agenda', async () => {
+    api.list.mockResolvedValue([publication({ publishedAt: '2999-01-01T12:00:00.000Z' })]);
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+
+    expect(await screen.findByRole('button', { name: 'Agendar' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Publicar' })).toBeNull();
+  });
+
+  it('Copiar link: só com a publicação no ar, e copia o endereço do artigo', async () => {
+    const live = publication({ status: 'published' });
+    api.list.mockResolvedValue([publication({ id: 2, slug: 'rascunho' }), live]);
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+
+    render(<AdminApp />);
+    await user.click((await screen.findAllByText('Code review sem atrito'))[0] as HTMLElement);
+    expect((await screen.findByRole('button', { name: 'Copiar link' })).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByText('Disponível com a publicação no ar.')).not.toBeNull();
+
+    await user.click((await screen.findAllByText('Code review sem atrito'))[1] as HTMLElement);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copiar link' }).hasAttribute('disabled')).toBe(false));
+    await user.click(screen.getByRole('button', { name: 'Copiar link' }));
+
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/pt/publicacoes/code-review-sem-atrito`);
+    expect(await screen.findByText('Link copiado.')).not.toBeNull();
   });
 
   it('Aparência: desligar "Herdar" grava o padrão, e o controle salva o valor', async () => {
@@ -204,7 +235,7 @@ describe('AdminApp', () => {
 
     await user.click(screen.getByRole('checkbox', { name: 'Herdar da categoria' }));
     await user.click(screen.getByRole('checkbox', { name: 'Movimento' }));
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(() => expect(api.update).toHaveBeenCalled());
     const patch = api.update.mock.calls.at(-1)?.[1] as { appearance: unknown };
