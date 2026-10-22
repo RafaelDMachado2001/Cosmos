@@ -1,13 +1,16 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
+import { resolveSiteOrigin } from './src/core/siteOrigin';
+
 const DEFAULT_PORT = 5174;
-const FALLBACK_URL = `http://localhost:${DEFAULT_PORT}`;
 
 export default defineConfig(({ mode }) => {
   // '.' já resolve para a raiz do projeto e evita depender de @types/node aqui.
-  const env = loadEnv(mode, '.', 'VITE_');
-  const origin = (env.VITE_SITE_URL ?? FALLBACK_URL).replace(/\/+$/, '');
+  // Prefixo vazio para enxergar também as variáveis de sistema da Vercel
+  // (ver `resolveSiteOrigin`); só o que `define` lista vai para o bundle.
+  const env = loadEnv(mode, '.', '');
+  const origin = resolveSiteOrigin(env);
   // Sem a variável, a constelação lê o acervo semente. Ver src/data/source.ts.
   const apiUrl = env.VITE_API_URL === undefined || env.VITE_API_URL === ''
     ? null
