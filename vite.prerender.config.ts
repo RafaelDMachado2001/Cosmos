@@ -1,6 +1,8 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
+import { resolveSiteOrigin } from './src/core/siteOrigin';
+
 /**
  * O build dos módulos que rodam em Node, não no navegador.
  *
@@ -18,7 +20,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   // Prefixo vazio: PRERENDER_API_URL não vai para o bundle de cliente.
   const env = loadEnv(mode, '.', '');
-  const origin = (env.VITE_SITE_URL ?? 'http://localhost:5174').replace(/\/+$/, '');
+  // A mesma regra do `vite.config.ts`: as duas origens precisam bater.
+  const origin = resolveSiteOrigin(env);
   /*
    * O prerender roda em Node, onde não existe "mesma origem".
    *
