@@ -253,6 +253,14 @@ describe('createHttpSource — a publicação', () => {
     expect(detail?.locales).toEqual(['pt', 'en']);
   });
 
+  it('traz as tags, e uma API sem elas vale como nenhuma', async () => {
+    const { impl } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: '', tags: ['php', 7, 'sql'] } } });
+    expect((await createHttpSource('https://x.dev', impl).get('x', 'pt'))?.tags).toEqual(['php', 'sql']);
+
+    const { impl: semTags } = stubFetch({ body: { data: { ...SUMMARY_ROW, body: '' } } });
+    expect((await createHttpSource('https://x.dev', semTags).get('x', 'pt'))?.tags).toEqual([]);
+  });
+
   it('404 é ausência, não erro', async () => {
     const { impl } = stubFetch({ status: 404 });
     await expect(createHttpSource('https://x.dev', impl).get('sumiu', 'pt')).resolves.toBeNull();

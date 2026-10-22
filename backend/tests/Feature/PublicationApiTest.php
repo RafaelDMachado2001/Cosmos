@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Modules\Content\Models\Publication;
+use App\Modules\Content\Models\Tag;
 use Carbon\Carbon;
 use Database\Seeders\PublicationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -304,6 +305,19 @@ class PublicationApiTest extends TestCase
         $this->getJson('/api/publications/code-review-sem-atrito')
             ->assertJsonPath('data.appearance.nebula', 0.8)
             ->assertJsonPath('data.appearance.motion', false);
+    }
+
+    public function test_as_tags_chegam_so_no_detalhe_em_ordem_alfabetica(): void
+    {
+        $publication = Publication::where('slug', 'code-review-sem-atrito')->firstOrFail();
+        $publication->tags()->attach([
+            Tag::create(['slug' => 'times'])->id,
+            Tag::create(['slug' => 'code-review'])->id,
+        ]);
+
+        $this->getJson('/api/publications/code-review-sem-atrito')->assertJsonPath('data.tags', ['code-review', 'times']);
+        $this->getJson('/api/publications/fundamentos-de-indices-no-postgresql')->assertJsonPath('data.tags', []);
+        $this->assertArrayNotHasKey('tags', $this->getJson('/api/publications')->json('data.0'));
     }
 
     public function test_seo_title_e_seo_description_vem_nulos_sem_override(): void

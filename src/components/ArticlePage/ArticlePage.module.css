@@ -83,6 +83,10 @@
   margin: 0 0 34px;
 }
 
+.tags {
+  margin: -16px 0 34px;
+}
+
 .filet {
   height: 1px;
   background: linear-gradient(90deg, var(--cat), var(--n2) 40%, transparent);

@@ -51,6 +51,7 @@ export const en: Dictionary = {
     minutes: 'min read',
     progress: 'Reading progress',
     resume: 'Pick up where you left off',
+    tags: 'Tags',
   },
   categories: {
     filterBy: 'FILTER BY CATEGORY',

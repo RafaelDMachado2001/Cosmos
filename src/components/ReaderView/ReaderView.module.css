@@ -455,6 +455,12 @@
   text-wrap: pretty;
 }
 
+/* Puxadas para perto do subtítulo, de que são o rodapé; o filete mantém a
+   distância de sempre do que vem acima dele. */
+.tags {
+  margin: -20px 0 40px;
+}
+
 .filet {
   height: 1px;
   margin-bottom: 56px;

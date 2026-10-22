@@ -169,6 +169,7 @@ export async function prerenderPages(
             title={detail.title}
             summary={detail.summary}
             body={detail.body}
+            tags={detail.tags}
             homeHref={homePath(locale)}
             otherLocaleHref={hasOtherLocale ? articlePath(other, detail.slug) : null}
             index={index}
