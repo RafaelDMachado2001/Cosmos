@@ -184,7 +184,10 @@ export function usePublicationEditor(
     if (!ok) throw new Error('O rascunho não foi salvo; publicar agora levaria a versão anterior.');
   }
 
-  /** O "Salvar" manual: o mesmo salvamento do autosave, sem esperar o timer. */
+  /**
+   * O Ctrl+S: o mesmo salvamento do autosave, sem esperar o timer. Botão não
+   * tem — o autosave e o publicar já descarregam o que falta.
+   */
   async function saveNow(): Promise<void> {
     await flushSave();
   }

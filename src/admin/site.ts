@@ -12,3 +12,15 @@ export function siteHost(siteUrl: string | null, fallback: string): string {
     return fallback;
   }
 }
+
+/**
+ * A origem do site público, para o link que o Studio compartilha. Mesma regra
+ * de `siteHost`: a do servidor quando há, senão a da própria página.
+ */
+export function siteOrigin(siteUrl: string | null, fallback: string): string {
+  try {
+    return new URL(siteUrl ?? '').origin;
+  } catch {
+    return fallback;
+  }
+}
