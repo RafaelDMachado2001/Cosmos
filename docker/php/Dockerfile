@@ -24,7 +24,9 @@ ENV VITE_API_URL=${VITE_API_URL}
 
 RUN npm run build
 
-FROM php:8.3-fpm-alpine
+# Patch fixo: 8.3.36 corrige o PHP2Shell (CVE-2026-109618/109619, RCE sem
+# autenticação). Tag flutuante deixava o build preso no cache de uma versão vulnerável.
+FROM php:8.3.36-fpm-alpine
 
 # Bibliotecas de execução e o que o Composer usa para resolver pacotes.
 # `libwebp`/`libpng`/`libjpeg-turbo` ficam em tempo de execução: é o que o GD
