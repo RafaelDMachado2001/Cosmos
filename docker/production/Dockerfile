@@ -31,7 +31,9 @@ COPY backend/ ./
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative --no-scripts
 
 # --- Runtime ----------------------------------------------------------------
-FROM dunglas/frankenphp:1.12.7-php8.3-alpine
+# PHP fixo em 8.3.36: corrige o PHP2Shell (CVE-2026-109618/109619). A 1.12.x
+# não tem build com ele; a 1.13.3 é a primeira.
+FROM dunglas/frankenphp:1.13.3-php8.3.36-alpine
 
 RUN install-php-extensions pdo_pgsql intl zip bcmath opcache gd exif \
  && apk add --no-cache nodejs
