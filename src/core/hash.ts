@@ -1,8 +1,8 @@
 /**
  * O hash que decide a altura de cada estrela.
  *
- * Separado da colocacao temporal porque e contrato com o backend: o PHP precisa
- * reproduzir exatamente estes bits, e mexer aqui move toda a constelacao.
+ * Separado da colocação temporal porque é contrato com o backend: o PHP precisa
+ * reproduzir exatamente estes bits, e mexer aqui move toda a constelação.
  *
  * Modulo puro: sem DOM, sem React, sem Three.
  */

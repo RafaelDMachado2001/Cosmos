@@ -124,7 +124,7 @@ describe('zoomTarget', () => {
 });
 
 describe('hoverSide', () => {
-  it('ancora à direita da estrela quando há espaço', () => {
+  it('âncora à direita da estrela quando há espaço', () => {
     expect(hoverSide(400, 1440)).toBe('right');
   });
 

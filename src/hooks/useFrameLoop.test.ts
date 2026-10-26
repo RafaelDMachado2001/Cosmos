@@ -11,10 +11,10 @@ function nextFrame(): Promise<void> {
 }
 
 describe('useFrameLoop', () => {
-  it('uma excecao num quadro não cancela os quadros seguintes', async () => {
-    // Aconteceu de fato: uma excecao dentro do callback (ex: a cena 3D, em
-    // Chromium headless sem GPU) cancelava o proprio requestAnimationFrame
-    // seguinte, travando enter/pan/fase para sempre, nao so o visual 3D.
+  it('uma exceção num quadro não cancela os quadros seguintes', async () => {
+    // Aconteceu de fato: uma exceção dentro do callback (ex: a cena 3D, em
+    // Chromium headless sem GPU) cancelava o próprio requestAnimationFrame
+    // seguinte, travando enter/pan/fase para sempre, não só o visual 3D.
     let calls = 0;
     const onFrame = vi.fn(() => {
       calls += 1;

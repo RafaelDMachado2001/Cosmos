@@ -64,10 +64,10 @@ async function readStaticCss(): Promise<string> {
 }
 
 /**
- * Grava por arquivo temporario e `rename`.
+ * Grava por arquivo temporário e `rename`.
  *
  * O volume `site` tem dois escritores — o entrypoint do Nginx e o job — e
- * `rename` no mesmo sistema de arquivos e atomico: quem le ou pega o arquivo
+ * `rename` no mesmo sistema de arquivos e atomico: quem lê ou pega o arquivo
  * antigo inteiro, ou o novo inteiro, nunca meio HTML com 200. O sufixo usa
  * `randomUUID`, não `process.pid`: os dois escritores rodam em containers
  * Docker separados, cada um com seu próprio namespace de PID, então os dois
@@ -106,11 +106,11 @@ async function readTemplate(): Promise<{ html: string; path: string }> {
 }
 
 /**
- * Apaga do disco os artigos que esta passada nao gravou.
+ * Apaga do disco os artigos que esta passada não gravou.
  *
- * O diretorio de artigo de cada idioma sai de `articlePath`: `routing.ts`
- * continua dono unico dos segmentos traduzidos. Some o diretorio do slug
- * inteiro, nao so o `index.html` — um diretorio vazio deixado para tras faria
+ * O diretório de artigo de cada idioma sai de `articlePath`: `routing.ts`
+ * continua dono único dos segmentos traduzidos. Some o diretório do slug
+ * inteiro, não só o `index.html` — um diretório vazio deixado para trás faria
  * o `try_files $uri/index.html` do Nginx cair no `@app` em vez de 404.
  */
 async function pruneArticles(pages: readonly PrerenderedPage[]): Promise<readonly string[]> {
@@ -260,7 +260,7 @@ async function main(): Promise<void> {
   }
 
   // Depois de gravar tudo, nunca antes: o que fica no ar durante a passada e o
-  // site anterior inteiro, e o que sai e so o que o acervo nao contem mais.
+  // site anterior inteiro, e o que sai é só o que o acervo não contém mais.
   const pruned = [...(await pruneArticles(pages)), ...(await pruneOgImages(ogPaths.wanted))];
 
   console.log(

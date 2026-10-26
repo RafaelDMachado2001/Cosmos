@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { compareKeys, parseEnv, productionProblems } from './env';
 
 describe('parseEnv', () => {
-  it('le chave e valor, ignora comentario e linha vazia, tira aspas', () => {
+  it('lê chave e valor, ignora comentario e linha vazia, tira aspas', () => {
     const text = `# comentario
 APP_ENV=production
 
@@ -20,7 +20,7 @@ QUOTED='x'`;
 });
 
 describe('compareKeys', () => {
-  it('aponta o que falta e o que sobra em relacao ao exemplo', () => {
+  it('aponta o que falta e o que sobra em relação ao exemplo', () => {
     expect(compareKeys({ A: '', B: '' }, { B: '1', C: '2' }, '.env')).toEqual([
       '.env: falta A (está no .env.example)',
       '.env: sobra C (não está no .env.example)',
@@ -43,17 +43,17 @@ describe('productionProblems', () => {
     },
   };
 
-  it('fora de producao, nada e exigido', () => {
+  it('fora de produção, nada e exigido', () => {
     expect(productionProblems({ root: {}, backend: { APP_ENV: 'local', APP_DEBUG: 'true' } })).toEqual(
       [],
     );
   });
 
-  it('uma producao bem configurada passa', () => {
+  it('uma produção bem configurada passa', () => {
     expect(productionProblems(ok)).toEqual([]);
   });
 
-  it('em producao: debug desligado, chave, senha de banco e URL absoluta', () => {
+  it('em produção: debug desligado, chave, senha de banco e URL absoluta', () => {
     expect(
       productionProblems({
         root: { VITE_SITE_URL: 'localhost:8080' },

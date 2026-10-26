@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { CATEGORIES, LOCALES } from '../core/types';
 
 /**
- * O config do backend e gerado deste vocabulario por `npm run emit:seed`.
+ * O config do backend e gerado deste vocabulário por `npm run emit:seed`.
  *
  * Mudar `core/types.ts` sem emitir de novo deixaria a API validando contra a
- * lista velha — e o erro so apareceria como 422 em producao.
+ * lista velha — e o erro só apareceria como 422 em produção.
  */
 describe('backend/config/publications.php', () => {
   const config = readFileSync('backend/config/publications.php', 'utf8');
@@ -22,7 +22,7 @@ describe('backend/config/publications.php', () => {
     expect(config).toContain(`'categories' => [${quoted(CATEGORIES)}]`);
   });
 
-  it('tem dicionario para cada idioma', () => {
+  it('tem dicionário para cada idioma', () => {
     const dictionaries = config.slice(config.indexOf("'dictionaries'"));
     for (const locale of LOCALES) expect(dictionaries).toContain(`'${locale}' => '`);
   });

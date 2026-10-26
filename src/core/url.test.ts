@@ -7,7 +7,7 @@ describe('absolute', () => {
     expect(absolute('https://rdmlabs.dev', '/pt')).toBe('https://rdmlabs.dev/pt');
   });
 
-  it('nao duplica a barra quando a origem termina em uma ou mais', () => {
+  it('não duplica a barra quando a origem termina em uma ou mais', () => {
     expect(absolute('https://rdmlabs.dev//', '/pt')).toBe('https://rdmlabs.dev/pt');
   });
 });

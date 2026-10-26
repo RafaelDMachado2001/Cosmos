@@ -9,10 +9,10 @@ use App\Modules\Content\Models\PublicationTranslation;
 use Tests\TestCase;
 
 /**
- * O vocabulario vem de config/publications.php, que e gerado do frontend.
+ * O vocabulário vem de config/publications.php, que é gerado do frontend.
  *
- * Os testes trocam o config em tempo de execucao: se algum ponto ainda lesse
- * uma copia escrita a mao, a troca nao chegaria nele.
+ * Os testes trocam o config em tempo de execução: se algum ponto ainda lesse
+ * uma cópia escrita à mão, a troca não chegaria nele.
  */
 class VocabularyTest extends TestCase
 {
