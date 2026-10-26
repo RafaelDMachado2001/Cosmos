@@ -7,7 +7,7 @@ import App from '../../App';
 
 /*
  * A Shell inteira em jsdom: histórico, foco e a câmera que o fechamento
- * promete devolver. Mora em App.tsx; o teste monta o App, que é o que o
+ * promete devolver. O teste monta o App, e não a Shell sozinha: é o que o
  * navegador monta.
  *
  * Sem WebGL aqui: o núcleo cai no fallback em CSS, que é o caminho que o
