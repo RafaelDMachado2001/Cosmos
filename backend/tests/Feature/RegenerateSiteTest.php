@@ -43,10 +43,10 @@ class RegenerateSiteTest extends TestCase
         $publication->update(['status' => Publication::STATUS_PUBLISHED]);
         $publication->update(['featured' => true]);
 
-        // Tres escritas, um job. E o mecanismo central da fase: quem esta
-        // escrevendo no painel salva varias vezes seguidas, e cada salvamento
-        // custaria um prerender de um minuto se ShouldBeUnique nao colapsasse
-        // a rajada. Nao libere a trava aqui — liberar apaga justamente a prova.
+        // Três escritas, um job. É o mecanismo central da fase: quem está
+        // escrevendo no painel salva várias vezes seguidas, e cada salvamento
+        // custaria um prerender de um minuto se ShouldBeUnique não colapsasse
+        // a rajada. Não libere a trava aqui — liberar apaga justamente a prova.
         Queue::assertPushed(RegenerateSite::class, 1);
     }
 
@@ -61,8 +61,8 @@ class RegenerateSiteTest extends TestCase
             'featured' => false,
             'status' => Publication::STATUS_DRAFT,
         ]);
-        // A trava e liberada de proposito: aqui o que se mede e o observer, nao
-        // a deduplicacao. O teste acima e quem cobre a deduplicacao.
+        // A trava é liberada de propósito: aqui o que se mede é o observer, não
+        // a deduplicação. O teste acima é quem cobre a deduplicação.
         $queue->releaseUniqueJobLocks();
         $publication->update(['status' => Publication::STATUS_PUBLISHED]);
         $queue->releaseUniqueJobLocks();
@@ -81,7 +81,7 @@ class RegenerateSiteTest extends TestCase
             'status' => Publication::STATUS_PUBLISHED,
         ]);
 
-        // Depois da criacao: interessa o dispatch do delete, nao o dela.
+        // Depois da criação: interessa o dispatch do delete, não o dela.
         $queue = Queue::fake();
         $publication->delete();
 
@@ -104,9 +104,9 @@ class RegenerateSiteTest extends TestCase
             'body' => 'Texto.',
         ]);
 
-        // Um ajuste de titulo nao encosta na linha de `publications`, entao so
-        // o observer de PublicationTranslation o pega. E a metade menos obvia
-        // da fiacao, e a que regride em silencio.
+        // Um ajuste de título não encosta na linha de `publications`, então só
+        // o observer de PublicationTranslation o pega. É a metade menos óbvia
+        // da fiação, e a que regride em silêncio.
         $queue = Queue::fake();
         $translation->update(['title' => 'Titulo corrigido']);
 

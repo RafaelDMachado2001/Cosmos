@@ -1,10 +1,10 @@
 #!/bin/sh
 # Semeia o volume `site` com o build assado na imagem.
 #
-# O volume nasce vazio no primeiro boot e o job so grava quando alguem publica:
-# sem esta copia o Nginx serviria 404 em tudo ate a primeira publicacao. A marca
-# de versao evita recopiar a cada restart e, num deploy, faz a imagem nova
-# sobrescrever o que o job havia gravado — que e o comportamento desejado: o job
+# O volume nasce vazio no primeiro boot e o job só grava quando alguém publica:
+# sem esta copia o Nginx serviria 404 em tudo até a primeira publicação. A marca
+# de versão evita recopiar a cada restart e, num deploy, faz a imagem nova
+# sobrescrever o que o job havia gravado — que é o comportamento desejado: o job
 # regrava por cima depois.
 set -e
 

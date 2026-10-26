@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # O runner do prerender. Mesma origem do build do `web`: um segundo caminho de
-# compilacao divergiria do primeiro no primeiro ajuste.
+# compilação divergiria do primeiro no primeiro ajuste.
 FROM node:22-alpine AS runner
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -9,16 +9,16 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 
 # A origem do canonical, do hreflang e do sitemap fica assada no bundle do
-# prerender. Sem o mesmo valor do `web`, a primeira publicacao regravaria todas
-# as paginas apontando para o padrao de desenvolvimento.
+# prerender. Sem o mesmo valor do `web`, a primeira publicação regravaria todas
+# as páginas apontando para o padrão de desenvolvimento.
 ARG VITE_SITE_URL=http://localhost:8080
 ENV VITE_SITE_URL=${VITE_SITE_URL}
 
-# O molde que o job usa sai deste build, mas as paginas que ele grava sao
-# servidas com os assets do build do `web`. Os nomes com hash so coincidem se as
+# O molde que o job usa sai deste build, mas as páginas que ele grava são
+# servidas com os assets do build do `web`. Os nomes com hash só coincidem se as
 # entradas coincidirem: qualquer ARG que o estagio de build do `web` tenha
 # precisa estar aqui com o mesmo valor. O prerender recusa um molde cujos assets
-# o destino nao tem (src/prerender/assets.ts).
+# o destino não tem (src/prerender/assets.ts).
 ARG VITE_API_URL=/
 ENV VITE_API_URL=${VITE_API_URL}
 
@@ -47,7 +47,7 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS libpq-dev icu-dev libz
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Node no container do backend e o preco de nao ter um quarto servico. Fica
+# Node no container do backend é o preço de não ter um quarto serviço. Fica
 # registrado na spec como o primeiro candidato a mudar se o deploy apertar.
 RUN apk add --no-cache nodejs
 
@@ -62,8 +62,8 @@ RUN addgroup -g "${GID}" app 2>/dev/null || true \
  && adduser -u "${UID}" -G "$(getent group "${GID}" | cut -d: -f1)" -s /bin/sh -D app 2>/dev/null || true
 
 # O COPY --from=runner acima grava como root. O prerender reescreve
-# dist-ssr/template.html a cada execucao (Tarefa 2) e roda como o mesmo
-# usuario sem privilegio do `app`/`queue` — sem isso ele morre com EACCES
+# dist-ssr/template.html a cada execução (Tarefa 2) e roda como o mesmo
+# usuário sem privilégio do `app`/`queue` — sem isso ele morre com EACCES
 # antes de sequer falar com a API.
 RUN chown -R app:app /srv/render/dist-ssr
 

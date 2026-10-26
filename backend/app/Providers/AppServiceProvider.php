@@ -22,17 +22,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // O grupo `api` so aplica `throttle:api` porque bootstrap/app.php
+        // O grupo `api` só aplica `throttle:api` porque bootstrap/app.php
         // chama throttleApi() — sem este limiter registrado, a primeira
-        // requisicao lancaria "Rate limiter [api] is not defined".
+        // requisição lançaria "Rate limiter [api] is not defined".
         RateLimiter::for('api', static function (Request $request): Limit {
             $token = config('publishing.internal_token');
 
-            // O prerender regenera o site inteiro a cada publicacao/edicao —
-            // dezenas de chamadas numa unica passada, crescendo com o acervo.
-            // E trafego de sistema, nao de cliente publico, e o segredo que o
+            // O prerender regenera o site inteiro a cada publicação/edição —
+            // dezenas de chamadas numa única passada, crescendo com o acervo.
+            // É tráfego de sistema, não de cliente público, e o segredo que o
             // identifica nunca sai do bundle de servidor (ver
-            // src/prerender/main.ts): so o navegador nao tem como declarar.
+            // src/prerender/main.ts): só o navegador não tem como declarar.
             if (is_string($token) && $token !== '' && hash_equals($token, (string) $request->header('X-Internal-Token'))) {
                 return Limit::none();
             }

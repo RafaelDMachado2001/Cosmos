@@ -34,7 +34,7 @@ class FallbackTest extends TestCase
         $response->assertSee('Ainda nao no disco');
         $response->assertSee('Primeiro paragrafo.');
         $response->assertSee('noindex', false);
-        // O caminho de excecao nao afirma canonical: uma segunda implementacao
+        // O caminho de exceção não afirma canonical: uma segunda implementação
         // de SEO e como o canonical errado nasce.
         $response->assertDontSee('rel="canonical"', false);
     }

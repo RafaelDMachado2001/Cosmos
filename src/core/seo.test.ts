@@ -109,6 +109,14 @@ describe('articleMeta', () => {
     expect(meta.description).toBe('Revisar sem travar o time.');
   });
 
+  it('article:modified_time só aparece quando houve edição depois de publicar', () => {
+    expect(articleMeta(SITE, 'pt', ARTICLE).og).not.toHaveProperty('article:modified_time');
+    const same = articleMeta(SITE, 'pt', { ...ARTICLE, updatedAt: ARTICLE.publishedAt });
+    expect(same.og).not.toHaveProperty('article:modified_time');
+    const edited = articleMeta(SITE, 'pt', { ...ARTICLE, updatedAt: '2025-10-01T10:00:00.000Z' });
+    expect(edited.og['article:modified_time']).toBe('2025-10-01T10:00:00.000Z');
+  });
+
   it('indexable: false declara noindex; ausente ou true não declara nada', () => {
     expect(articleMeta(SITE, 'pt', { ...ARTICLE, indexable: false }).robots).toBe('noindex');
     expect(articleMeta(SITE, 'pt', { ...ARTICLE, indexable: true }).robots).toBeUndefined();
@@ -194,7 +202,11 @@ describe('articleJsonLd', () => {
   });
 
   it('declara quem publica', () => {
-    expect(json.publisher).toEqual({ '@type': 'Organization', name: SITE.siteName, url: 'https://rdmlabs.dev/' });
+    expect(json.publisher).toEqual({
+      '@type': 'Organization',
+      name: SITE.siteName,
+      url: 'https://rdmlabs.dev/',
+    });
   });
 });
 
@@ -264,9 +276,9 @@ describe('renderHeadTags', () => {
   });
 
   it('não emite JSON-LD quando não há artigo', () => {
-    expect(renderHeadTags(homeMeta(SITE, 'pt', { title: 'T', description: 'D' }, ), null)).not.toContain(
-      'ld+json',
-    );
+    expect(
+      renderHeadTags(homeMeta(SITE, 'pt', { title: 'T', description: 'D' }), null),
+    ).not.toContain('ld+json');
   });
 
   it('impede que o JSON-LD feche o próprio <script>', () => {
@@ -298,7 +310,7 @@ describe('notFoundHeadTags', () => {
 });
 
 describe('og:image', () => {
-  it('o artigo aponta para o cartao dele, com URL absoluta', () => {
+  it('o artigo aponta para o cartão dele, com URL absoluta', () => {
     const og = articleMeta(SITE, 'pt', ARTICLE).og;
     expect(og['og:image']).toBe(`https://rdmlabs.dev${ogImagePath(articleOgCard('pt', ARTICLE))}`);
     expect(og['og:image:width']).toBe('1200');
@@ -306,7 +318,7 @@ describe('og:image', () => {
     expect(og['og:image:alt']).toBe('Code review sem atrito');
   });
 
-  it('o cartao do artigo desenha titulo, categoria e data, no idioma da pagina', () => {
+  it('o cartão do artigo desenha título, categoria e data, no idioma da página', () => {
     expect(articleOgCard('en', ARTICLE)).toEqual({
       locale: 'en',
       title: 'Code review sem atrito',
@@ -316,7 +328,7 @@ describe('og:image', () => {
     });
   });
 
-  it('a home tambem tem cartao, com o nome do site no lugar da categoria', () => {
+  it('a home também tem cartão, com o nome do site no lugar da categoria', () => {
     const copy = { title: 'Entre no meu universo', description: 'Constelação.' };
     const og = homeMeta(SITE, 'pt', copy).og;
     expect(homeOgCard(SITE, 'pt', copy)).toEqual({
@@ -324,12 +336,10 @@ describe('og:image', () => {
       title: 'Entre no meu universo',
       kicker: 'RDM Labs',
     });
-    expect(og['og:image']).toBe(
-      `https://rdmlabs.dev${ogImagePath(homeOgCard(SITE, 'pt', copy))}`,
-    );
+    expect(og['og:image']).toBe(`https://rdmlabs.dev${ogImagePath(homeOgCard(SITE, 'pt', copy))}`);
   });
 
-  it('nao duplica a barra quando a origem termina nela', () => {
+  it('não duplica a barra quando a origem termina nela', () => {
     const og = articleMeta({ ...SITE, origin: 'https://rdmlabs.dev/' }, 'pt', ARTICLE).og;
     expect(og['og:image']).toMatch(/^https:\/\/rdmlabs\.dev\/og\//);
   });

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-// O unico administrador do painel, criado pelo DatabaseSeeder. Os valores vem
-// do ambiente para nao existir credencial escrita no repositorio; env() so e
+// O único administrador do painel, criado pelo DatabaseSeeder. Os valores vem
+// do ambiente para não existir credencial escrita no repositório; env() só e
 // lido aqui, porque com o config em cache ele devolve null fora de config/.
 
 return [

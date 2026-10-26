@@ -1,11 +1,11 @@
 /**
- * O que sobrou no disco de uma publicacao que nao existe mais.
+ * O que sobrou no disco de uma publicação que não existe mais.
  *
- * O job regenera o site inteiro a cada publicacao, mas gravar nao apaga: um
- * artigo despublicado continuaria servido com 200, que e o soft-404 que a fase
+ * O job regenera o site inteiro a cada publicação, mas gravar não apaga: um
+ * artigo despublicado continuaria servido com 200, que é o soft-404 que a fase
  * 6 eliminou ao tirar o fallback do Nginx.
  *
- * Por diferenca, e nao esvaziando o destino antes: a regeracao completa leva
+ * Por diferença, e não esvaziando o destino antes: a regeração completa leva
  * perto de um minuto, e esvaziar deixaria o site fora do ar nessa janela.
  */
 export function stalePages(

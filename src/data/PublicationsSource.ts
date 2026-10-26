@@ -182,10 +182,10 @@ export interface HttpSourceOptions {
   /**
    * Chamado quando a API declara que cortou o acervo.
    *
-   * Sem isto, truncamento lanca — que e o comportamento que o prerender quer:
+   * Sem isto, truncamento lança — que é o comportamento que o prerender quer:
    * um site publicado com metade do acervo e pior que um build vermelho. No
-   * cliente, truncamento e falha de operacao, nao estado de leitura, entao la
-   * quem chama passa um aviso de console e a constelacao segue.
+   * cliente, truncamento e falha de operação, não estado de leitura, então lá
+   * quem chama passa um aviso de console e a constelação segue.
    */
   readonly onTruncated?: (meta: { count: number; limit: number }) => void;
   /**

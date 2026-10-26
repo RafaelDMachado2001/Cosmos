@@ -12,8 +12,8 @@ ARG VITE_SITE_URL=http://localhost:8080
 ENV VITE_SITE_URL=${VITE_SITE_URL}
 
 # O bundle de cliente precisa falar com a API, senao serve o acervo semente
-# embutido e desfaz, ao montar, o que o job de regeracao acabou de gravar.
-# Relativo a origem de proposito: vale para qualquer dominio, e e a mesma
+# embutido e desfaz, ao montar, o que o job de regeração acabou de gravar.
+# Relativo à origem de propósito: vale para qualquer domínio, e é a mesma
 # origem que serve /api.
 ARG VITE_API_URL=/
 ENV VITE_API_URL=${VITE_API_URL}
@@ -24,12 +24,12 @@ RUN npm run build
 
 FROM nginx:1.27-alpine-slim AS web
 
-# O mesmo uid do servico `queue`.
+# O mesmo uid do serviço `queue`.
 #
-# Este container semeia o volume, mas quem escreve nele depois e o job, que roda
+# Este container semeia o volume, mas quem escreve nele depois é o job, que roda
 # como uid 1000. `cp -a` preserva o dono da origem: sem estes chown o volume
-# nasce inteiro como root e a primeira publicacao morre com EACCES. O Nginx le
-# como root e nao se importa com o dono.
+# nasce inteiro como root e a primeira publicação morre com EACCES. O Nginx lê
+# como root e não se importa com o dono.
 ARG UID=1000
 ARG GID=1000
 
@@ -40,9 +40,9 @@ COPY docker/web/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
  && date -u +%Y%m%d%H%M%S > /opt/site/.build-id \
  && chown ${UID}:${GID} /opt/site/.build-id \
- # O ponto de montagem tambem: o Docker semeia o dono do volume a partir dele,
- # e criar arquivo novo na raiz de /srv/site exige permissao neste diretorio,
- # nao so nos que o `cp` trouxe.
+ # O ponto de montagem também: o Docker semeia o dono do volume a partir dele,
+ # e criar arquivo novo na raiz de /srv/site exige permissão neste diretório,
+ # não só nos que o `cp` trouxe.
  && mkdir -p /srv/site \
  && chown ${UID}:${GID} /srv/site
 ENV SITE_DIR=/srv/site
