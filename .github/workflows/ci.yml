@@ -109,9 +109,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      # O build servido pelo Nginx de verdade: 404 com status real e pagina sem
-      # JavaScript so existem la. VITE_API_URL vazia faz a constelacao ler o
-      # acervo semente; o caminho com a API e do job de integracao.
+      # O build servido pelo Nginx de verdade: 404 com status real e página sem
+      # JavaScript só existem lá. VITE_API_URL vazia faz a constelação ler o
+      # acervo semente; o caminho com a API é do job de integração.
       - run: docker compose build --build-arg VITE_API_URL= web
       - run: docker compose up -d web
       - name: Esperar o Nginx
@@ -283,7 +283,7 @@ jobs:
           url="http://localhost:8080/pt/publicacoes/$SLUG"
           for _ in $(seq 1 60); do
             body="$(curl -fs "$url" || true)"
-            # Sem noindex: e o arquivo que o job gravou, nao a casca do @app.
+            # Sem noindex: é o arquivo que o job gravou, não a casca do @app.
             if echo "$body" | grep -q "$TITLE" && ! echo "$body" | grep -q noindex; then
               echo "publicado: $url"
               exit 0

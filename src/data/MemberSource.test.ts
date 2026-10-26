@@ -14,7 +14,7 @@ function respond(status: number, body?: unknown): Response {
 }
 
 describe('createMemberSource', () => {
-  it('sem sessao, me() e null (204)', async () => {
+  it('sem sessão, me() é null (204)', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(respond(204)));
     const source = createMemberSource('https://api.example', fetchImpl, () => '');
 
@@ -25,13 +25,13 @@ describe('createMemberSource', () => {
     });
   });
 
-  it('com sessao, me() e o perfil', async () => {
+  it('com sessão, me() é o perfil', async () => {
     const source = createMemberSource('https://api.example', () => Promise.resolve(respond(200, profile)), () => '');
 
     await expect(source.me()).resolves.toMatchObject({ handle: 'ana', providers: ['google'] });
   });
 
-  it('erro da API e erro, nao anonimo', async () => {
+  it('erro da API é erro, não anônimo', async () => {
     const source = createMemberSource('https://api.example', () => Promise.resolve(respond(500)), () => '');
 
     await expect(source.me()).rejects.toThrow('500');

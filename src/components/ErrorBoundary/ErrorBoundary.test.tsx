@@ -40,7 +40,7 @@ describe('ErrorBoundary', () => {
     expect(root.hidden).toBe(true);
   });
 
-  it('sem erro, nao mexe em nada', () => {
+  it('sem erro, não mexe em nada', () => {
     act(() => {
       createRoot(root).render(
         <ErrorBoundary>

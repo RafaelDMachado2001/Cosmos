@@ -10,9 +10,9 @@ use App\Modules\Content\Support\SiteRebuild;
 /**
  * Publicar pelo painel tem de chegar ao disco.
  *
- * `saved` cobre criacao e edicao; `deleted` existe porque despublicar tambem
+ * `saved` cobre criação e edição; `deleted` existe porque despublicar também
  * muda o site — e um artigo que sumiu do banco mas continua no disco e pior
- * que um que nunca chegou la.
+ * que um que nunca chegou lá.
  */
 class PublicationObserver
 {

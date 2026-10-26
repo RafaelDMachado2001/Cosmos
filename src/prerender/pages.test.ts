@@ -89,7 +89,7 @@ describe('prerenderPages', () => {
     }
   });
 
-  it('prerenderiza a partir da fonte injetada, nao do acervo semente', async () => {
+  it('prerenderiza a partir da fonte injetada, não do acervo semente', async () => {
     const fixture = createStaticSource([
       {
         slug: 'so-esta-publicacao',
@@ -141,7 +141,7 @@ describe('prerenderPages', () => {
     expect(sitemap).not.toContain('/en/publications/so-em-portugues');
   });
 
-  it('pede o acervo inteiro: o limite padrao da API derrubaria o build na 101a publicacao', async () => {
+  it('pede o acervo inteiro: o limite padrão da API derrubaria o build na 101a publicação', async () => {
     const asked: (number | undefined)[] = [];
     const inner = createStaticSource(PUBLICATIONS);
     const spy = {

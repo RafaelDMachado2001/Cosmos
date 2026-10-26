@@ -6,15 +6,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../App';
 
 /*
- * A Shell inteira em jsdom: historico, foco e a camera que o fechamento
- * promete devolver. Mora em App.tsx; o teste monta o App, que e o que o
+ * A Shell inteira em jsdom: histórico, foco e a câmera que o fechamento
+ * promete devolver. Mora em App.tsx; o teste monta o App, que é o que o
  * navegador monta.
  *
- * Sem WebGL aqui: o nucleo cai no fallback em CSS, que e o caminho que o
- * `webgl.ts` ja preve.
+ * Sem WebGL aqui: o núcleo cai no fallback em CSS, que é o caminho que o
+ * `webgl.ts` já prevê.
  */
 
-/** As estrelas da constelacao, nao as ancoras do StarIndex: so elas tem o rotulo longo. */
+/** As estrelas da constelação, não as âncoras do StarIndex: só elas tem o rótulo longo. */
 function constellationStars(): HTMLAnchorElement[] {
   return screen
     .getAllByRole('link')
@@ -24,15 +24,15 @@ function constellationStars(): HTMLAnchorElement[] {
 }
 
 /**
- * O jsdom 25 nao tem `PointerEvent`, e o `fireEvent.pointerDown` cai num
- * `Event` generico que descarta `pointerType` — justo o que se quer testar.
+ * O jsdom 25 não tem `PointerEvent`, e o `fireEvent.pointerDown` cai num
+ * `Event` genérico que descarta `pointerType` — justo o que se quer testar.
  */
 function pointerDown(pointerType: 'mouse' | 'touch'): MouseEvent {
   const event = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 });
   return Object.assign(event, { pointerType });
 }
 
-/** Um toque completo: o jsdom nao gera a sequencia de ponteiro sozinho. */
+/** Um toque completo: o jsdom não gera a sequência de ponteiro sozinho. */
 function tocar(element: HTMLElement): void {
   fireEvent(element, pointerDown('touch'));
   fireEvent.pointerUp(window);
@@ -41,9 +41,9 @@ function tocar(element: HTMLElement): void {
 
 async function entrarNaConstelacao(user: UserEvent): Promise<HTMLAnchorElement> {
   await user.click(await screen.findByRole('button', { name: 'Role para atravessar' }));
-  // A fase vira `cosmos` quando a travessia suavizada passa do limiar; so
-  // entao a constelacao deixa de ser `inert`. O motor libera o ponteiro um
-  // pouco depois, quando a revelacao passa de 0.9 — e e isso que a pessoa
+  // A fase vira `cosmos` quando a travessia suavizada passa do limiar; só
+  // então a constelação deixa de ser `inert`. O motor libera o ponteiro um
+  // pouco depois, quando a revelação passa de 0.9 — e é isso que a pessoa
   // espera antes de conseguir clicar.
   return waitFor(
     () => {
@@ -64,11 +64,11 @@ describe('Shell', () => {
   beforeEach(() => {
     window.history.replaceState(null, '', '/pt');
     window.localStorage.clear();
-    // jsdom nao implementa canvas: sem isto cada montagem loga um erro de
-    // "not implemented" que nao diz nada sobre o que esta sendo testado.
+    // jsdom não implementa canvas: sem isto cada montagem loga um erro de
+    // "not implemented" que não diz nada sobre o que está sendo testado.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
-    // jsdom declara matchMedia sem implementa-la. Sem preferencia por menos
-    // movimento: e o caminho com a viagem de camera que estes testes trancam.
+    // jsdom declara matchMedia sem implementá-la. Sem preferência por menos
+    // movimento: é o caminho com a viagem de câmera que estes testes trancam.
     window.matchMedia = (query: string) => ({
       matches: false,
       media: query,
@@ -86,7 +86,7 @@ describe('Shell', () => {
     vi.restoreAllMocks();
   });
 
-  it('abrir uma estrela empilha uma entrada de historico', async () => {
+  it('abrir uma estrela empilha uma entrada de histórico', async () => {
     const user = userEvent.setup();
     render(<App />);
     const estrela = await entrarNaConstelacao(user);
@@ -116,18 +116,18 @@ describe('Shell', () => {
     expect(window.location.pathname).toBe('/pt');
   });
 
-  it('Esc durante a abertura fecha sem deixar a camera no meio do caminho', async () => {
+  it('Esc durante a abertura fecha sem deixar a câmera no meio do caminho', async () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(await entrarNaConstelacao(user));
-    // Antes do dialogo montar: e a fase `opening`, com a camera ainda viajando.
+    // Antes do diálogo montar: e a fase `opening`, com a câmera ainda viajando.
     expect(screen.queryByRole('dialog')).toBeNull();
     await user.keyboard('{Escape}');
 
     await waitFor(() => {
       expect(window.location.pathname).toBe('/pt');
     });
-    // E a vista nao remonta sozinha quando o timer da abertura venceria.
+    // É a vista não remonta sozinha quando o timer da abertura venceria.
     await new Promise((resolve) => setTimeout(resolve, 1200));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
@@ -149,17 +149,17 @@ describe('Shell', () => {
     );
   });
 
-  it('arrastar com o mouse nao seleciona texto, e o clique ainda abre a estrela', async () => {
+  it('arrastar com o mouse não seleciona texto, e o clique ainda abre a estrela', async () => {
     const user = userEvent.setup();
     render(<App />);
     const estrela = await entrarNaConstelacao(user);
     const regua = screen.getByRole('slider');
 
-    // `fireEvent` devolve falso quando o padrao foi cancelado.
+    // `fireEvent` devolve falso quando o padrão foi cancelado.
     expect(fireEvent(estrela, pointerDown('mouse'))).toBe(false);
     expect(fireEvent(regua, pointerDown('mouse'))).toBe(false);
     expect(fireEvent.dragStart(estrela)).toBe(false);
-    // O toque segue nativo: e o padrao dele que distingue toque de rolagem.
+    // O toque segue nativo: é o padrão dele que distingue toque de rolagem.
     expect(fireEvent(estrela, pointerDown('touch'))).toBe(true);
     fireEvent.pointerUp(window);
 
@@ -181,14 +181,14 @@ describe('Shell', () => {
     expect(await screen.findByRole('dialog', {}, { timeout: 4000 })).toBeTruthy();
   });
 
-  it('tocar numa area vazia fecha o painel', async () => {
+  it('tocar numa área vazia fecha o painel', async () => {
     const user = userEvent.setup();
     render(<App />);
     const estrela = await entrarNaConstelacao(user);
     tocar(estrela);
     await screen.findByText('TOQUE DE NOVO PARA ABRIR');
 
-    // A camada da constelacao, fora de qualquer estrela.
+    // A camada da constelação, fora de qualquer estrela.
     fireEvent(estrela.parentElement as HTMLElement, pointerDown('touch'));
     fireEvent.pointerUp(window);
 
@@ -220,7 +220,7 @@ describe('Shell', () => {
     );
   });
 
-  it('carga direta num slug que nao existe mostra o 404 dentro da constelacao', async () => {
+  it('carga direta num slug que não existe mostra o 404 dentro da constelação', async () => {
     window.history.replaceState(null, '', '/pt/publicacoes/nao-existe');
     render(<App />);
 

@@ -19,8 +19,8 @@ export function createSource(): PublicationsSource {
   if (__API_URL__ === null) return createStaticSource(PUBLICATIONS);
 
   return createHttpSource(__API_URL__, fetch, {
-    // Falha de operacao, nao estado de leitura: a pessoa que le nao tem o que
-    // fazer com isso, e apagar a constelacao seria pior que mostra-la menor.
+    // Falha de operação, não estado de leitura: a pessoa que lê não tem o que
+    // fazer com isso, e apagar a constelação seria pior que mostra-la menor.
     onTruncated: ({ count, limit }) => {
       console.warn(
         `A API truncou o acervo em ${String(limit)} publicacoes, e havia mais; a constelacao mostra so estas ${String(count)}.`,

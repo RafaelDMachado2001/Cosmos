@@ -17,8 +17,8 @@ jobs:
     if: github.event.pull_request.draft == false && vars.REVISAO_ATIVA == 'true'
     runs-on: ubuntu-latest
     env:
-      # Sem o segredo, o job passa sem revisar: o repositorio funciona antes de
-      # alguem decidir liga-lo. Ver README, secao CI.
+      # Sem o segredo, o job passa sem revisar: o repositório funciona antes de
+      # alguém decidir liga-lo. Ver README, seção CI.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - if: env.ANTHROPIC_API_KEY == ''

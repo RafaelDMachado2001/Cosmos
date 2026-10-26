@@ -12,15 +12,15 @@ const CARD: OgCard = {
 };
 
 describe('ogImagePath', () => {
-  it('mora em /og/, com o idioma no nome e extensao png', () => {
+  it('mora em /og/, com o idioma no nome e extensão png', () => {
     expect(ogImagePath(CARD)).toMatch(/^\/og\/pt-[0-9a-f]{8}\.png$/);
   });
 
-  it('o mesmo cartao da sempre o mesmo nome: o que nao mudou nao e redesenhado', () => {
+  it('o mesmo cartão dá sempre o mesmo nome: o que não mudou não é redesenhado', () => {
     expect(ogImagePath({ ...CARD })).toBe(ogImagePath(CARD));
   });
 
-  it('qualquer coisa desenhada no cartao muda o nome', () => {
+  it('qualquer coisa desenhada no cartão muda o nome', () => {
     const base = ogImagePath(CARD);
     expect(ogImagePath({ ...CARD, title: 'Outro título' })).not.toBe(base);
     expect(ogImagePath({ ...CARD, locale: 'en' })).not.toBe(base);
@@ -31,7 +31,7 @@ describe('ogImagePath', () => {
 });
 
 describe('parseTokens', () => {
-  it('le as propriedades customizadas, sem comentarios nem espacos', () => {
+  it('lê as propriedades customizadas, sem comentarios nem espacos', () => {
     const css = `:root {
   --color-bg: #05060b; /* fundo global */
   --color-cat-artigo: #6e7bff;

@@ -1,9 +1,9 @@
 /**
- * A camera da constelacao, como funcoes puras de estado para estado.
+ * A câmera da constelação, como funções puras de estado para estado.
  *
- * O motor guarda este estado num ref e o aplica a cada quadro; aqui ficam so as
- * transicoes discretas — abrir, fechar, chegar, voltar. E onde moravam os
- * defeitos de camera desfazendo o recuo que o fechamento promete, e fora do
+ * O motor guarda este estado num ref e o aplica a cada quadro; aqui ficam só as
+ * transições discretas — abrir, fechar, chegar, voltar. E onde moravam os
+ * defeitos de câmera desfazendo o recuo que o fechamento promete, e fora do
  * hook eles passam a ter teste.
  *
  * O alvo chega resolvido: quem chama faz o `panForStar`, que precisa do acervo e
@@ -13,19 +13,19 @@
 import type { PanBounds } from './geometry';
 
 export interface CameraState {
-  /** Alvo da travessia do portal: 0 na entrada, 1 na constelacao. */
+  /** Alvo da travessia do portal: 0 na entrada, 1 na constelação. */
   readonly enter: number;
   readonly enterS: number;
   /** Alvo do pan. O suavizado, `panS`, e o que vai para a tela. */
   readonly pan: number;
   readonly panS: number;
   readonly zoomS: number;
-  /** x em tela da estrela aberta — origem do avanco da camera. */
+  /** x em tela da estrela aberta — origem do avanço da câmera. */
   readonly focusX: number;
   readonly velocity: number;
 }
 
-/** Onde uma estrela poe a camera: o pan que a enquadra e o x dela na linha. */
+/** Onde uma estrela põe a câmera: o pan que a enquadra e o x dela na linha. */
 export interface CameraTarget {
   readonly pan: number;
   readonly x: number;
@@ -41,10 +41,10 @@ export function goHome<S extends CameraState>(state: S, bounds: PanBounds): S {
 }
 
 /**
- * Desliza a camera ate uma estrela, sem abrir nada.
+ * Desliza a câmera até uma estrela, sem abrir nada.
  *
- * E o que a busca e o filtro usam para levar o leitor ao primeiro resultado:
- * apagar as demais sem mover a camera deixaria a tela vazia quando o que
+ * É o que a busca e o filtro usam para levar o leitor ao primeiro resultado:
+ * apagar as demais sem mover a câmera deixaria a tela vazia quando o que
  * corresponde esta fora do enquadramento.
  */
 export function slideTo<S extends CameraState>(state: S, pan: number): S {
@@ -54,10 +54,10 @@ export function slideTo<S extends CameraState>(state: S, pan: number): S {
 /**
  * A chegada direta pela URL.
  *
- * Aqui os valores suavizados sao escritos junto com os alvos, que e exatamente
- * o que o resto do motor nunca faz. E deliberado: deixar so o alvo poria o
- * `damp` a encenar uma travessia de portal que ninguem pediu. Quem chega pela
- * URL nao atravessou nada.
+ * Aqui os valores suavizados são escritos junto com os alvos, que é exatamente
+ * o que o resto do motor nunca faz. É deliberado: deixar só o alvo poria o
+ * `damp` a encenar uma travessia de portal que ninguém pediu. Quem chega pela
+ * URL não atravessou nada.
  */
 export function jumpTo<S extends CameraState>(state: S, target: CameraTarget | null): S {
   const crossed = { ...state, enter: 1, enterS: 1, velocity: 0 };
@@ -75,8 +75,8 @@ export function jumpTo<S extends CameraState>(state: S, target: CameraTarget | n
  * O primeiro tempo da abertura: centralizar a estrela.
  *
  * O `focusX` e medido depois de o pan ser limitado pelas bordas da linha do
- * tempo — nas pontas a estrela nao chega ao meio da tela, e assumir que chegou
- * faria o avanco da camera crescer em torno do ponto errado. Quem chama guarda
+ * tempo — nas pontas a estrela não chega ao meio da tela, e assumir que chegou
+ * faria o avanço da câmera crescer em torno do ponto errado. Quem chama guarda
  * `state.pan` antes: e a origem que `closeReader` devolve.
  */
 export function openStar<S extends CameraState>(state: S, target: CameraTarget): S {
@@ -90,10 +90,10 @@ export function openStar<S extends CameraState>(state: S, target: CameraTarget):
 }
 
 /**
- * Recua a camera ate o pan que a abertura guardou.
+ * Recua a câmera até o pan que a abertura guardou.
  *
  * Limitado de novo porque o acervo pode ter mudado com o leitor aberto: um pan
- * de antes, fora dos limites de agora, poria a constelacao fora da tela.
+ * de antes, fora dos limites de agora, poria a constelação fora da tela.
  */
 export function closeReader<S extends CameraState>(
   state: S,

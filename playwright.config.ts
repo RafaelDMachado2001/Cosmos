@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Contra o build servido pelo Nginx de verdade, nao contra o Vite: 404 com
- * status real e pagina sem JavaScript so existem la.
+ * Contra o build servido pelo Nginx de verdade, não contra o Vite: 404 com
+ * status real e página sem JavaScript só existem lá.
  */
 export default defineConfig({
   testDir: 'e2e',

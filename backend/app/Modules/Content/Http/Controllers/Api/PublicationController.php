@@ -47,7 +47,7 @@ class PublicationController extends Controller
                 isset($input['q']) && trim((string) $input['q']) !== '',
                 fn (Builder $query) => $query->whereRaw(
                     'translation.search_vector @@ websearch_to_tsquery(?::regconfig, ?)',
-                    // O dicionario de cada idioma, como na coluna gerada.
+                    // O dicionário de cada idioma, como na coluna gerada.
                     [config('publications.dictionaries')[$locale], $input['q']]
                 )
             )
@@ -61,7 +61,7 @@ class PublicationController extends Controller
         $publications = $publications->take($limit);
 
         // Cortar sem avisar publicava metade do acervo em silencio. O prerender
-        // le `truncated` e prefere um build vermelho a um site pela metade.
+        // lê `truncated` e prefere um build vermelho a um site pela metade.
         return PublicationResource::collection($publications)->additional([
             'meta' => [
                 'count' => $publications->count(),
@@ -125,8 +125,8 @@ class PublicationController extends Controller
             })
             ->where('publications.status', Publication::STATUS_PUBLISHED)
             // Sem isto, "Publicado" com data futura aparecia na hora. A
-            // publicacao agendada so vira elegivel quando a data chega — ver
-            // o comando `publications:publish-scheduled`, que e quem nota a
+            // publicação agendada só vira elegível quando a data chega — ver
+            // o comando `publications:publish-scheduled`, que é quem nota a
             // mudanca e manda regenerar o site.
             ->where('publications.published_at', '<=', now());
     }
