@@ -7,8 +7,8 @@ import { placeStars } from './timeline';
 /**
  * Orçamento folgado de propósito.
  *
- * Não e benchmark: e trava contra regressão de ordem de grandeza, do tipo que a
- * busca linear em App.tsx era. Número apertado aqui vira teste intermitente em
+ * Não é benchmark: é trava contra regressão de ordem de grandeza, do tipo que a
+ * busca linear na Shell era. Número apertado aqui vira teste intermitente em
  * CI compartilhado.
  */
 function millis(work: () => void): number {
