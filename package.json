@@ -2,6 +2,10 @@
   "name": "rdm-labs-cosmos",
   "private": true,
   "version": "0.1.0",
+  "description": "A personal blog navigated as a temporal constellation: static-first React and Three.js, with a Laravel backend.",
+  "author": "Rafael Dorneles Machado",
+  "license": "MIT",
+  "homepage": "https://cosmos.rdmlabs.com.br",
   "type": "module",
   "scripts": {
     "predev": "vite-node scripts/check-env.ts",
