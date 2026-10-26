@@ -200,6 +200,9 @@ export function articleMeta(
       'og:locale': OG_LOCALE[locale],
       'og:locale:alternate': otherOgLocales(locale, locales),
       'article:published_time': article.publishedAt,
+      // Só quando houve edição depois de publicar: repetir a data de
+      // publicação não diz nada a quem lê a tag.
+      ...(isEdited(article) ? { 'article:modified_time': article.updatedAt } : {}),
       'article:section': article.categoryLabel,
       ...ogImageTags(site, articleOgCard(locale, article)),
     },
@@ -235,14 +238,10 @@ export function homeMeta(
 /**
  * O `Article` que vai no `<script type="application/ld+json">`.
  *
- * Só o artigo tem JSON-LD: a tela de entrada não é um documento indexável, é
- * uma porta. Descrevê-la como `Article` prometeria um texto que não existe.
+ * Só o artigo é um `Article`: a tela de entrada é uma porta, não um texto, e se
+ * apresenta como `WebSite` (ver `homeJsonLd`).
  */
-export function articleJsonLd(
-  site: MetaSite,
-  locale: Locale,
-  article: MetaArticle,
-): ArticleJsonLd {
+export function articleJsonLd(site: MetaSite, locale: Locale, article: MetaArticle): ArticleJsonLd {
   const url = absolute(site.origin, articlePath(locale, article.slug));
 
   return {
@@ -262,6 +261,13 @@ export function articleJsonLd(
     author: { '@type': 'Person', name: site.authorName },
     publisher: publisher(site),
   };
+}
+
+function isEdited(article: MetaArticle): article is MetaArticle & { readonly updatedAt: string } {
+  return (
+    article.updatedAt !== undefined &&
+    Date.parse(article.updatedAt) > Date.parse(article.publishedAt)
+  );
 }
 
 function publisher(site: MetaSite): JsonLdPublisher {
