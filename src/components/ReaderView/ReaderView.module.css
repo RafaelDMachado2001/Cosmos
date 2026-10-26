@@ -19,7 +19,7 @@
   /* Só opacity: `will-change: transform`, como o próprio transform, faria do
      overlay o contêiner dos `position: fixed` de dentro (ver useCosmosEngine). */
   will-change: opacity;
-  /* Reverte a nave do palco (App.module.css): ler texto com um cursor que
+  /* Reverte a nave do palco (Shell.module.css): ler texto com um cursor que
      não é de texto atrapalha mais do que ambienta. */
   cursor: auto;
 
