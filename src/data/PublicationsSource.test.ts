@@ -60,7 +60,7 @@ export function describePublicationsSource(name: string, create: () => Publicati
         expect(await source.list({ locale: 'pt', limit: 3 })).toHaveLength(3);
       });
 
-      it('pagina por janela temporal com before', async () => {
+      it('página por janela temporal com before', async () => {
         const all = await source.list({ locale: 'pt' });
         const cutoff = all[2]?.publishedAt;
         if (cutoff === undefined) throw new Error('acervo pequeno demais para o teste');
@@ -201,7 +201,7 @@ describe('createHttpSource — a lista', () => {
       }),
     )) as unknown as typeof fetch;
 
-  it('lanca quando a API diz que truncou, para o build nao publicar meio acervo', async () => {
+  it('lança quando a API diz que truncou, para o build não publicar meio acervo', async () => {
     const source = createHttpSource('http://api', truncatedFetch);
 
     await expect(source.list({ locale: 'pt' })).rejects.toThrow(/truncad/i);

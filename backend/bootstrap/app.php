@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // `throttle:api` so existe no grupo porque isto o ativa; o limiter
+        // `throttle:api` só existe no grupo porque isto o ativa; o limiter
         // 'api' e quem o define, em AppServiceProvider::boot().
         $middleware->throttleApi();
         // Sessão e CSRF nas rotas da API quando o pedido vem do site

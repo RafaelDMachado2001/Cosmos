@@ -31,9 +31,9 @@ export function useFrameLoop(onFrame: (deltaSeconds: number) => void, active = t
       try {
         callbackRef.current(delta);
       } catch (error) {
-        // Sem isto, uma excecao em QUALQUER ponto do quadro (3D, DOM, o que
-        // for) cancelava o proprio requestAnimationFrame seguinte e travava
-        // a aplicacao inteira pra sempre — enter, pan e fase, nao so o
+        // Sem isto, uma exceção em QUALQUER ponto do quadro (3D, DOM, o que
+        // for) cancelava o próprio requestAnimationFrame seguinte e travava
+        // a aplicação inteira pra sempre — enter, pan e fase, não só o
         // visual. Aconteceu de fato: Chromium headless sem GPU no CI.
         console.error('quadro falhou; continuando no próximo em vez de travar', error);
       }

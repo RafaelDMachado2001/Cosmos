@@ -1,58 +1,68 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Cosmos · backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The Laravel side of [Cosmos](../README.md): the public JSON API the site is built from, the
+admin panel and the RDM Studio editor, reader accounts, and the jobs that regenerate the site
+when something is published.
 
-## About Laravel
+Readers never reach this application. The site is static HTML on a CDN; the backend serves the
+author, the build that regenerates the site, and signed-in readers. If it goes down, the site
+keeps reading.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Laravel 13 on PHP 8.3, PostgreSQL 18, Filament 5 for the admin, Laravel Sanctum (SPA mode) and
+Socialite for reader accounts. In production it runs as a single FrankenPHP container on Cloud
+Run; locally, under Docker Compose with Nginx and PHP-FPM.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Layout
 
-## Learning Laravel
+| Path | What lives there |
+|---|---|
+| `app/Modules/Content/` | Publications, translations, drafts, media, the RDM Studio, site regeneration |
+| `app/Modules/Identity/` | Reader accounts, Google and GitHub sign-in, profile, data export and deletion |
+| `app/Modules/Activity/` | The append-only log of readers' domain actions |
+| `app/Http/Middleware/` | Platform concerns shared by every module: host boundary, edge verification, CORS, security headers |
+| `app/Filament/` | The admin panel and its Google sign-in, restricted to one allowlisted address |
+| `config/publications.php` | Locales, categories and search dictionaries, **generated** from `src/core/types.ts` |
+| `database/seeders/publications.json` | The seed archive, **generated** from `src/data/publications.ts` |
+| `deptrac.yaml` | The module boundaries, checked in CI |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+A module may import another module's events (`Identity/Events`) and contracts
+(`Identity/Contracts`), and nothing else. Platform code depends on no module. Deptrac fails the
+build on any other import.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Running it
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Everything runs in Docker from the repository root; PHP is not needed on the host.
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```sh
+docker compose --profile backend up -d db app queue scheduler web   # API, admin and Nginx on :8080
+docker compose --profile backend exec app php artisan migrate --seed
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The admin lives at `http://localhost:8080/admin`, the editor at `/admin/studio` (built with
+`npm run build:admin` from the root).
 
-## Contributing
+## Checks
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The same commands CI runs:
 
-## Code of Conduct
+```sh
+docker compose --profile backend exec -T app ./vendor/bin/pint --test
+docker compose --profile backend exec -T app ./vendor/bin/phpstan analyse --memory-limit=1G   # level 8
+docker compose --profile backend exec -T app ./vendor/bin/deptrac analyse
+docker compose --profile backend exec -T app php artisan test
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The suite runs against a real PostgreSQL, because search depends on generated `tsvector`
+columns with the `portuguese` and `english` dictionaries. `tests/TestCase.php` refuses to run
+unless the database name ends in `_test`, so `RefreshDatabase` can never wipe the development
+database.
 
-## Security Vulnerabilities
+## Production
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Production differs from Compose by environment variables, never by code. The variables that
+only exist in production are documented in `.env.production.example`, and the image refuses to
+start when one of them is missing (`php artisan env:assert-production`). The infrastructure and
+the cut-over steps are in [`infra/README.md`](../infra/README.md); the trade-offs, in
+[`docs/architecture.md`](../docs/architecture.md).

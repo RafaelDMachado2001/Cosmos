@@ -19,15 +19,15 @@ export default defineConfig({
     // Os módulos de `src/core/` são puros; o do prerender monta HTML por
     // string, sem DOM. Nada aqui precisa de navegador.
     environment: 'node',
-    // Os componentes sao a excecao: precisam de DOM, e so eles pagam por ele.
+    // Os componentes são a exceção: precisam de DOM, e só eles pagam por ele.
     // `src/admin/` e o RDM Studio — componentes também, pela mesma razão.
     environmentMatchGlobs: [
       ['src/components/**', 'jsdom'],
       ['src/admin/**', 'jsdom'],
     ],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'infra/**/*.test.ts'],
-    // O Vitest esvazia todo CSS importado, inclusive com `?raw`. O cartao de
-    // Open Graph le as cores deste arquivo como texto, e o teste precisa delas.
+    // O Vitest esvazia todo CSS importado, inclusive com `?raw`. O cartão de
+    // Open Graph lê as cores deste arquivo como texto, e o teste precisa delas.
     css: { include: [/src\/styles\/tokens\.css/] },
   },
 });

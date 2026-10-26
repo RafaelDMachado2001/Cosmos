@@ -1,9 +1,9 @@
 /**
- * A geometria da constelacao: faixa vertical, conectores, eixo do tempo, limites
- * de pan e janela visivel.
+ * A geometria da constelação: faixa vertical, conectores, eixo do tempo, limites
+ * de pan e janela visível.
  *
- * Tudo aqui parte de estrelas ja colocadas por `placeStars`; nada decide onde
- * uma estrela fica, so como o resto da cena se arranja em volta dela.
+ * Tudo aqui parte de estrelas já colocadas por `placeStars`; nada decide onde
+ * uma estrela fica, só como o resto da cena se arranja em volta dela.
  *
  * Modulo puro: sem DOM, sem React, sem Three.
  */
@@ -165,7 +165,7 @@ export function yearMarkers(
   const firstYear = new Date(first.timestamp).getUTCFullYear();
   const lastYear = new Date(last.timestamp).getUTCFullYear();
 
-  // O ano inicial ancora no mês da primeira publicação, não em janeiro: um
+  // O ano inicial âncora no mês da primeira publicação, não em janeiro: um
   // acervo que começa em outubro não pode abrir com nove meses de vazio.
   const start = firstMonthStart(stars);
   const markers: YearMarker[] = [];

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
-/** As estrelas da constelacao, nao as ancoras do StarIndex: so elas tem o rotulo longo. */
+/** As estrelas da constelação, não as âncoras do StarIndex: só elas tem o rótulo longo. */
 function stars(page: Page): Locator {
   return page.locator('a[aria-label*=" — "]');
 }
@@ -9,19 +9,19 @@ function stars(page: Page): Locator {
 async function enterCosmos(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: 'Role para atravessar' }).click();
   const star = stars(page).first();
-  // Clicavel so depois da travessia: antes disso a constelacao e `inert`.
+  // Clicável só depois da travessia: antes disso a constelação e `inert`.
   await expect(star).toBeVisible();
-  // O padrao de 5s do Playwright e menor que o proprio orcamento de quadro
-  // que essa transicao amortecida pode levar no Chromium headless sem GPU
-  // do GitHub Actions — o teste falhava aqui mesmo com a transicao correta,
-  // so mais lenta do que o limite padrao da asserção aguenta.
+  // O padrão de 5s do Playwright é menor que o próprio orçamento de quadro
+  // que essa transição amortecida pode levar no Chromium headless sem GPU
+  // do GitHub Actions — o teste falhava aqui mesmo com a transição correta,
+  // só mais lenta do que o limite padrão da asserção aguenta.
   await expect(page.locator('[inert] a[aria-label*=" — "]')).toHaveCount(0, { timeout: 30_000 });
   return star;
 }
 
 test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async ({ page }) => {
-  // O unico teste que atravessa entrar + abrir + fechar: tres transicoes
-  // amortecidas em sequencia. O timeout padrao de 30s e justo o bastante no
+  // O único teste que atravessa entrar + abrir + fechar: três transições
+  // amortecidas em sequência. O timeout padrão de 30s e justo o bastante no
   // hardware do GitHub Actions para sobrar tempo zero de folga.
   test.setTimeout(60_000);
 
@@ -34,18 +34,18 @@ test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async (
 
   await page.goBack();
   await expect(page).toHaveURL(/\/pt$/);
-  // Mesmo motivo do inert acima: o fechamento tambem e uma transicao
-  // amortecida, e o mesmo hardware lento ja fez essa asserção estourar o
-  // padrao de 5s em pelo menos uma execução real do CI.
+  // Mesmo motivo do inert acima: o fechamento também e uma transição
+  // amortecida, e o mesmo hardware lento já fez essa asserção estourar o
+  // padrão de 5s em pelo menos uma execução real do CI.
   await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30_000 });
 });
 
-test('um slug que nao existe responde 404 de verdade', async ({ page }) => {
+test('um slug que não existe responde 404 de verdade', async ({ page }) => {
   const response = await page.goto('/pt/publicacoes/nao-existe');
   expect(response?.status()).toBe(404);
 });
 
-test('o segmento do outro idioma nao vira segunda URL do mesmo artigo', async ({ page }) => {
+test('o segmento do outro idioma não vira segunda URL do mesmo artigo', async ({ page }) => {
   const response = await page.goto('/pt/publications/code-review-sem-atrito');
   expect(response?.status()).toBe(404);
 });

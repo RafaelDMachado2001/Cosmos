@@ -21,7 +21,7 @@ describe('assetRefs', () => {
 });
 
 describe('missingAssets', () => {
-  it('aponta o que o molde pede e o destino nao tem', () => {
+  it('aponta o que o molde pede e o destino não tem', () => {
     const existing = new Set(['assets/index-py1KIQ22.js', 'assets/style-9cYTb_PA.css']);
     expect(missingAssets(TEMPLATE, (path) => existing.has(path))).toEqual([
       'assets/index-D01KjhG2.js',

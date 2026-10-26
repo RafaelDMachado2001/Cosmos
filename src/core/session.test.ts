@@ -16,7 +16,7 @@ const api = {
 };
 
 describe('parseMember', () => {
-  it('le o perfil da API e descarta provedor desconhecido', () => {
+  it('lê o perfil da API e descarta provedor desconhecido', () => {
     expect(parseMember(api)).toEqual({
       id: 7,
       name: 'Ana',
@@ -28,7 +28,7 @@ describe('parseMember', () => {
     });
   });
 
-  it('recusa o que nao tem o formato', () => {
+  it('recusa o que não tem o formato', () => {
     expect(parseMember(null)).toBeNull();
     expect(parseMember({ data: { ...api.data, id: '7' } })).toBeNull();
     expect(parseMember({ data: { ...api.data, locale: 'fr' } })).toBeNull();
@@ -43,7 +43,7 @@ describe('parseMember', () => {
 });
 
 describe('sessionOf', () => {
-  it('sem membro e anonimo, com membro e member', () => {
+  it('sem membro e anônimo, com membro e member', () => {
     expect(sessionOf(null)).toBe(ANONYMOUS);
     const member = parseMember(api);
     expect(member).not.toBeNull();
@@ -64,7 +64,7 @@ describe('loginHref', () => {
 });
 
 describe('loginOutcome', () => {
-  it('le o motivo que a API acrescenta', () => {
+  it('lê o motivo que a API acrescenta', () => {
     expect(loginOutcome('?login=unverified')).toBe('unverified');
     expect(loginOutcome('?a=1&login=failed')).toBe('failed');
   });
@@ -80,7 +80,7 @@ describe('xsrfToken', () => {
     expect(xsrfToken('a=1; XSRF-TOKEN=eyJ%3D%3D; b=2')).toBe('eyJ==');
   });
 
-  it('sem o cookie, ou com valor quebrado, e null', () => {
+  it('sem o cookie, ou com valor quebrado, é null', () => {
     expect(xsrfToken('a=1')).toBeNull();
     expect(xsrfToken('XSRF-TOKEN=%E0%A4%A')).toBeNull();
   });

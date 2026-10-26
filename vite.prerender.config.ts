@@ -31,9 +31,10 @@ export default defineConfig(({ mode }) => {
    * nomes diferentes, e fingir o contrário só adiaria o erro para o deploy.
    */
   const configured = env.PRERENDER_API_URL ?? env.VITE_API_URL;
-  const apiUrl = configured === undefined || configured === '' || configured === '/'
-    ? null
-    : configured.replace(/\/+$/, '');
+  const apiUrl =
+    configured === undefined || configured === '' || configured === '/'
+      ? null
+      : configured.replace(/\/+$/, '');
 
   return {
     plugins: [react()],
@@ -54,6 +55,10 @@ export default defineConfig(({ mode }) => {
       // que são as únicas que usam esse CSS — sairiam sem estilo.
       ssrEmitAssets: true,
       cssCodeSplit: false,
+      // Este CSS vai embutido em cada página gravada. O build de SSR não
+      // minifica por padrão, e os comentários das folhas de estilo iam parar
+      // no HTML servido.
+      cssMinify: true,
       target: 'node20',
       rollupOptions: {
         input: {

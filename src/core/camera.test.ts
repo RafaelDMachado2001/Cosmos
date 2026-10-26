@@ -16,7 +16,7 @@ function base(overrides: Partial<CameraState> = {}): CameraState {
   };
 }
 
-describe('camera', () => {
+describe('câmera', () => {
   it('fechar o leitor devolve exatamente o pan de onde a estrela foi aberta', () => {
     const bounds = { min: -1000, max: 1000 };
     const aberto = openStar(base({ pan: 120 }), { pan: 480, x: 1100 });
@@ -25,19 +25,19 @@ describe('camera', () => {
     expect(fechado.pan).toBe(120);
   });
 
-  it('nao devolve um pan fora dos limites quando o acervo encolheu', () => {
+  it('não devolve um pan fora dos limites quando o acervo encolheu', () => {
     const bounds = { min: -100, max: 100 };
     expect(closeReader(base({ pan: 0 }), 5000, bounds).pan).toBe(100);
   });
 
-  it('fechar sem origem guardada nao move a camera', () => {
+  it('fechar sem origem guardada não move a câmera', () => {
     const bounds = { min: -1000, max: 1000 };
     expect(closeReader(base({ pan: 300, velocity: 4 }), null, bounds)).toEqual(
       base({ pan: 300, velocity: 0 }),
     );
   });
 
-  it('abrir mede o foco depois do pan limitado, nao no meio da tela', () => {
+  it('abrir mede o foco depois do pan limitado, não no meio da tela', () => {
     const aberto = openStar(base({ pan: 0, enter: 0, velocity: 3 }), { pan: 480, x: 1100 });
 
     expect(aberto.pan).toBe(480);
@@ -46,7 +46,7 @@ describe('camera', () => {
     expect(aberto.velocity).toBe(0);
   });
 
-  it('abrir mexe so no alvo: a suavizacao continua de onde estava', () => {
+  it('abrir mexe só no alvo: a suavização continua de onde estava', () => {
     const aberto = openStar(base({ pan: 0, panS: 10 }), { pan: 480, x: 1100 });
     expect(aberto.panS).toBe(10);
   });
@@ -58,7 +58,7 @@ describe('camera', () => {
     expect(chegou.focusX).toBe(620);
   });
 
-  it('a chegada sem estrela so atravessa o portal', () => {
+  it('a chegada sem estrela só atravessa o portal', () => {
     const chegou = jumpTo(base({ enter: 0, enterS: 0, pan: 50, panS: 50 }), null);
     expect(chegou).toEqual(base({ pan: 50, panS: 50 }));
   });
@@ -70,7 +70,7 @@ describe('camera', () => {
     );
   });
 
-  it('deslizar ate a estrela muda o alvo sem abrir nada', () => {
+  it('deslizar até a estrela muda o alvo sem abrir nada', () => {
     const deslizou = slideTo(base({ enter: 0, pan: 0, velocity: 5, zoomS: 0 }), 700);
     expect(deslizou).toEqual(base({ enter: 1, pan: 700, velocity: 0 }));
   });

@@ -25,8 +25,8 @@ class ContentServiceProvider extends ServiceProvider
     {
         Publication::observe(PublicationObserver::class);
 
-        // A traducao nao passa pelo observer de Publication: salvar so o
-        // texto, sem tocar na publicacao, nao dispara `saved` nela.
+        // A tradução não passa pelo observer de Publication: salvar só o
+        // texto, sem tocar na publicação, não dispara `saved` nela.
         PublicationTranslation::saved(static fn () => SiteRebuild::request());
         PublicationTranslation::deleted(static fn () => SiteRebuild::request());
 
