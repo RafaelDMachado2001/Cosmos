@@ -16,6 +16,11 @@ use Symfony\Component\HttpFoundation\Response;
  * origem `*` com credenciais faria o pacote refletir qualquer origem — e
  * qualquer site leria o perfil de quem está logado. Por isso as duas
  * políticas são separadas, e esta só vale para GET simples, sem preflight.
+ *
+ * Global, não de rota: um 404 de rota inexistente ou um 429 do throttle do
+ * grupo `api` nunca passariam por um middleware de rota, e o navegador, sem o
+ * cabeçalho, mostra só "Failed to fetch" no lugar do status. Os caminhos da
+ * conta ficam com o HandleCors.
  */
 class PublicCors
 {
@@ -23,7 +28,12 @@ class PublicCors
     {
         $response = $next($request);
 
-        $response->headers->set('Access-Control-Allow-Origin', '*');
+        /** @var list<string> $credentialed */
+        $credentialed = config('cors.paths', []);
+
+        if ($request->is('api/*') && ! $request->is(...$credentialed)) {
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+        }
 
         return $response;
     }

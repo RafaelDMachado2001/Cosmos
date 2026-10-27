@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\HostBoundary;
+use App\Http\Middleware\PublicCors;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyEdge;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // (sanctum.stateful); o resto da API continua sem sessão.
         $middleware->statefulApi();
         $middleware->append(SecurityHeaders::class);
+        // Fora do grupo `api` de propósito: também o 404 sem rota e o 429.
+        $middleware->append(PublicCors::class);
         // Em produção, a borda é o Worker da Cloudflare: o host original chega
         // em X-Forwarded-Host. Confiar em qualquer proxy é seguro só porque
         // VerifyEdge recusa, antes, o que não veio do Worker.

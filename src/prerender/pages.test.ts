@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ARCHIVE_LIMIT, prerenderPages } from './pages';
 import { PUBLICATIONS } from '../data/publications';
+import { parseSnapshot } from '../core/snapshot';
 import { LOCALES } from '../core/types';
 import type { PublicationsSource } from '../data/PublicationsSource';
 import { SITE } from '../site';
@@ -86,6 +87,13 @@ describe('prerenderPages', () => {
     for (const publication of PUBLICATIONS) {
       expect(output.rss.pt).toContain(`/pt/publicacoes/${publication.slug}</link>`);
       expect(output.rss.en).toContain(`/en/publications/${publication.slug}</link>`);
+    }
+  });
+
+  it('traz o snapshot de cada idioma, legível pelo cliente e na mesma ordem da lista', async () => {
+    for (const locale of LOCALES) {
+      const parsed = parseSnapshot(JSON.parse(output.snapshot[locale]));
+      expect(parsed).toEqual(await createStaticSource(PUBLICATIONS).list({ locale }));
     }
   });
 

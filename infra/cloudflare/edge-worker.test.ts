@@ -151,6 +151,18 @@ describe('borda: o que não chega ao Cloud Run', () => {
     }
   });
 
+  it('o 503 da origem na leitura pública sai com CORS aberto', async () => {
+    const t = deps(() => new Response('Service Unavailable', { status: 503 }));
+    const response = await handle(
+      new Request('https://api.rdmlabs.com.br/api/publications?locale=pt'),
+      ENV,
+      t.ctx,
+      t.deps,
+    );
+    expect(response.status).toBe(503);
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+  });
+
   it('a conta do leitor e as escritas passam direto, com cookie', async () => {
     const t = deps();
 

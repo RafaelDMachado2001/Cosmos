@@ -13,6 +13,9 @@ import { matches } from '../core/filter';
 import type { Category, Locale, Publication, PublicationSummary } from '../core/types';
 import { LOCALES, isLocale } from '../core/types';
 
+import { DEFAULT_RETRY, fetchWithRetry } from './fetchWithRetry';
+import type { RetryPolicy } from './fetchWithRetry';
+
 export interface ListQuery {
   readonly locale: Locale;
   readonly category?: Category | 'all';
@@ -198,6 +201,8 @@ export interface HttpSourceOptions {
    * passa aqui.
    */
   readonly internalToken?: string | null;
+  /** Prazo e novas tentativas de cada chamada (`fetchWithRetry`). */
+  readonly retry?: RetryPolicy;
 }
 
 export function createHttpSource(
@@ -210,6 +215,7 @@ export function createHttpSource(
     options.internalToken === undefined || options.internalToken === null
       ? {}
       : { 'X-Internal-Token': options.internalToken };
+  const retry = options.retry ?? DEFAULT_RETRY;
 
   /**
    * Um erro de rede precisa chegar como erro.
@@ -219,7 +225,7 @@ export function createHttpSource(
    * uma busca que a pessoa não fez. Ver `src/core/collection.ts`.
    */
   async function json<T>(url: string): Promise<T> {
-    const response = await fetchImpl(url, { headers });
+    const response = await fetchWithRetry(fetchImpl, url, { headers }, retry);
     if (!response.ok) throw new Error(`${url} respondeu ${String(response.status)}`);
     return (await response.json()) as T;
   }
@@ -256,7 +262,7 @@ export function createHttpSource(
 
     async get(slug, locale) {
       const url = `${root}/${encodeURIComponent(slug)}?locale=${locale}`;
-      const response = await fetchImpl(url, { headers });
+      const response = await fetchWithRetry(fetchImpl, url, { headers }, retry);
       // 404 é ausência — o slug não existe — e quem chama decide o que fazer.
       // Qualquer outro status é falha, e não pode virar "publicação sem texto".
       if (response.status === 404) return null;

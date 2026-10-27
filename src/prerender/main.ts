@@ -20,6 +20,7 @@ import { dirname, join } from 'node:path';
 import { ogImagePath } from '../core/og';
 import type { OgCard } from '../core/og';
 import { stalePages } from '../core/prune';
+import { snapshotPath } from '../core/snapshot';
 import { articlePath, homePath } from '../core/routing';
 import { DEFAULT_LOCALE, LOCALES } from '../core/types';
 import { PUBLICATIONS } from '../data/publications';
@@ -224,7 +225,7 @@ async function main(): Promise<void> {
       : createHttpSource(apiUrl, fetch, {
           internalToken: process.env.PRERENDER_INTERNAL_TOKEN ?? null,
         });
-  const { pages, notFound, sitemap, robots, rss } = await prerenderPages(source);
+  const { pages, notFound, sitemap, robots, rss, snapshot } = await prerenderPages(source);
 
   // Os cartões antes das páginas: nenhum HTML gravado aponta para um
   // `og:image` que ainda não existe.
@@ -258,13 +259,17 @@ async function main(): Promise<void> {
   for (const locale of LOCALES) {
     await write(join(DIST, locale, 'rss.xml'), rss[locale]);
   }
+  // O mesmo caminho que o cliente pede (`snapshotPath`), sem a barra inicial.
+  for (const locale of LOCALES) {
+    await write(join(DIST, snapshotPath(locale).slice(1)), snapshot[locale]);
+  }
 
   // Depois de gravar tudo, nunca antes: o que fica no ar durante a passada e o
   // site anterior inteiro, e o que sai é só o que o acervo não contém mais.
   const pruned = [...(await pruneArticles(pages)), ...(await pruneOgImages(ogPaths.wanted))];
 
   console.log(
-    `prerender: ${pages.length} páginas, 404.html, sitemap.xml, robots.txt e rss.xml por idioma em ${DIST}/; ` +
+    `prerender: ${pages.length} páginas, 404.html, sitemap.xml, robots.txt, rss.xml e snapshot por idioma em ${DIST}/; ` +
       `${ogPaths.drawn} cartões desenhados, ${ogPaths.wanted.size - ogPaths.drawn} reaproveitados` +
       (pruned.length > 0 ? `; podados: ${pruned.join(', ')}` : ''),
   );
