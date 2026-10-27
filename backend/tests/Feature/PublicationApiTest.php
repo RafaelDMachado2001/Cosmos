@@ -83,6 +83,37 @@ class PublicationApiTest extends TestCase
         $this->getJson('/api/publications/rascunho-secreto')->assertNotFound();
     }
 
+    public function test_nenhum_parametro_da_query_abre_rascunho_ou_agendada(): void
+    {
+        $this->publish(
+            'rascunho-secreto',
+            'artigo',
+            '2026-01-01T12:00:00Z',
+            ['Rascunho', 'Resumo', 'Corpo'],
+            ['Draft', 'Summary', 'Body'],
+            Publication::STATUS_DRAFT
+        );
+        $this->publish(
+            'agendada-secreta',
+            'artigo',
+            now()->addMonth()->toIso8601String(),
+            ['Agendada', 'Resumo', 'Corpo'],
+            ['Scheduled', 'Summary', 'Body'],
+        );
+
+        // O filtro de status mora na query base do controller, não num
+        // parâmetro: o que a URL traz não pode desligá-lo.
+        foreach (['status=draft', 'status[]=draft&status[]=published', 'include_drafts=1', 'preview=1', 'status=scheduled'] as $query) {
+            $response = $this->getJson("/api/publications?{$query}");
+            $slugs = $response->status() === 200 ? array_column($response->json('data'), 'slug') : [];
+            $this->assertNotContains('rascunho-secreto', $slugs, $query);
+            $this->assertNotContains('agendada-secreta', $slugs, $query);
+
+            $this->getJson("/api/publications/rascunho-secreto?{$query}")->assertNotFound();
+            $this->getJson("/api/publications/agendada-secreta?{$query}")->assertNotFound();
+        }
+    }
+
     public function test_o_idioma_troca_o_conteudo(): void
     {
         $pt = $this->getJson('/api/publications?locale=pt')->json('data.0');
