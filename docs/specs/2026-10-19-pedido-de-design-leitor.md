@@ -1,9 +1,8 @@
 # Pedido de design: o leitor com conta (D4)
 
 O backend da etapa 2 está pronto e em produção: login com Google e GitHub, perfil, sair, exportar
-os dados e apagar a conta. Falta a interface no site, e o `CLAUDE.md` não deixa inventar cor,
-fonte, espaçamento ou componente fora de um handoff. Este documento é o que levar para o design.
-O pacote que voltar entra em `docs/design/leitor/`, como os outros.
+os dados e apagar a conta. Falta a interface no site, e a regra do projeto é não inventar cor,
+fonte, espaçamento ou componente fora de um handoff de design. Este documento é o que levar para o design.
 
 ## O que precisa existir
 

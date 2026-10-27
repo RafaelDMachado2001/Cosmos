@@ -6,21 +6,11 @@ dist-ssr
 .DS_Store
 *.log
 .env
-# As specs, os planos e o documento de arquitetura são a exceção: o desenho
-# aprovado é versionado junto do código que ele governa. O resto de /docs
-# continua fora. A cadeia precisa ser
-# re-incluída diretório a diretório — sob um pai excluído o Git não desce, e uma
-# negação direta em /docs/superpowers/ não teria efeito nenhum.
+# O documento de arquitetura e as specs são a exceção: o desenho aprovado é
+# versionado junto do código que ele governa. O resto de /docs é material local.
 /docs/*
 !/docs/architecture.md
-!/docs/superpowers/
-/docs/superpowers/*
-!/docs/superpowers/specs/
-!/docs/superpowers/plans/
-# Os handoffs de design entram pelo README e pelo prompt; o protótipo (HTML do
-# Claude Design + o runtime da ferramenta) é referência local, não código.
-!/docs/design/
-/docs/design/*/prototype/
+!/docs/specs/
 # backend/ é versionado desde a fase 8. O que o Laravel gera — vendor, .env,
 # storage e os assets que o Filament publica — está em backend/.gitignore.
 
