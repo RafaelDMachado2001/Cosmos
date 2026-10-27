@@ -1,6 +1,6 @@
 import styles from './CategoryPanel.module.css';
+import { categoryRows } from '../../core/filter';
 import type { CategoryCounts } from '../../core/filter';
-import { CATEGORIES } from '../../core/types';
 import type { Category } from '../../core/types';
 import { useLocale } from '../../i18n/useLocale';
 
@@ -20,7 +20,7 @@ export interface CategoryPanelProps {
  */
 export function CategoryPanel({ open, counts, active, onPick }: CategoryPanelProps) {
   const { t } = useLocale();
-  const rows: readonly (Category | 'all')[] = ['all', ...CATEGORIES];
+  const rows = categoryRows(counts, active);
 
   return (
     <div

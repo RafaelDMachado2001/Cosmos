@@ -64,13 +64,27 @@ export function filterStars(
 
 export type CategoryCounts = Record<Category | 'all', number>;
 
-/** Contagens para o painel de categorias. Categoria sem itens aparece zerada,
- *  não some: sumir mudaria o layout do painel a cada publicação. */
+/** Contagens do acervo inteiro para o painel de categorias. */
 export function countByCategory(stars: readonly SearchableStar[]): CategoryCounts {
   const counts = { all: stars.length } as CategoryCounts;
   for (const category of CATEGORIES) counts[category] = 0;
   for (const star of stars) counts[star.category] += 1;
   return counts;
+}
+
+/**
+ * As linhas do painel: "Tudo" e as categorias que têm o que filtrar.
+ *
+ * Uma categoria zerada era um filtro que só apagava a constelação inteira
+ * ("Projeto 0"). A exceção é a ativa: se ela zerar com o painel aberto (o
+ * acervo da API trocando o do snapshot), sumir com ela tiraria o único botão
+ * que desfaz o filtro.
+ */
+export function categoryRows(
+  counts: CategoryCounts,
+  active: Category | 'all',
+): readonly (Category | 'all')[] {
+  return ['all', ...CATEGORIES.filter((category) => counts[category] > 0 || category === active)];
 }
 
 /**
