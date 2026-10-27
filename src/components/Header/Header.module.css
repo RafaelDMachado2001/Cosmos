@@ -99,15 +99,55 @@
   flex: 1 1 auto;
 }
 
+.navIcon {
+  display: none;
+  width: 16px;
+  height: 16px;
+}
+
 /**
- * O menu fica invisível no hero, mas continuava ocupando ~290px no flex e
- * empurrava o seletor de idioma para fora da tela em telas estreitas.
- * Abaixo deste ponto ele sai do fluxo; a fase 3 dá a ele um tratamento
- * próprio de tela estreita, como o protótipo faz a partir de 1120px.
+ * Tela estreita. O menu inteiro sumia daqui para baixo, e com ele o filtro
+ * de categorias: no tablet e no celular não havia como filtrar. Fica só
+ * Categorias — o INÍCIO repete a marca, que já volta ao início — e, no hero,
+ * nada: invisível, o menu ainda ocupava espaço e empurrava o idioma para fora.
  */
 @media (max-width: 900px) {
-  .nav {
+  .nav[data-visible='false'],
+  .navButton[data-role='home'] {
     display: none;
+  }
+}
+
+/**
+ * Celular: no cosmos a marca vira só o ponto (o nome continua para o leitor
+ * de tela) e Categorias vira ícone. Sem isso a busca ficava com ~70px, menos
+ * que o próprio placeholder.
+ */
+@media (max-width: 560px) {
+  .header[data-phase='cosmos'] .brandText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .header[data-phase='cosmos'] .brand {
+    padding: 13px;
+  }
+
+  .navText {
+    display: none;
+  }
+
+  .navIcon {
+    display: block;
+  }
+
+  .navButton {
+    display: flex;
+    padding: 6px;
   }
 }
 
