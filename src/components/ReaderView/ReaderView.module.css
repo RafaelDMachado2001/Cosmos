@@ -34,7 +34,9 @@
   /* O respiro lateral da coluna: o mesmo dos dois lados, medido até a
      borda da tela — o X fica por cima, não reserva espaço. */
   --reading-gutter: clamp(32px, 5vw, 96px);
-  --reading-column: 68ch;
+  /* A coluna ocupa a área do artigo até 1180px. Estreitá-la a 68ch deixava
+     metade da tela vazia num monitor largo e o texto espremido no meio. */
+  --reading-column: 1180px;
 }
 
 /* --- Painel da esquerda --------------------------------------------------
@@ -369,17 +371,16 @@
    não ocupa espaço (margem negativa do mesmo tamanho).
 
    Sob a coluna de texto o campo quase some: estrela cintilando atrás de uma
-   linha compete com a leitura. A máscara usa a mesma medida de `.inner`
-   (por isso o mesmo font-size, de que o `ch` depende) e deixa as estrelas
-   nas margens. */
+   linha compete com a leitura. A máscara usa a mesma medida de `.inner` —
+   a coluna, ou a largura menos o respiro quando a tela é mais estreita — e
+   deixa as estrelas nas margens. */
 .starfield {
   position: sticky;
   top: 0;
   height: 100vh;
   margin-bottom: -100vh;
   pointer-events: none;
-  font-size: var(--reading-size);
-  --text-half: calc(var(--reading-column) / 2);
+  --text-half: min(var(--reading-column) / 2, 50% - var(--reading-gutter));
   mask-image: linear-gradient(
     90deg,
     #000000 calc(50% - var(--text-half) - 64px),
@@ -389,8 +390,6 @@
   );
 }
 
-/* 68ch na fonte do corpo: de 60 a 75 caracteres por linha. Com 1180px
-   cabiam ~120, e o olho se perdia na volta de cada linha. */
 .inner {
   position: relative;
   z-index: 1;
