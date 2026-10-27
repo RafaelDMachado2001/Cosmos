@@ -6,11 +6,10 @@ dist-ssr
 .DS_Store
 *.log
 .env
-# O documento de arquitetura e as specs são a exceção: o desenho aprovado é
-# versionado junto do código que ele governa. O resto de /docs é material local.
+# O documento de arquitetura é a exceção: é versionado junto do código que ele
+# descreve. O resto de /docs é material local.
 /docs/*
 !/docs/architecture.md
-!/docs/specs/
 # backend/ é versionado desde a fase 8. O que o Laravel gera — vendor, .env,
 # storage e os assets que o Filament publica — está em backend/.gitignore.
 
