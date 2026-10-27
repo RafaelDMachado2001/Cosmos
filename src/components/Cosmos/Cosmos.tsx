@@ -9,6 +9,7 @@ import {
   AXIS_PCT,
   connectors,
   monthMarkers,
+  occludedMonths,
   resolveBand,
   strandExtent,
   visibleRange,
@@ -88,6 +89,10 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   const links = useMemo(() => connectors(stars, band), [stars, band]);
   const years = useMemo(() => yearMarkers(stars), [stars]);
   const months = useMemo(() => monthMarkers(stars), [stars]);
+  const hiddenMonths = useMemo(
+    () => occludedMonths(months, stars, band, viewport.height * AXIS_PCT),
+    [months, stars, band, viewport.height],
+  );
   const { locale } = useLocale();
 
   // Acima do limiar, monta só a janela. Abaixo dele, content-visibility já
@@ -178,7 +183,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             data-active={marker.hasPublication}
             aria-hidden="true"
           >
-            {marker.withYear
+            {hiddenMonths.has(marker.key) ? null : marker.withYear
               ? monthYearLabel(marker.timestamp, locale)
               : monthLabel(marker.timestamp, locale)}
           </div>

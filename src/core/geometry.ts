@@ -246,6 +246,58 @@ export function monthMarkers(
   return markers;
 }
 
+/**
+ * A caixa do rótulo de mês, em mono de 11px com `--tracking-meta` (0.22em):
+ * 0.6em de avanço + 0.22em de tracking dá ~9px por caractere, mais os 8px de
+ * recuo do filete. A altura cobre o recuo de janeiro (16px) e a linha.
+ */
+const MONTH_LABEL = { padPx: 8, charPx: 9, heightPx: 32 } as const;
+
+/** Até onde a estrela chega acima do centro: metade do núcleo em destaque. */
+const STAR_REACH_ABOVE_PX = 22;
+
+/** Meia largura do rótulo da estrela (`--star-label-width` de 180px). */
+const STAR_CAPTION_HALF_PX = 90;
+
+/** Folga entre o rótulo de mês e o de uma estrela. */
+const LABEL_CLEARANCE_PX = 8;
+
+/**
+ * Os meses cujo rótulo cairia sob uma estrela ou sob o rótulo dela.
+ *
+ * A estrela perto do eixo desenhava a própria data (`OUT 2026`) em cima da do
+ * mês, que diz o mesmo. Quem cede é o mês: o filete continua, só o texto some,
+ * e a data da estrela já cobre aquele trecho do eixo.
+ */
+export function occludedMonths(
+  markers: readonly MonthMarker[],
+  stars: readonly PlacedStar[],
+  band: Band,
+  axisPx: number,
+): ReadonlySet<string> {
+  const hidden = new Set<string>();
+  const labelTop = axisPx - LABEL_CLEARANCE_PX;
+  const labelBottom = axisPx + MONTH_LABEL.heightPx + LABEL_CLEARANCE_PX;
+
+  for (const marker of markers) {
+    const chars = marker.withYear ? 8 : 3;
+    const left = marker.x - LABEL_CLEARANCE_PX;
+    const right = marker.x + MONTH_LABEL.padPx + chars * MONTH_LABEL.charPx + LABEL_CLEARANCE_PX;
+
+    const covered = stars.some((star) => {
+      const y = yPx(star, band);
+      return (
+        star.x + STAR_CAPTION_HALF_PX > left &&
+        star.x - STAR_CAPTION_HALF_PX < right &&
+        y + CAPTION_BELOW_PX > labelTop &&
+        y - STAR_REACH_ABOVE_PX < labelBottom
+      );
+    });
+    if (covered) hidden.add(marker.key);
+  }
+  return hidden;
+}
+
 // ---------------------------------------------------------------------------
 // Extensão da faixa e limites de pan
 // ---------------------------------------------------------------------------

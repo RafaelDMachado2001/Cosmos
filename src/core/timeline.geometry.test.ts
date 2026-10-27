@@ -4,6 +4,7 @@ import {
   CAPTION_BELOW_PX,
   connectors,
   monthMarkers,
+  occludedMonths,
   panBounds,
   panBucket,
   panForStar,
@@ -220,6 +221,35 @@ describe('monthMarkers', () => {
       expect(marker.x).toBeCloseTo(xAtTime(stars, Date.UTC(marker.year, marker.month, 1)), 9);
     }
     expect(monthMarkers([])).toEqual([]);
+  });
+});
+
+describe('occludedMonths', () => {
+  const stars = placeStars([
+    { slug: 'a', publishedAt: '2024-03-10T12:00:00.000Z', category: 'artigo' },
+    { slug: 'b', publishedAt: '2025-02-01T12:00:00.000Z', category: 'artigo' },
+  ]);
+  const months = monthMarkers(stars);
+  const axis = 500;
+
+  it('esconde o mês sob uma estrela assentada no eixo, e só os vizinhos dela', () => {
+    // A faixa reduzida ao eixo: as duas estrelas pendem o rótulo sobre ele.
+    const hidden = occludedMonths(months, stars, { topPx: axis, bottomPx: axis }, axis);
+
+    expect(hidden.has('2024-03')).toBe(true);
+    expect(hidden.has('2025-02')).toBe(true);
+    // O miolo do ano, longe das duas, continua com rótulo.
+    expect(hidden.has('2024-08')).toBe(false);
+    // Nenhum mês escondido está a mais de um rótulo de distância de uma estrela.
+    for (const marker of months.filter((m) => hidden.has(m.key))) {
+      expect(Math.min(...stars.map((s) => Math.abs(s.x - marker.x)))).toBeLessThan(90 + 80 + 16);
+    }
+  });
+
+  it('estrelas longe do eixo, acima ou abaixo, não escondem nada', () => {
+    expect(occludedMonths(months, stars, { topPx: 100, bottomPx: 100 }, axis).size).toBe(0);
+    // Abaixo: o núcleo começa depois do rótulo de mês e da folga.
+    expect(occludedMonths(months, stars, { topPx: axis + 80, bottomPx: axis + 80 }, axis).size).toBe(0);
   });
 });
 
