@@ -425,7 +425,7 @@ export function Shell({ route }: { route: Route }) {
     };
   }, [reader, article, dateLabel, t]);
 
-  usePageHead(reader, article, locale, t);
+  usePageHead(reader, article, locale, t, summaries);
 
   /**
    * Se a travessia partiu de um botão do hero com o foco nele.
@@ -571,6 +571,7 @@ export function Shell({ route }: { route: Route }) {
               enterCosmos(true);
             }}
             active={engine.phase === 'hero'}
+            heading={readerCard === null}
           />
           <StarIndex items={summaries} label={t.star.indexLabel} hrefFor={hrefFor} />
         </main>

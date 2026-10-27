@@ -12,7 +12,7 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'pt';
 
 /** A etiqueta BCP-47 de cada idioma: o `lang` do documento e o `inLanguage` do JSON-LD. */
-export const LOCALE_TAG: Record<Locale, string> = { pt: 'pt-BR', en: 'en' };
+export const LOCALE_TAG: Record<Locale, string> = { pt: 'pt-BR', en: 'en-GB' };
 
 /**
  * A mesma coisa na forma que o Open Graph exige.

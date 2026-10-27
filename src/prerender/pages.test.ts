@@ -51,20 +51,35 @@ describe('prerenderPages', () => {
     }
   });
 
+  it('a lista estática traz resumo, categoria e data em <time>, e o artigo também data em <time>', () => {
+    const home = at('/pt')?.body ?? '';
+    expect(home).toContain('Comentar o código, não a pessoa.');
+    // O React grava `dateTime`; atributo de HTML não diferencia caixa.
+    expect(home).toMatch(/Rotina · <time datetime="2025-09-12T[^"]+">SET 2025<\/time>/i);
+    const article = at('/pt/publicacoes/code-review-sem-atrito')?.body ?? '';
+    expect(article.match(/<time datetime=/gi)?.length).toBe(PUBLICATIONS.length + 1);
+  });
+
   it('o cabeçalho canoniza a própria rota', () => {
     expect(at('/en/publications/code-review-sem-atrito')?.head).toContain(
       `rel="canonical" data-head href="${SITE.origin}/en/publications/code-review-sem-atrito"`,
     );
   });
 
-  it('o artigo traz o Article em JSON-LD, a home o WebSite', () => {
-    expect(at('/pt/publicacoes/code-review-sem-atrito')?.head).toContain('"@type":"Article"');
-    expect(at('/pt')?.head).toContain('"@type":"WebSite"');
+  it('o artigo traz o BlogPosting e o breadcrumb em JSON-LD, a home o WebSite e o Blog', () => {
+    const article = at('/pt/publicacoes/code-review-sem-atrito')?.head ?? '';
+    expect(article).toContain('"@type":"BlogPosting"');
+    expect(article).toContain('"@type":"BreadcrumbList"');
+    expect(article).toMatch(/"wordCount":\d+/);
+    const home = at('/pt')?.head ?? '';
+    expect(home).toContain('"@type":"WebSite"');
+    expect(home.match(/"@type":"BlogPosting"/g)).toHaveLength(PUBLICATIONS.length);
   });
 
   it('declara o idioma do documento', () => {
     expect(at('/pt')?.lang).toBe('pt-BR');
-    expect(at('/en')?.lang).toBe('en');
+    // en-GB, como o og:locale (en_GB) e o formato das datas.
+    expect(at('/en')?.lang).toBe('en-GB');
   });
 
   it('escapa o que vai para o HTML', () => {

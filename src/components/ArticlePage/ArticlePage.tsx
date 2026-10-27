@@ -1,5 +1,7 @@
 import styles from './ArticlePage.module.css';
 import { ArticleBody } from '../ArticleBody/ArticleBody';
+import { ArticleIndex } from '../ArticleIndex/ArticleIndex';
+import type { ArticleLink } from '../ArticleIndex/ArticleIndex';
 import { ArticleTags } from '../ArticleTags/ArticleTags';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
 import { parseBlocks } from '../../core/blocks';
@@ -7,15 +9,12 @@ import { readingMinutes } from '../../core/readingTime';
 import type { Category } from '../../core/types';
 import { useLocale } from '../../i18n/useLocale';
 
-export interface ArticleLink {
-  readonly href: string;
-  readonly title: string;
-}
-
 export interface ArticlePageProps {
   readonly category: Category;
   readonly categoryLabel: string;
   readonly dateLabel: string;
+  /** ISO 8601, para o `datetime` da data. */
+  readonly publishedAt: string;
   readonly title: string;
   readonly summary: string;
   /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
@@ -51,6 +50,7 @@ export function ArticlePage({
   category,
   categoryLabel,
   dateLabel,
+  publishedAt,
   title,
   summary,
   body,
@@ -87,7 +87,7 @@ export function ArticlePage({
         <p className={styles.meta}>
           {categoryLabel}
           <span className={styles.metaDate}>
-            / {dateLabel} · {minutes} {t.reader.minutes}
+            / <time dateTime={publishedAt}>{dateLabel}</time> · {minutes} {t.reader.minutes}
           </span>
         </p>
         <h1 className={styles.title}>{title}</h1>
@@ -108,16 +108,7 @@ export function ArticlePage({
         O acervo inteiro, como no `StarIndex`: sem ele cada artigo seria uma
         folha solta, alcançável só por quem já sabe a URL.
       */}
-      <nav className={styles.index} aria-label={t.star.indexLabel}>
-        <h2 className={styles.indexTitle}>{t.star.indexLabel}</h2>
-        <ul>
-          {index.map((item) => (
-            <li key={item.href}>
-              <a href={item.href}>{item.title}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <ArticleIndex items={index} className={styles.index} />
     </div>
   );
 }

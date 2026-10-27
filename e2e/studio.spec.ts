@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import type { Browser, Locator } from '@playwright/test';
 
 /**
  * O RDM Studio de ponta a ponta: escrever, publicar, ver no site público com a
@@ -18,10 +19,23 @@ test.skip(cookie === undefined, 'sem E2E_ADMIN_COOKIE: precisa da stack com back
 test.setTimeout(300_000);
 const JOB_TIMEOUT = 180_000;
 
+/**
+ * O artigo do HTML que o job gravou, lido sem JavaScript — como um crawler o
+ * recebe. Com JavaScript a casca sai do DOM assim que o React monta (um H1 por
+ * página), e `#prerender` deixa de existir.
+ */
+async function staticArticle(browser: Browser, url: string): Promise<{ article: Locator; close: () => Promise<void> }> {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto(url);
+  return { article: page.locator('#prerender article'), close: () => context.close() };
+}
+
 test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', async ({
   page,
   baseURL,
   request,
+  browser,
 }) => {
   const { name, value } = JSON.parse(cookie ?? '{}') as { name: string; value: string };
   await page.context().addCookies([{ name, value, url: baseURL ?? 'http://localhost:8080' }]);
@@ -64,8 +78,9 @@ test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', 
   // As duas leituras do mesmo corpo: o HTML que o job gravou (o que um
   // crawler e quem está sem JavaScript recebem) e a vista de leitura que a
   // Shell abre por cima dele. Os dois passam por ArticleBody.
+  const shell = await staticArticle(browser, new URL(url, baseURL).href);
   await page.goto(url);
-  for (const article of [page.locator('#prerender article'), page.getByRole('dialog').locator('article')]) {
+  for (const article of [shell.article, page.getByRole('dialog').locator('article')]) {
     await expect(article.locator('p', { hasText: '1984. Foi o ano em que tudo mudou.' })).toHaveCount(1);
     await expect(article.locator('ol')).toHaveCount(0);
     await expect(article.locator('p strong', { hasText: 'tudo' })).toHaveCount(1);
@@ -73,6 +88,7 @@ test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', 
     await expect(article.locator('pre code span', { hasText: 'const' })).toHaveCount(1);
   }
   await expect(page.getByRole('dialog').getByText('1984. Foi o ano em que')).toBeVisible();
+  await shell.close();
 
   await page.goto('/admin/studio');
   // Só a lista mostra o título enquanto nada está selecionado.

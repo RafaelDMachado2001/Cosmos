@@ -256,6 +256,22 @@ describe('Shell', () => {
     );
   });
 
+  it('um H1 só, na entrada, na constelação e com o artigo aberto', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const titulos = (): string[] =>
+      [...document.querySelectorAll('h1')].map((h1) => h1.textContent ?? '');
+
+    expect(titulos()).toEqual(['Bem-vindo ao meu Cosmos!']);
+    const estrela = await entrarNaConstelacao(user);
+    expect(titulos()).toEqual(['Bem-vindo ao meu Cosmos!']);
+
+    await user.click(estrela);
+    const dialogo = await screen.findByRole('dialog', undefined, { timeout: 4000 });
+    expect(titulos()).toHaveLength(1);
+    expect(dialogo.querySelector('h1')).not.toBeNull();
+  });
+
   it('carga direta num slug que não existe mostra o 404 dentro da constelação', async () => {
     window.history.replaceState(null, '', '/pt/publicacoes/nao-existe');
     render(<App />);

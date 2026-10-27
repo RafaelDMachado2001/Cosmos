@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 
+import { parseBlocks } from '../core/blocks';
 import type { ReaderState } from '../core/reader';
+import { wordCount } from '../core/readingTime';
 import { articleJsonLd, articleMeta, homeJsonLd, homeMeta } from '../core/seo';
 import type { MetaArticle } from '../core/seo';
 import { LOCALES } from '../core/types';
-import type { Locale } from '../core/types';
+import type { Locale, PublicationSummary } from '../core/types';
 import type { Dictionary } from '../i18n/pt';
 import { SITE } from '../site';
 import { useHeadMeta } from './useHeadMeta';
@@ -22,6 +24,8 @@ export function usePageHead(
   article: ArticleState,
   locale: Locale,
   t: Dictionary,
+  /** O acervo carregado: o `Blog` do JSON-LD da home lista as publicações. */
+  posts: readonly PublicationSummary[],
 ): void {
   const metaArticle = useMemo<MetaArticle | null>(() => {
     if (reader.phase === 'closed' || reader.phase === 'closing') return null;
@@ -39,6 +43,7 @@ export function usePageHead(
       ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),
       ...(detail.seoDescription === undefined ? {} : { seoDescription: detail.seoDescription }),
       ...(detail.indexable === undefined ? {} : { indexable: detail.indexable }),
+      wordCount: wordCount(parseBlocks(detail.body)),
     };
   }, [reader.phase, reader.slug, article, t]);
 
@@ -58,9 +63,9 @@ export function usePageHead(
   const jsonLd = useMemo(
     () =>
       metaArticle === null
-        ? homeJsonLd(SITE, locale, t.meta)
+        ? homeJsonLd(SITE, locale, t.meta, posts)
         : articleJsonLd(SITE, locale, metaArticle),
-    [metaArticle, locale, t.meta],
+    [metaArticle, locale, t.meta, posts],
   );
 
   useHeadMeta(pageMeta, jsonLd, t.meta.localeTag);

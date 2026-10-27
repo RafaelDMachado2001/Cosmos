@@ -1,9 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { ArticlePage } from '../components/ArticlePage/ArticlePage';
-import type { ArticleLink } from '../components/ArticlePage/ArticlePage';
+import type { ArticleLink } from '../components/ArticleIndex/ArticleIndex';
 import { HomePage } from '../components/HomePage/HomePage';
+import { parseBlocks } from '../core/blocks';
 import { monthYearLabel } from '../core/format';
+import { wordCount } from '../core/readingTime';
 import { articlePath, homePath, otherLocale } from '../core/routing';
 import type { OgCard } from '../core/og';
 import {
@@ -69,6 +71,19 @@ export interface PrerenderOutput {
  */
 export const ARCHIVE_LIMIT = 1000;
 
+/** A lista estática de um idioma: título, resumo, categoria e data de cada publicação. */
+function articleIndex(locale: Locale, summaries: readonly PublicationSummary[]): ArticleLink[] {
+  const dictionary = DICTIONARIES[locale];
+  return summaries.map((summary) => ({
+    href: articlePath(locale, summary.slug),
+    title: summary.title,
+    summary: summary.summary,
+    categoryLabel: dictionary.categories[summary.category],
+    dateLabel: monthYearLabel(Date.parse(summary.publishedAt), locale),
+    publishedAt: summary.publishedAt,
+  }));
+}
+
 /**
  * Renderiza a casca estática de cada rota.
  *
@@ -119,15 +134,15 @@ export async function prerenderPages(
     rss[locale] = rssXml(SITE.origin, locale, dictionary.meta, summaries);
     snapshot[locale] = serializeSnapshot(summaries);
 
-    const index: readonly ArticleLink[] = summaries.map((summary) => ({
-      href: articlePath(locale, summary.slug),
-      title: summary.title,
-    }));
+    const index = articleIndex(locale, summaries);
 
     pages.push({
       path: homePath(locale),
       lang: LOCALE_TAG[locale],
-      head: renderHeadTags(homeMeta(SITE, locale, dictionary.meta), homeJsonLd(SITE, locale, dictionary.meta)),
+      head: renderHeadTags(
+        homeMeta(SITE, locale, dictionary.meta),
+        homeJsonLd(SITE, locale, dictionary.meta, summaries),
+      ),
       og: homeOgCard(SITE, locale, dictionary.meta),
       body: markup(
         locale,
@@ -152,6 +167,7 @@ export async function prerenderPages(
         ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),
         ...(detail.seoDescription === undefined ? {} : { seoDescription: detail.seoDescription }),
         ...(detail.indexable === undefined ? {} : { indexable: detail.indexable }),
+        wordCount: wordCount(parseBlocks(detail.body)),
       };
 
       const availableLocales = localesForSlug.get(detail.slug) ?? [locale];
@@ -171,6 +187,7 @@ export async function prerenderPages(
             category={detail.category}
             categoryLabel={meta.categoryLabel}
             dateLabel={monthYearLabel(Date.parse(detail.publishedAt), locale)}
+            publishedAt={detail.publishedAt}
             title={detail.title}
             summary={detail.summary}
             body={detail.body}
@@ -186,12 +203,7 @@ export async function prerenderPages(
 
   const fallbackLocale: Locale = 'pt';
   const fallback = DICTIONARIES[fallbackLocale];
-  const fallbackIndex: readonly ArticleLink[] = (
-    await source.list({ locale: fallbackLocale, limit: ARCHIVE_LIMIT })
-  ).map((summary) => ({
-    href: articlePath(fallbackLocale, summary.slug),
-    title: summary.title,
-  }));
+  const fallbackIndex = articleIndex(fallbackLocale, summariesByLocale[fallbackLocale]);
 
   return {
     pages,

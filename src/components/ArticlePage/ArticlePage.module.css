@@ -116,34 +116,4 @@
 .index {
   max-width: var(--page-width);
   margin: 88px auto 0;
-  padding-top: 28px;
-  border-top: 1px solid var(--color-border);
-}
-
-.indexTitle {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: var(--tracking-kicker);
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  margin: 0 0 18px;
-}
-
-.index ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.index a {
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  font-size: 15px;
-}
-
-.index a:hover {
-  color: var(--color-accent-hover);
 }

@@ -5,6 +5,7 @@ import { parseRoute } from './core/routing';
 import type { Route } from './core/routing';
 import type { Locale } from './core/types';
 import { LocaleProvider } from './i18n/LocaleProvider';
+import { detachShell } from './prerenderShell';
 
 /** O idioma que a rota fixa, ou `null` quando a URL não o diz. */
 function routeLocale(route: Route): Locale | null {
@@ -24,13 +25,13 @@ export default function App() {
 
   /*
    * A casca sai depois do primeiro commit bem-sucedido, não antes: se o React
-   * quebrar na montagem, ela precisa continuar lá (ver `ErrorBoundary`).
-   * `hidden` e não `remove()`, para o limite poder trazê-la de volta. Layout
+   * quebrar na montagem, ela precisa continuar lá (ver `ErrorBoundary`). Sai
+   * do DOM, com lugar guardado para voltar (`prerenderShell.ts`). Layout
    * effect porque roda antes da pintura: com o efeito comum haveria um quadro
    * com a casca e a constelação na tela ao mesmo tempo.
    */
   useLayoutEffect(() => {
-    document.getElementById('prerender')?.setAttribute('hidden', '');
+    detachShell();
   }, []);
 
   return (
