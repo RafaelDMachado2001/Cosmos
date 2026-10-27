@@ -8,6 +8,9 @@ import { isWebGLAvailable } from '../../three/webgl';
 // three só entra no bundle se houver contexto para usá-lo.
 const CoreCanvas = lazy(() => import('../CoreCanvas/CoreCanvas'));
 
+/** O máximo que a cena espera por um momento ocioso. */
+const IDLE_TIMEOUT_MS = 1500;
+
 export interface BackdropProps {
   readonly rootRef: RefObject<HTMLElement>;
   readonly headerRef: RefObject<HTMLElement>;
@@ -23,8 +26,26 @@ export interface BackdropProps {
 export function Backdrop({ fallbackRef, skyFallbackRef, ...props }: BackdropProps) {
   const [webgl, setWebgl] = useState<boolean | null>(null);
 
+  /*
+   * A cena (e com ela o three, ~460 KB) só começa a carregar quando o
+   * navegador fica ocioso, com teto de 1,5s: baixar e interpretar o chunk na
+   * mesma janela da montagem disputava a thread com o primeiro input no
+   * celular. Até lá fica o fallback em CSS, que já cobre o carregamento.
+   */
   useEffect(() => {
-    setWebgl(isWebGLAvailable());
+    const start = (): void => {
+      setWebgl(isWebGLAvailable());
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      const handle = window.requestIdleCallback(start, { timeout: IDLE_TIMEOUT_MS });
+      return () => {
+        window.cancelIdleCallback(handle);
+      };
+    }
+    const timer = window.setTimeout(start, 0);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, []);
 
   return (
