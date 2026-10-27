@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createHttpSource, createStaticSource } from './PublicationsSource';
+import { DEFAULT_RETRY } from './fetchWithRetry';
 import type { PublicationsSource } from './PublicationsSource';
 import { PUBLICATIONS } from './publications';
 import type { PublicationSummary } from '../core/types';
@@ -123,6 +124,9 @@ function stubFetch(reply: { status?: number; body?: unknown } = {}) {
   return { calls, impl: impl as unknown as typeof fetch };
 }
 
+/** As mesmas tentativas, sem os segundos de espera entre elas. */
+const NO_WAIT = { retry: { ...DEFAULT_RETRY, sleep: () => Promise.resolve() } };
+
 const SUMMARY_ROW = {
   slug: 'code-review-sem-atrito',
   category: 'rotina',
@@ -188,8 +192,12 @@ describe('createHttpSource — a lista', () => {
   });
 
   it('uma falha da API é uma falha, não uma lista vazia', async () => {
-    const { impl } = stubFetch({ status: 500 });
-    await expect(createHttpSource('https://x.dev', impl).list({ locale: 'pt' })).rejects.toThrow();
+    const { impl, calls } = stubFetch({ status: 500 });
+    await expect(
+      createHttpSource('https://x.dev', impl, NO_WAIT).list({ locale: 'pt' }),
+    ).rejects.toThrow();
+    // Antes de desistir, duas novas tentativas (fetchWithRetry).
+    expect(calls).toHaveLength(3);
   });
 
   /** Uma API que respondeu, mas declarou ter cortado o acervo. */
@@ -268,7 +276,7 @@ describe('createHttpSource — a publicação', () => {
 
   it('500 continua sendo erro', async () => {
     const { impl } = stubFetch({ status: 500 });
-    await expect(createHttpSource('https://x.dev', impl).get('x', 'pt')).rejects.toThrow();
+    await expect(createHttpSource('https://x.dev', impl, NO_WAIT).get('x', 'pt')).rejects.toThrow();
   });
 });
 

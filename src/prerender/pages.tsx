@@ -18,6 +18,7 @@ import {
 } from '../core/seo';
 import type { MetaArticle } from '../core/seo';
 import { rssXml } from '../core/rss';
+import { serializeSnapshot } from '../core/snapshot';
 import { robotsTxt, sitemapXml } from '../core/sitemap';
 import { LOCALES, LOCALE_TAG } from '../core/types';
 import type { Locale, PublicationSummary } from '../core/types';
@@ -55,6 +56,8 @@ export interface PrerenderOutput {
   readonly robots: string;
   /** Um feed RSS 2.0 por idioma, só com o que aquele idioma publicou. */
   readonly rss: Record<Locale, string>;
+  /** A lista de cada idioma, para o cliente abrir sem esperar a API (`core/snapshot.ts`). */
+  readonly snapshot: Record<Locale, string>;
 }
 
 /**
@@ -87,6 +90,7 @@ export async function prerenderPages(
     { publishedAt: string; updatedAt?: string; indexable?: boolean }
   >();
   const rss: Partial<Record<Locale, string>> = {};
+  const snapshot: Partial<Record<Locale, string>> = {};
 
   // Primeira passada: que idiomas cada slug de fato tem. Uma publicação pode
   // existir só num deles — o formulário do painel permite — e só se sabe ao
@@ -113,6 +117,7 @@ export async function prerenderPages(
     // Do mais novo para o mais antigo, igual à constelação — não há motivo
     // para um leitor de RSS ver o acervo em outra ordem.
     rss[locale] = rssXml(SITE.origin, locale, dictionary.meta, summaries);
+    snapshot[locale] = serializeSnapshot(summaries);
 
     const index: readonly ArticleLink[] = summaries.map((summary) => ({
       href: articlePath(locale, summary.slug),
@@ -226,5 +231,6 @@ export async function prerenderPages(
     // Todo LOCALES passa pelo laço acima, então toda chave existe — o cast
     // é só o que o TypeScript não infere de um objeto montado por atribuição.
     rss: rss as Record<Locale, string>,
+    snapshot: snapshot as Record<Locale, string>,
   };
 }

@@ -1,6 +1,8 @@
 import { PUBLICATIONS } from './publications';
 import { createHttpSource, createStaticSource } from './PublicationsSource';
 import type { PublicationsSource } from './PublicationsSource';
+import { createSnapshotLoader } from './snapshotLoader';
+import type { SnapshotLoader } from './snapshotLoader';
 
 /**
  * De onde vêm as publicações.
@@ -27,4 +29,14 @@ export function createSource(): PublicationsSource {
       );
     },
   });
+}
+
+/**
+ * O acervo do build, para a constelação abrir sem esperar a API.
+ *
+ * Só existe com a API: no acervo semente a fonte já é local e nunca falha, e
+ * pedir um arquivo a mais seria só uma requisição sem propósito.
+ */
+export function createSnapshot(): SnapshotLoader | null {
+  return __API_URL__ === null ? null : createSnapshotLoader();
 }

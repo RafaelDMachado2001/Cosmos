@@ -4,6 +4,7 @@ import { failed, loaded, loading, retry as retryCollection } from '../core/colle
 import type { CollectionState } from '../core/collection';
 import type { Locale, PublicationSummary } from '../core/types';
 import type { PublicationDetail, PublicationsSource } from '../data/PublicationsSource';
+import type { SnapshotLoader } from '../data/snapshotLoader';
 
 export interface Collection {
   readonly state: CollectionState<PublicationSummary>;
@@ -13,25 +14,39 @@ export interface Collection {
 /**
  * O acervo, vindo da fonte.
  *
- * Hoje a fonte é o adapter estático e nunca falha; a fase 7 troca por um
- * adapter HTTP sem que nada aqui mude. É por isso que os estados de espera e
- * de erro existem desde já: encená-los depois, sobre um `import` síncrono,
- * daria uma tela que não corresponde a nenhum caminho real do código.
+ * Com a API, o snapshot do build e a API são pedidos juntos. O que chegar
+ * primeiro abre a constelação; a resposta da API, quando vem, substitui o
+ * snapshot. Se a API falha, o snapshot fica, sem erro na tela: a API acordando
+ * de uma partida a frio não é problema de quem lê. Só sem os dois a tela é de
+ * erro.
  */
-export function usePublications(source: PublicationsSource, locale: Locale): Collection {
+export function usePublications(
+  source: PublicationsSource,
+  locale: Locale,
+  snapshot: SnapshotLoader | null = null,
+): Collection {
   const [state, setState] = useState(() => loading<PublicationSummary>());
   const { attempt } = state;
 
   useEffect(() => {
     let cancelled = false;
+    let fromApi = false;
+
+    const fallback = snapshot === null ? Promise.resolve(null) : snapshot(locale);
+    void fallback.then((items) => {
+      // Um snapshot que chega depois da API é mais velho que ela: descartado.
+      if (!cancelled && !fromApi && items !== null) setState((current) => loaded(current, items));
+    });
 
     source
       .list({ locale })
       .then((items) => {
+        fromApi = true;
         if (!cancelled) setState((current) => loaded(current, items));
       })
-      .catch(() => {
-        if (!cancelled) setState(failed);
+      .catch(async () => {
+        const items = await fallback;
+        if (!cancelled && items === null) setState(failed);
       });
 
     return () => {
@@ -40,7 +55,7 @@ export function usePublications(source: PublicationsSource, locale: Locale): Col
       // sobrescrever a nova.
       cancelled = true;
     };
-  }, [source, locale, attempt]);
+  }, [source, locale, snapshot, attempt]);
 
   const retry = useCallback(() => {
     setState(retryCollection);

@@ -19,7 +19,7 @@ import type { Route } from '../../core/routing';
 import { placeStars } from '../../core/timeline';
 import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
-import { createSource } from '../../data/source';
+import { createSnapshot, createSource } from '../../data/source';
 import { useConstellationFilter } from '../../hooks/useConstellationFilter';
 import { useCosmosEngine } from '../../hooks/useCosmosEngine';
 import { usePageHead } from '../../hooks/usePageHead';
@@ -97,7 +97,8 @@ export function Shell({ route }: { route: Route }) {
    * efeito de carregamento em laço.
    */
   const source = useMemo(() => createSource(), []);
-  const collection = usePublications(source, locale);
+  const snapshot = useMemo(() => createSnapshot(), []);
+  const collection = usePublications(source, locale, snapshot);
   const summaries = collection.state.items;
 
   const stars = useMemo(() => placeStars(summaries), [summaries]);
