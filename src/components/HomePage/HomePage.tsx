@@ -1,6 +1,7 @@
 import styles from './HomePage.module.css';
 import { useLocale } from '../../i18n/useLocale';
-import type { ArticleLink } from '../ArticlePage/ArticlePage';
+import { ArticleIndex } from '../ArticleIndex/ArticleIndex';
+import type { ArticleLink } from '../ArticleIndex/ArticleIndex';
 
 export interface HomePageProps {
   readonly otherLocaleHref: string;
@@ -48,16 +49,7 @@ export function HomePage({ otherLocaleHref, index, notice }: HomePageProps) {
         <h1 className={styles.title}>{notice?.title ?? t.hero.title}</h1>
         <p className={styles.subtitle}>{notice?.subtitle ?? t.hero.subtitle}</p>
 
-        <nav className={styles.index} aria-label={t.star.indexLabel}>
-          <h2 className={styles.indexTitle}>{t.star.indexLabel}</h2>
-          <ul>
-            {index.map((item) => (
-              <li key={item.href}>
-                <a href={item.href}>{item.title}</a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <ArticleIndex items={index} />
       </main>
     </div>
   );

@@ -51,6 +51,15 @@ describe('prerenderPages', () => {
     }
   });
 
+  it('a lista estática traz resumo, categoria e data em <time>, e o artigo também data em <time>', () => {
+    const home = at('/pt')?.body ?? '';
+    expect(home).toContain('Comentar o código, não a pessoa.');
+    // O React grava `dateTime`; atributo de HTML não diferencia caixa.
+    expect(home).toMatch(/Rotina · <time datetime="2025-09-12T[^"]+">SET 2025<\/time>/i);
+    const article = at('/pt/publicacoes/code-review-sem-atrito')?.body ?? '';
+    expect(article.match(/<time datetime=/gi)?.length).toBe(PUBLICATIONS.length + 1);
+  });
+
   it('o cabeçalho canoniza a própria rota', () => {
     expect(at('/en/publications/code-review-sem-atrito')?.head).toContain(
       `rel="canonical" data-head href="${SITE.origin}/en/publications/code-review-sem-atrito"`,

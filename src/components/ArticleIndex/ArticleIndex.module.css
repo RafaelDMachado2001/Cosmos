@@ -1,0 +1,53 @@
+.index {
+  padding-top: 28px;
+  border-top: 1px solid var(--color-border);
+}
+
+.indexTitle {
+  margin: 0 0 18px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  font-weight: 500;
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+}
+
+.list {
+  display: grid;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  gap: 4px;
+}
+
+.link {
+  color: var(--color-text-primary);
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--color-accent-hover);
+}
+
+.meta {
+  margin: 0;
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+}
+
+.summary {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
