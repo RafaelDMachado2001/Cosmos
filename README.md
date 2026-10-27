@@ -100,7 +100,7 @@ Without the backend, the site reads a seeded archive bundled with the code, so t
 | [`e2e/`](e2e/) | Playwright tests against the real Nginx and the full stack |
 | [`docker/`](docker/) | Development images and the production image |
 | [`infra/`](infra/) | Terraform for Google Cloud, Cloudflare and GitHub, plus the edge Worker |
-| [`docs/`](docs/) | The architecture write-up and implementation plans |
+| [`docs/`](docs/) | The architecture write-up and the design specs |
 
 ## Quality
 
@@ -131,7 +131,7 @@ Every pull request runs:
 
 [docs/architecture.md](docs/architecture.md) covers the parts this page skips: the render loop and why nothing that changes every frame goes through React, routing and SEO, how content is parsed and rendered, the modular monolith and its boundaries, the publishing pipeline, reader accounts and privacy, the edge Worker, deployment and cost.
 
-I use AI-assisted workflows for planning and review; the design notes and implementation plans are in [docs/plans/](docs/plans/).
+The design notes of each phase, in Portuguese, are in [docs/specs/](docs/specs/).
 
 ## Author
 

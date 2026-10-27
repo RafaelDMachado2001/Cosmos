@@ -32,7 +32,7 @@ que não se bloqueiam:
 | B · Blocos de leitura | Canvas de design do sistema de blocos, modelo de conteúdo rico, `ArticleBody` único. | fase 10 |
 | C · Painel profissional | Login com Google e allowlist, throttle de API e de login, `updated_at` no `lastmod`, publicação agendada, RSS. | fase 11 |
 
-A B e a C estão registradas no `CLAUDE.md`. O canvas da B não depende desta spec
+A B e a C ficam para as fases seguintes. O canvas da B não depende desta spec
 e pode começar a qualquer momento.
 
 ## Decisões
@@ -138,7 +138,7 @@ uma segunda implementação é como o canonical errado nasce.
   full-text. Hoje a lista de idiomas existe em `core/types.ts`, em
   `PublicationTranslation::LOCALES`, em `PublicationController::DICTIONARY` e no
   `CASE` de uma migration já aplicada. Mesmo precedente do `publications.json`,
-  mesma regra do `CLAUDE.md`: o acervo — e agora o vocabulário — tem uma fonte só.
+  mesma regra do projeto: o acervo — e agora o vocabulário — tem uma fonte só.
 - `absolute()` está duplicado em `core/seo.ts:66` e `core/sitemap.ts:23`; vai
   para um módulo comum.
 
@@ -161,8 +161,7 @@ casca e esconde o `#root` quando algo falha. Quem estava lendo continua lendo.
 | e2e | Playwright contra o build servido: navegação, histórico, 404 com status real, página sem JavaScript |
 | integração | `docker compose --profile backend`, publica pelo Filament e verifica que a URL do artigo responde 200 com o texto |
 
-O job de integração é o que prova a fase inteira de ponta a ponta. Mais
-`review.yml`, com o revisor comentando na PR.
+O job de integração é o que prova a fase inteira de ponta a ponta.
 
 Hooks: pre-commit rápido (apenas o que mudou, mais Pint no backend) e pre-push
 com a suíte completa. Hoje o pre-commit roda tudo, e é por isso que `--no-verify`
@@ -180,7 +179,7 @@ mexer nas configurações do repositório é decisão de quem o administra.
 
 O `README.md` afirma que o backend não existe e que será Laravel 11; ambas
 deixaram de ser verdade na fase 8. Reescrito onde mente e acrescido do pipeline
-de publicação, do CI e dos hooks. O `CLAUDE.md` recebe as decisões desta spec e
+de publicação, do CI e dos hooks, com as decisões desta spec e
 as fases 10 e 11 registradas.
 
 ## Tratamento de erro

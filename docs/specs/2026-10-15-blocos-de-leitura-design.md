@@ -1,7 +1,7 @@
 # Blocos de leitura — desenho da fase 11
 
 Estado: aprovado em 15/10/2026. Sucede a fase 10 (atmosfera e UX do cosmos).
-Corresponde à "Spec B" citada em `docs/superpowers/specs/2026-09-18-publicacao-viva-design.md`.
+Corresponde à "Spec B" citada em [`2026-09-18-publicacao-viva-design.md`](2026-09-18-publicacao-viva-design.md).
 
 ## O problema
 
@@ -9,7 +9,7 @@ O corpo de uma publicação hoje é `readonly string[]`: parágrafos de texto pu
 sem nenhuma formatação. Três sintomas:
 
 - `ArticlePage.tsx` e `ReaderView.tsx` duplicam o mesmo `body.map((p) => <p>{p}</p>)`
-  — exatamente o par que o `CLAUDE.md` já marca como pendente ("`ArticleBody`
+  — exatamente o par que as notas do projeto já marcavam como pendente ("`ArticleBody`
   único").
 - O banco guarda um `text` só (`PublicationTranslation::body`) e é o **servidor**
   quem decide dividir em parágrafos (`PublicationDetailResource::paragraphs`,
@@ -61,7 +61,7 @@ como texto, nunca é descartada.
 **`ArticleBody` é o único lugar que desenha um bloco.** Recebe `markdown:
 string`, chama `parseBlocks` uma vez (`useMemo`) e renderiza. `ArticlePage` e
 `ReaderView` passam a só montar `<ArticleBody markdown={...} />` em vez de
-mapear parágrafos — é o que fecha o item do `CLAUDE.md`.
+mapear parágrafos — é o que fecha esse item pendente.
 
 ## Migração de dados
 
