@@ -1,67 +1,42 @@
-# RDM Labs · Cosmos
-Cosmos is a personal blog and editorial space about technology, routines, and the small ideas that are easy to lose in the noise of the internet.
+# Cosmos
 
-Most blogs and online communities tend to converge on the same visual language: a feed, a sidebar, a familiar card layout, and a lot of text competing for attention. Cosmos is an attempt to build something more personal. Its interface treats navigation as part of the reading experience, using a space-inspired 3D environment to connect ideas without turning the content into a gimmick.
+My personal blog, built as a 3D star map. Each post is a star, placed in the sky by its publication date. Available in Portuguese and English.
 
-The project is being built as an experiment in expressive interfaces: a place where the visual identity, the code architecture, the accessibility of the content, and the performance of the experience all have to coexist.
+**Live:** [cosmos.rdmlabs.com.br](https://cosmos.rdmlabs.com.br) · **Architecture write-up:** [docs/architecture.md](docs/architecture.md)
+<!--
+ TODO: replace OWNER/REPO with the real repository path 
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions)
 
-## Goals
-- Create a distinctive reading experience instead of another generic blog layout.
-- Make exploration feel spatial while keeping individual publications easy to reach.
-- Keep the real content available to crawlers, screen readers, and users without JavaScript.
-- Treat performance as an architectural constraint, especially inside the WebGL scene.
-- Keep the domain logic independent from React and browser APIs wherever possible.
-- Support Portuguese and English from the beginning, with translated routes and metadata.
-- Run the whole system as one person, for close to nothing a month.
+<!-- TODO: record a 10–15 s GIF of the constellation (pan, zoom, open a post) and save it here 
+![Panning across the Cosmos constellation and opening a post](docs/media/cosmos.gif)-->
+
+## What it is
+
+Cosmos is where I publish articles, study notes, projects and the occasional post about routine (and coffee). Most blogs look the same: a feed, a sidebar, a grid of cards. I wanted the home page itself to be the way you explore, without making posts harder to reach.
+
+So every star is a normal link, every post has a real URL in both languages, and the whole archive is also served as plain HTML for crawlers, screen readers and anyone browsing with JavaScript off.
+
+It's also an exercise in constraints. One person builds and runs all of it, for about US$ 0.30 a month.
+
+## Five decisions everything else follows from
+
+1. **Readers never wait on a server.** The site is static HTML on a CDN. The backend exists for me, when I'm writing, and for the build that regenerates the site. If it goes down, the site keeps working; only publishing stops.
+2. **The domain is plain TypeScript.** Time, positions, routes, the Markdown parser and the camera live in [`src/core/`](src/core/), with no DOM, React or Three.js. Most of the tests are there, and the browser, the prerender and the editor's preview all run the same code.
+3. **One parser, one renderer.** Posts are stored in a small Markdown subset, parsed by hand into a tree and drawn by a single component, [`ArticleBody`](src/components/). No HTML string crosses the system.
+4. **Nothing is stored that can be derived.** A star's position comes from its date and a hash of its slug. Reading time and the table of contents are computed from the content. Publishing a new post can't move the old ones.
+5. **Production and development differ only in environment variables.** The request that regenerates the site locally is the same one that triggers a Vercel build in production.
 
 ## Stack
-**Site:** React 18, TypeScript, Vite, Three.js (used directly, without React Three Fiber), CSS Modules and CSS custom properties for the design tokens.
 
-**Backend:** Laravel 13, Filament 5 for the admin panel, a React editor (the RDM Studio), Laravel Sanctum and Socialite for reader accounts, PostgreSQL 18.
-
-**Infrastructure:** Vercel for the site and its cookieless Web Analytics, Google Cloud Run (São Paulo) for the backend, Neon for Postgres, Cloudflare for DNS, the edge Worker and R2 media storage, Terraform for all of it, and GitHub Actions for delivery.
-
-Laravel 13 rather than 11: every Laravel 11 release still available carries open security advisories, and Composer refuses to install them. Filament 3 does not run on Laravel 13, hence Filament 5.
-
-## If you're here for the engineering
-If you got here from the published site and want to know what is behind it, this half of the README is for you. Nothing below requires reading the code, but every claim points to where it lives, in case you do.
-
-### The short version
-If you only have a minute, these are the five decisions everything else follows from:
-
-1. **Readers never wait on a server.** The site is static HTML on a CDN. The backend only exists for the person writing and for the build that regenerates the site.
-2. **The domain is plain TypeScript.** Time, positions, routes, the Markdown parser and the camera live in `src/core/`, with no DOM, React or Three.js. That is where most of the tests are, and it is why the browser, the prerender and the editor's preview can share the same code.
-3. **One parser, one renderer.** Content is stored as a small Markdown subset, parsed by hand into a tree, and drawn by a single component. No HTML string ever crosses the system.
-4. **Nothing is stored that can be derived.** A star's place in the sky, the reading time and the table of contents are all computed from the content. Publishing something new cannot move what already exists.
-5. **Production differs from development by environment variables, never by code.** The same request that regenerates the site locally triggers a Vercel build in production.
-
-### Where things live
-
-| Path | What you'll find |
+| Layer | Technologies |
 |---|---|
-| `src/core/` | The domain in pure TypeScript, with most of the test suite |
-| `src/three/` | The WebGL scene and its shaders, outside React |
-| `src/components/`, `src/hooks/` | The React interface, each component next to its CSS Module |
-| `src/prerender/` | The Node step that writes one HTML file per route |
-| `src/admin/` | The RDM Studio, the editor the author writes in |
-| `backend/app/Modules/` | The Laravel modules: Content, Identity, Activity |
-| `e2e/` | Playwright tests against the real Nginx and the full stack |
-| `docker/` | Development images and the production image |
-| `infra/` | Terraform for Google Cloud, Cloudflare and GitHub, plus the edge Worker |
-| `docs/architecture.md` | The longer write-up, with the trade-offs |
+| Site | React 18, TypeScript, Vite, Three.js (used directly, without React Three Fiber), CSS Modules, CSS custom properties for design tokens |
+| Backend | Laravel 13, Filament 5 (admin), RDM Studio (a React editor), Sanctum and Socialite for reader accounts, PostgreSQL 18 |
+| Infrastructure | Vercel (site and cookieless analytics), Google Cloud Run in São Paulo (backend), Neon (Postgres), Cloudflare (DNS, edge Worker, R2 media), Terraform, GitHub Actions |
 
-### Running it
-Everything runs in Docker, so you don't need Node or PHP on your machine:
+Why Laravel 13 and not 11? Every Laravel 11 release still available has open security advisories, and Composer refuses to install them. Filament 3 doesn't run on Laravel 13, hence Filament 5.
 
-```sh
-docker compose up node                                  # the site on :5174, with hot reload
-docker compose run --rm node npm run check              # typecheck, lint and tests
-docker compose --profile backend up -d db app queue scheduler web   # API, admin and Nginx on :8080
-```
-
-Without the backend, the site reads a seeded archive bundled with the code, so the first command alone is enough to explore the interface.
-
-## System overview
+## How it fits together
 
 ```mermaid
 flowchart LR
@@ -96,136 +71,71 @@ flowchart LR
     cron -- every 15 min --> worker
 ```
 
-The system is split along the line that matters most here: who is waiting. Readers get static files from a CDN, with no backend in the request path. The backend only serves the author, the build that regenerates the site, and, later, signed-in readers. If the backend goes down, the site keeps reading; only writing stops.
+The system is split by who is waiting. Readers get static files from a CDN. The backend serves the author, the build and, soon, signed-in readers. The two halves share one JSON API, and the build reads it through the same adapter the browser uses.
 
-The two halves share one thing, a JSON API, and the site's build reads it through the same adapter the browser uses.
+## Running it
 
-## The site
+Everything runs in Docker (Compose v2), so you don't need Node or PHP installed.
 
-### Rendering
-Cosmos deliberately avoids an animation library. Motion is implemented with exponential damping (`damp`) and CSS keyframes. This keeps the animation model small and explicit, while making it easier to control what runs every frame.
+<!-- TODO: if the backend needs an env file, add the copy step here, e.g. cp backend/.env.example backend/.env -->
 
-The main performance rule is:
-> Nothing that changes every frame passes through React.
-
-Continuous interaction state—such as entering the scene, panning, and zooming—is stored in mutable refs. A single `requestAnimationFrame` loop reads those values and writes directly to DOM transforms and Three.js uniforms. React is reserved for discrete state changes, such as navigation, selection, and page transitions.
-
-The constellation itself is HTML positioned by transform, never canvas, so every star is a real link that can be focused and crawled. A star's position is derived from its date and a hash of its slug and is never stored: publishing something new never moves what is already in the sky.
-
-### Code layout
-The codebase is organized around boundaries rather than visual screens.
-
-- **`src/core/`** is pure TypeScript: temporal positioning, the camera, the navigation state machine, filters, routes, SEO headers, the Markdown parser and syntax highlighting. It has no DOM, React or Three.js dependencies, and most of the test suite lives here.
-- **`src/prerender/`** runs in Node after the client build and writes one HTML document per route. It renders `HomePage` or `ArticlePage`, not the WebGL constellation, so crawlers and users without JavaScript get a meaningful document. Once React mounts, it takes over.
-- **`src/three/`** holds the WebGL scene in its own class with its own loop. It receives only the values it needs to update objects and shader uniforms.
-- **`src/components/`** keeps each component next to its CSS Module.
-- **`src/styles/tokens.css`** is the single source of truth for colors. The scene reads the same values through `getComputedStyle`, so the interface and the shaders cannot drift into different palettes.
-- **`src/i18n/`**: `pt.ts` defines the translation keys and `en.ts` is typed against it, so a missing translation fails type checking instead of rendering an empty string.
-
-### Routing and SEO
-Every publication has a real, translated URL:
-
-```text
-/pt/publicacoes/{slug}
-/en/publications/{slug}
+```sh
+docker compose up node                                  # the site on :5174, with hot reload
+docker compose run --rm node npm run check              # typecheck, lint and tests
+docker compose --profile backend up -d db app queue scheduler web   # API, admin and Nginx on :8080
 ```
 
-`src/core/routing.ts` owns this map, so the client, the prerender, the links and the sitemap cannot develop separate ideas of the URL structure. Crossing the two (`/pt/publications/…`) is a real 404, not a second address for the same article.
+Without the backend, the site reads a seeded archive bundled with the code, so the first command is enough to explore the interface.
 
-Opening a publication from the constellation pushes a history entry. Closing it with `×`, Escape or the browser's Back button follows the same model, so arriving directly and arriving through the sky behave the same way.
+## Where things live
 
-Each build writes, per route, the title and description, the canonical URL, `hreflang` for both languages, Open Graph tags with a 1200×630 card drawn from the real design tokens, and JSON-LD. It also writes the sitemap, `robots.txt`, an RSS feed per language and the 404 page.
-
-### Reading content
-The body of a publication is Markdown, limited on purpose to headings, paragraphs, quotes, lists, code, images, tables and inline formatting. Highlights, notes and step-by-step flows are quotes with a marker on the first line (`> [!note] Title`), in the style of GitHub's alerts, so they stay readable as plain text. The parser is written by hand, produces a tree and never an HTML string, and `ArticleBody` is the only component that draws it. React escapes every piece of text; the one remaining injection vector, URLs, is allowlisted by protocol. Syntax highlighting follows the same rule: tokens, never markup.
-
-Why write a parser instead of using a library? Because the subset is small and closed, and owning it means the site, the prerender and the editor's preview can never disagree about what a piece of text means.
-
-The reading view opens over the sky rather than on a separate page. Each category has its own palette, taken from the same design tokens, and the side panel follows your scroll with progress and a table of contents.
-
-### The constellation as a navigation model
-The homepage is designed as a constellation rather than a feed. Publications are placed in time and space, and filters narrow the visible set without pushing the reader into a dashboard.
-
-The metaphor supports discovery; it does not hide the content. A full, non-virtualized index of the archive exists as plain links for screen readers, and keyboard focus moves the camera to the star being focused.
-
-## The backend
-
-### A modular monolith
-The Laravel app is one deployable unit, divided into modules with explicit boundaries:
-
-| Module | Owns |
+| Path | What you'll find |
 |---|---|
-| Content | Publications, drafts, media, the RDM Studio |
-| Identity | Reader accounts, social sign-in, profiles, data export and deletion |
-| Activity | An append-only log of readers' domain actions |
-
-Modules talk through domain events and interfaces, never by reading each other's tables. Deptrac enforces this in CI: a module may import another's events and contracts and nothing else, and the shared platform code depends on no module. Comments, sharing and gamification are planned as further modules on the same rules.
-
-### Writing and publishing
-The author writes in the RDM Studio, a React editor at `/admin/studio`, with autosave, scheduling and a live preview drawn by the same `ArticleBody` the site uses. Drafts are stored as structured blocks; publishing serializes them to Markdown. The serializer guarantees fidelity: every block of the draft comes back from the site's parser as exactly one block of the same type and content, and the test suite proves it case by case.
-
-Publishing does not deploy anything by itself. It marks the site as dirty:
-
-1. Each save calls `SiteRebuild::request()`, the only path that regenerates the site.
-2. In production that triggers a Vercel deploy hook at most once a minute, after the response is sent. Ten quick edits cost one build, not ten.
-3. Cloud Scheduler calls an internal endpoint every 15 minutes, signed with an OIDC token that the app verifies. The tick publishes scheduled posts and sends any rebuild still pending.
-4. The Vercel build reads every publication from the API and swaps the whole site atomically.
-
-Locally, the same request runs the prerender in a queue worker and writes into the volume Nginx serves, with atomic writes and pruning by difference. The two paths differ by one environment variable, not by code.
-
-A truncated archive from the API makes the build fail instead of publishing half the site.
-
-### Reader accounts
-Readers will be able to sign in with Google or GitHub. The backend for this is done; the interface on the site comes next.
-
-- An account is linked to the provider's user id, never to the e-mail, which can change. A second provider joins the same account only when both declared the same verified e-mail.
-- After the provider, the reader returns to the page they came from. The return path must be a path on the site: any other host falls back to the home page, so the callback is never an open redirect.
-- The site talks to the API with Laravel Sanctum in SPA mode: an HttpOnly session cookie with CSRF protection, and no token in `localStorage`. Sanctum only accepts the reader guard, so the admin's session never authenticates the site's API.
-- CORS has two policies. The account routes allow credentials and exactly one origin, the site. The public read API allows any origin and no credentials.
-- The prerendered HTML stays anonymous and identical for everyone; the session only exists in the browser.
-
-Privacy is part of the model rather than a later addition. Deleting an account removes the linked identities and anonymizes the member in one transaction, keeping the row so aggregate numbers do not shift. The export gathers the profile and whatever each module stores, through an interface the Identity module publishes without knowing who implements it. The activity log refuses `UPDATE` and `DELETE` at the database level, with a trigger; the only exception is that deletion, which may rewrite an entry's payload and nothing else.
-
-## Infrastructure and delivery
-
-### Two hosts, one app
-The admin and the API run in the same container on two hosts. The admin's session cookie is bound to `admin.rdmlabs.com.br` alone; the reader's is shared with the site's domain. A middleware assigns each request to its host and answers 404 to anything that belongs to the other one.
-
-### The edge
-Cloud Run cannot map a custom domain in São Paulo, and the Google load balancer that would do it has a fixed monthly cost. A small Cloudflare Worker does the same job: it receives `api.` and `admin.`, forwards to the service's `run.app` address with the original host, the client IP Cloudflare saw and a shared secret. The app answers 404 to anything without the secret, so the `run.app` address is not a back door.
-
-### Deployment
-GitHub Actions deploys the backend after CI passes on `main`, authenticating to Google through Workload Identity Federation, with no stored keys. It builds the production image (FrankenPHP, PHP and the web server in one process), runs migrations as a one-off Cloud Run job, and only then moves traffic to the new revision. If migrations fail, the previous revision keeps serving.
-
-The production image refuses to start when a setting is missing: a debug flag left on, local disk for media, a missing edge secret. A broken revision never passes its health check.
-
-Everything is described in Terraform: Cloud Run, the scheduler, the secrets, identity federation, the R2 bucket, the Worker and DNS. Secret values never pass through Terraform state, except the edge secret it generates itself.
-
-### Cost
-At this scale the whole system costs about US$ 0.30 a month, all of it Secret Manager. Everything else is billed per use and stays in a free tier. Some numbers were tuned for that: the scheduler runs every 15 minutes rather than every minute, because each tick wakes the database and a one-minute tick would keep it awake around the clock.
+| [`src/core/`](src/core/) | The domain in pure TypeScript, with most of the test suite |
+| [`src/three/`](src/three/) | The WebGL scene and its shaders, outside React |
+| [`src/components/`](src/components/), [`src/hooks/`](src/hooks/) | The React interface, each component next to its CSS Module |
+| [`src/prerender/`](src/prerender/) | The Node step that writes one HTML file per route |
+| [`src/admin/`](src/admin/) | RDM Studio, the editor I write in |
+| [`backend/app/Modules/`](backend/app/Modules/) | Laravel modules: Content, Identity, Activity |
+| [`e2e/`](e2e/) | Playwright tests against the real Nginx and the full stack |
+| [`docker/`](docker/) | Development images and the production image |
+| [`infra/`](infra/) | Terraform for Google Cloud, Cloudflare and GitHub, plus the edge Worker |
+| [`docs/`](docs/) | The architecture write-up and the design specs |
 
 ## Quality
+
 Every pull request runs:
 
-- **frontend**: environment check, typecheck, lint, about 650 Vitest tests (including the shell in jsdom and a 500/1000-publication scale budget) and the build with prerender;
-- **backend**: Pint, PHPStan at level 8 with no baseline, Deptrac, and about 190 tests against a real Postgres, twice: once as in development and once with the connection settings production needs;
-- **e2e**: Playwright against the build served by the real Nginx, including a CSP check that fails on any violation;
-- **integration**: the full stack. Publishing makes the article answer 200 from disk and deleting it brings back a 404; a seeded admin session drives the RDM Studio through writing, publishing, reading and unpublishing;
-- **production image**: the real image refuses an incomplete configuration, and each host answers only what belongs to it;
-- **infrastructure**: Terraform formatting and validation, and the edge Worker's tests.
+- **Frontend:** typecheck, lint, about 650 Vitest tests (including a 500/1000-post scale budget) and the build with prerender.
+- **Backend:** Pint, PHPStan level 8 with no baseline, Deptrac for module boundaries, and about 190 tests against a real Postgres, run twice: with development settings and with the connection settings production needs.
+- **End-to-end:** Playwright against the build served by the real Nginx, including a check that fails on any CSP violation.
+- **Integration:** the full stack. Publishing a post makes it answer 200 from disk, deleting it brings back a 404, and a seeded admin session drives RDM Studio through write, publish, read and unpublish.
+- **Production image:** the real image refuses an incomplete configuration, and each host answers only its own routes.
+- **Infrastructure:** Terraform format and validate, plus tests for the edge Worker.
 
-After the merge, `main` runs only the frontend and backend jobs before deploying: the pull request has already run the rest against the same code, and CI minutes are the tightest budget a private repository has. Changes that only touch documentation run nothing at all.
+## Status
 
-The backend suite refuses to run unless the database name ends in `_test`. That guard exists because it once mattered.
+**Done:** the interactive site and Three.js scene, translated routing, prerendering and SEO, the API, the admin panel and RDM Studio, live publishing, the reading view with per-category themes, production infrastructure, and the backend for reader accounts.
 
-## Project status
-Implemented: the interactive site and the Three.js scene, translated routing, prerendering and SEO, the API, the admin panel and the RDM Studio, live publishing, tables and callouts, the reading view with per-category themes, the production infrastructure, and the backend for reader accounts.
+**Next:** the reader sign-in interface and privacy page, then comments and sharing, monitoring before opening accounts to the public, and gamification built on the activity log.
 
-Next: the reader sign-in interface and the privacy page, then comments and sharing, monitoring before opening to the public, and gamification as a projection over the activity log.
+## Trade-offs and what I'd do differently
 
-A longer write-up of the architecture and its trade-offs is in [`docs/architecture.md`](docs/architecture.md). The design specs of each phase, in Portuguese, are in [`docs/specs/`](docs/specs/).
+- **The hand-written parser.** It works because the Markdown subset is small and closed, and owning it keeps the site, the prerender and the editor in agreement. The cost is that every new block type touches the parser, the serializer, the renderer and their tests. If the subset keeps growing, I'll revisit this.
+- **A Cloudflare Worker instead of Google's load balancer.** Cloud Run can't map a custom domain in São Paulo, and the load balancer has a fixed monthly cost. The Worker is free, but it's one more piece I have to maintain and secure.
+- **A 15-minute scheduler.** Each tick wakes the database, so a one-minute tick would keep it awake around the clock. The price is that a scheduled post can go live up to 15 minutes late. For a blog, that's fine.
+- **The `_test` guard.** The backend suite refuses to run unless the database name ends in `_test`. That guard exists because it once mattered.
+  <!-- TODO: tell in one or two lines what happened -->
 
-## Why this project exists
-Cosmos is not trying to make a blog harder to use. It is trying to make the act of arriving somewhere feel intentional again.
+## Going deeper
 
-The project is an exploration of how far a personal publishing space can depart from the standard blog template while preserving the things that matter: readable content, durable links, good metadata, predictable browser behavior, testable domain rules, and a fast enough experience to respect the reader.
+[docs/architecture.md](docs/architecture.md) covers the parts this page skips: the render loop and why nothing that changes every frame goes through React, routing and SEO, how content is parsed and rendered, the modular monolith and its boundaries, the publishing pipeline, reader accounts and privacy, the edge Worker, deployment and cost.
+
+The design notes of each phase, in Portuguese, are in [docs/specs/](docs/specs/).
+
+## Author
+
+Built by **Rafael Dorneles Machado**, full stack software engineer (PHP/Laravel, React).
+[Portfolio](https://portfolio.rdmlabs.com.br) · [LinkedIn](https://www.linkedin.com/in/rafael-dorneles-machado-8478b3172) · [Laravel internals series (PT)](https://cosmos.rdmlabs.com.br/pt/publicacoes/marco-zero-laravel-antes-do-primeiro-comando)
+
+<!-- TODO: add a LICENSE file and name it here, or state "All rights reserved" if the code is for viewing only -->
