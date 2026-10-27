@@ -63,10 +63,9 @@ describe('câmera', () => {
     expect(chegou).toEqual(base({ pan: 50, panS: 50 }));
   });
 
-  it('voltar ao inicio fecha o portal na borda esquerda e mata a inercia', () => {
-    const bounds = { min: -200, max: 900 };
-    expect(goHome(base({ pan: 500, velocity: 8 }), bounds)).toEqual(
-      base({ enter: 0, pan: -200, velocity: 0 }),
+  it('voltar ao inicio fecha o portal no enquadramento de chegada e mata a inercia', () => {
+    expect(goHome(base({ pan: 500, velocity: 8 }), 900)).toEqual(
+      base({ enter: 0, pan: 900, velocity: 0 }),
     );
   });
 
@@ -75,23 +74,30 @@ describe('câmera', () => {
     expect(deslizou).toEqual(base({ enter: 1, pan: 700, velocity: 0 }));
   });
 
-  it('na entrada, traz o pan inicial para a faixa sem encenar a viagem', () => {
-    // O acervo começa em 2026 (x≈5000) e o pan nasce em 0.
-    const bounds = { min: 4700, max: 4700 };
-    expect(settle(base({ enter: 0, enterS: 0, velocity: 2 }), bounds)).toEqual(
-      base({ enter: 0, enterS: 0, pan: 4700, panS: 4700, velocity: 0 }),
+  it('na entrada, leva o pan à mais recente sem encenar a viagem', () => {
+    // O acervo vai de x≈4700 a 9000 e o pan nasce em 0.
+    const bounds = { min: 4700, max: 9000 };
+    expect(settle(base({ enter: 0, enterS: 0, velocity: 2 }), bounds, 8200)).toEqual(
+      base({ enter: 0, enterS: 0, pan: 8200, panS: 8200, velocity: 0 }),
     );
+  });
+
+  it('antes da travessia, um pan já dentro dos limites também vai à chegada', () => {
+    // O acervo semente chega antes da API: os limites crescem, a chegada muda.
+    const bounds = { min: 0, max: 9000 };
+    const antes = base({ enter: 0.5, enterS: 0.5, pan: 3000, panS: 3000 });
+    expect(settle(antes, bounds, 8200)).toMatchObject({ pan: 8200, panS: 8200 });
   });
 
   it('com a constelação assentada, muda só o alvo e deixa o damp deslizar', () => {
     const bounds = { min: 0, max: 800 };
-    expect(settle(base({ pan: 1200, panS: 1200 }), bounds)).toEqual(
+    expect(settle(base({ pan: 1200, panS: 1200 }), bounds, 400)).toEqual(
       base({ pan: 800, panS: 1200 }),
     );
   });
 
   it('não toca no estado quando o pan já está dentro dos limites', () => {
     const state = base({ pan: 300, panS: 280, velocity: 3 });
-    expect(settle(state, { min: 0, max: 800 })).toBe(state);
+    expect(settle(state, { min: 0, max: 800 }, 600)).toBe(state);
   });
 });

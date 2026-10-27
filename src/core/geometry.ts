@@ -343,7 +343,30 @@ export function panBounds(
     const centered = (first.x + last.x) / 2 - viewportWidth / 2;
     return { min: centered, max: centered };
   }
-  return { min: extent.minX, max: Math.max(extent.minX, extent.maxX - viewportWidth) };
+  // O limite direito alcança a última estrela no centro da tela, que é onde a
+  // constelação abre (`homePan`); só a folga de `trailingPadPx` não bastava
+  // numa tela mais larga que o dobro dela.
+  const latestCentered = last ? last.x - viewportWidth / 2 : extent.minX;
+  return {
+    min: extent.minX,
+    max: Math.max(extent.minX, extent.maxX - viewportWidth, latestCentered),
+  };
+}
+
+/**
+ * Onde a constelação abre: a publicação mais recente no centro da tela.
+ *
+ * Abrir na mais antiga deixava a chegada no passado, com o marcador da régua
+ * colado em PASSADO e o que acabou de sair a telas de distância.
+ */
+export function homePan(
+  stars: readonly PlacedStar[],
+  viewportWidth: number,
+  config: TimelineConfig = TIMELINE,
+): number {
+  const last = stars[stars.length - 1];
+  if (!last) return 0;
+  return panForStar(stars, last, viewportWidth, 0.5, config);
 }
 
 /** Pan que traz a estrela para `bias` da largura da viewport. */

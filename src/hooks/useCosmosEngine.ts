@@ -22,7 +22,7 @@ import {
   zoomTarget,
 } from '../core/reader';
 import type { ReaderState } from '../core/reader';
-import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
+import { homePan, panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
 import type { PlacedStar } from '../core/timeline';
 import type { Category } from '../core/types';
 import type { CoreScene } from '../three/CoreScene';
@@ -178,10 +178,13 @@ export function useCosmosEngine(
   );
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
+  const home = useMemo(() => homePan(stars, viewportWidth), [stars, viewportWidth]);
+  const homeRef = useRef(home);
+  homeRef.current = home;
 
   useEffect(() => {
-    Object.assign(state.current, camera.settle(state.current, bounds));
-  }, [bounds]);
+    Object.assign(state.current, camera.settle(state.current, bounds, home));
+  }, [bounds, home]);
 
   const lambda = useMemo(() => lambdas(reducedMotion), [reducedMotion]);
 
@@ -196,7 +199,7 @@ export function useCosmosEngine(
   const locked = useCallback((): boolean => readerRef.current.state.phase !== 'closed', []);
 
   const goHome = useCallback(() => {
-    Object.assign(state.current, camera.goHome(state.current, boundsRef.current));
+    Object.assign(state.current, camera.goHome(state.current, homeRef.current));
   }, []);
 
   const goCosmos = useCallback(() => {

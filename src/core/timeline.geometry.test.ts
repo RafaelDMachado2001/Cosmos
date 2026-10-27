@@ -5,6 +5,7 @@ import {
   connectors,
   monthMarkers,
   occludedMonths,
+  homePan,
   panBounds,
   panBucket,
   panForStar,
@@ -324,6 +325,17 @@ describe('panBounds e panForStar', () => {
       expect(pan).toBeGreaterThanOrEqual(bounds.min);
       expect(pan).toBeLessThanOrEqual(bounds.max);
     }
+  });
+
+  it('abre com a mais recente no centro, em qualquer largura', () => {
+    const stars = placeStars(spaced(30));
+    const last = stars[stars.length - 1]?.x ?? 0;
+    for (const vw of [390, 768, 1280, 1440, 2560]) {
+      const pan = homePan(stars, vw);
+      expect(last - pan).toBeCloseTo(vw / 2, 9);
+      expect(pan).toBeLessThanOrEqual(panBounds(stars, vw).max);
+    }
+    expect(homePan([], 1280)).toBe(0);
   });
 
   it('a faixa cobre a última estrela mais a folga', () => {
