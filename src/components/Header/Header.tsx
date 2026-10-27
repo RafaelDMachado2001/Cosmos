@@ -8,6 +8,12 @@ import { SearchField } from '../SearchField/SearchField';
 export interface HeaderProps {
   /** No hero só a marca e o idioma aparecem; o resto entra no cosmos. */
   readonly phase: 'hero' | 'cosmos';
+  /**
+   * Com a vista de leitura montada o cabeçalho sai: ela tem o próprio
+   * "← Constelação", e o da home aparecia como fantasma atrás dele enquanto
+   * o overlay ainda não estava opaco.
+   */
+  readonly concealed: boolean;
   readonly query: string;
   readonly categoriesOpen: boolean;
   readonly onBrandClick: () => void;
@@ -16,14 +22,20 @@ export interface HeaderProps {
 }
 
 export const Header = forwardRef<HTMLElement, HeaderProps>(function Header(
-  { phase, query, categoriesOpen, onBrandClick, onQueryChange, onToggleCategories },
+  { phase, concealed, query, categoriesOpen, onBrandClick, onQueryChange, onToggleCategories },
   ref,
 ) {
   const { t } = useLocale();
   const inCosmos = phase === 'cosmos';
 
   return (
-    <header ref={ref} className={styles.header}>
+    <header
+      ref={ref}
+      className={styles.header}
+      data-concealed={concealed}
+      aria-hidden={concealed}
+      {...(concealed ? { inert: '' } : {})}
+    >
       <button type="button" className={styles.brand} onClick={onBrandClick}>
         <span className={styles.mark} aria-hidden="true" />
         {t.nav.brand}

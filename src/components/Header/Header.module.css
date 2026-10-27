@@ -8,6 +8,12 @@
   align-items: center;
   gap: 12px;
   padding: 18px 20px;
+  transition: opacity var(--dur-ui) var(--ease);
+}
+
+.header[data-concealed='true'] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .brand {

@@ -12,8 +12,12 @@ export interface NebulaProps {
   readonly intensity: number;
   readonly motion: boolean;
   readonly className?: string | undefined;
-  /** Só as estrelas, sem manchas nem poeira: o fundo do texto corrido. */
-  readonly starsOnly?: boolean;
+  /**
+   * `stars`: só as estrelas, o fundo do texto corrido. `cloud`: só manchas e
+   * poeira, para quem já tem estrelas por baixo — duas camadas de estrelas
+   * cintilavam por cima do começo do texto.
+   */
+  readonly layers?: 'all' | 'stars' | 'cloud';
 }
 
 const pct = (value: number): string => `${value.toFixed(2)}%`;
@@ -30,9 +34,10 @@ export function Nebula({
   intensity,
   motion,
   className,
-  starsOnly = false,
+  layers = 'all',
 }: NebulaProps) {
   const layout = useMemo(() => nebulaLayout(seed, variant), [seed, variant]);
+  const cloud = layers !== 'stars';
 
   return (
     <div
@@ -40,7 +45,7 @@ export function Nebula({
       aria-hidden="true"
       data-variant={variant}
     >
-      {!starsOnly &&
+      {cloud &&
         layout.blobs.map((blob, index) => (
           <span
             key={`b${String(index)}`}
@@ -58,7 +63,7 @@ export function Nebula({
             }}
           />
         ))}
-      {!starsOnly &&
+      {cloud &&
         layout.dust.map((lane, index) => (
           <span
             key={`d${String(index)}`}
@@ -72,19 +77,20 @@ export function Nebula({
             }}
           />
         ))}
-      {layout.stars.map((star, index) => (
-        <span
-          key={`s${String(index)}`}
-          className={star.sparkle ? styles.sparkle : star.twinkle ? styles.twinkle : styles.star}
-          style={{
-            left: pct(star.x),
-            top: pct(star.y),
-            width: `${String(star.sizePx)}px`,
-            height: `${String(star.sizePx)}px`,
-            animationDelay: `${star.delaySec.toFixed(1)}s`,
-          }}
-        />
-      ))}
+      {layers !== 'cloud' &&
+        layout.stars.map((star, index) => (
+          <span
+            key={`s${String(index)}`}
+            className={star.sparkle ? styles.sparkle : star.twinkle ? styles.twinkle : styles.star}
+            style={{
+              left: pct(star.x),
+              top: pct(star.y),
+              width: `${String(star.sizePx)}px`,
+              height: `${String(star.sizePx)}px`,
+              animationDelay: `${star.delaySec.toFixed(1)}s`,
+            }}
+          />
+        ))}
     </div>
   );
 }

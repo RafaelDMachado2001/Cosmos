@@ -240,7 +240,7 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
             variant="wide"
             intensity={0}
             motion={card.appearance.motion}
-            starsOnly
+            layers="stars"
           />
         </div>
         <Nebula
@@ -249,6 +249,7 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
           variant="wide"
           intensity={card.appearance.nebula * 0.85}
           motion={card.appearance.motion}
+          layers="cloud"
         />
 
         <button

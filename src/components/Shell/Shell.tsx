@@ -519,6 +519,7 @@ export function Shell({ route }: { route: Route }) {
         <Header
           ref={headerRef}
           phase={engine.phase}
+          concealed={reader.phase !== 'closed'}
           query={query}
           categoriesOpen={categoriesOpen}
           onBrandClick={goHome}
@@ -529,7 +530,7 @@ export function Shell({ route }: { route: Route }) {
         />
 
         <CategoryPanel
-          open={categoriesOpen && engine.phase === 'cosmos'}
+          open={categoriesOpen && engine.phase === 'cosmos' && reader.phase === 'closed'}
           counts={counts}
           active={category}
           onPick={setCategory}
