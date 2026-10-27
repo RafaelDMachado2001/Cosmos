@@ -35,6 +35,29 @@
   text-wrap: pretty;
 }
 
+/* Texto, não pílula: o ícone do mouse continua sendo a entrada principal. */
+.skip {
+  margin: 0;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-line);
+  background: transparent;
+  color: var(--color-accent-soft);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-nav);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color var(--dur-ui) var(--ease),
+    border-color var(--dur-ui) var(--ease);
+}
+
+.skip:hover {
+  border-color: var(--color-accent-hover);
+  color: var(--color-accent-hover);
+}
+
 /*
  * Só a área clicável do ícone: sem pílula, sem borda. O anel de foco vem do
  * `:focus-visible` global — nada aqui pode zerar o outline, porque sem a borda

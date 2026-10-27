@@ -239,6 +239,23 @@ describe('Shell', () => {
     );
   });
 
+  it('"Ver publicações" atravessa sem a animação e deixa o foco na régua', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Ver publicações' }));
+
+    // Sem a travessia de ~1s: a constelação sai do inert no próximo quadro.
+    await waitFor(
+      () => {
+        expect(constellationStars()[0]?.closest('[inert]')).toBeNull();
+      },
+      { timeout: 300 },
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole('slider', { name: 'Percorrer a linha do tempo' }),
+    );
+  });
+
   it('carga direta num slug que não existe mostra o 404 dentro da constelação', async () => {
     window.history.replaceState(null, '', '/pt/publicacoes/nao-existe');
     render(<App />);

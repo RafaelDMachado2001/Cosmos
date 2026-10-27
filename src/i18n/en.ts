@@ -14,6 +14,7 @@ export const en: Dictionary = {
     subtitle:
       'This is where I keep what I think, learn, and build. Pull up a chair, look up, and wander through the constellations.',
     scrollHint: 'Scroll to pass through',
+    skip: 'See publications',
   },
   nav: {
     brand: 'RDM LABS',
