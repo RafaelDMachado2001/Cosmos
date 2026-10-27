@@ -17,7 +17,7 @@
 .edge {
   color: var(--color-text-muted);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
 }
 
@@ -63,7 +63,7 @@
   transform: translateX(-50%);
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
 }
 

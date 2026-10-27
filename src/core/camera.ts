@@ -35,9 +35,12 @@ function clamp(pan: number, bounds: PanBounds): number {
   return Math.min(bounds.max, Math.max(bounds.min, pan));
 }
 
-/** Fecha o portal na borda esquerda da linha do tempo. */
-export function goHome<S extends CameraState>(state: S, bounds: PanBounds): S {
-  return { ...state, enter: 0, pan: bounds.min, velocity: 0 };
+/**
+ * Fecha o portal e deixa a constelação de volta no enquadramento de chegada
+ * (`homePan`): atravessar de novo dá na mesma vista da primeira vez.
+ */
+export function goHome<S extends CameraState>(state: S, home: number): S {
+  return { ...state, enter: 0, pan: home, velocity: 0 };
 }
 
 /**
@@ -106,19 +109,20 @@ export function closeReader<S extends CameraState>(
 }
 
 /**
- * Traz o pan para dentro dos limites quando eles mudam: o acervo chega depois
- * do primeiro quadro, e o pan inicial (0) fica longe da faixa, que começa na
- * primeira estrela. Sem isto a constelação abria num trecho vazio do eixo.
+ * Acomoda o pan quando os limites mudam: o acervo chega depois do primeiro
+ * quadro, e a tela pode mudar de largura.
  *
- * Enquanto a travessia não termina, o suavizado salta junto — deslizar dali
- * encenaria uma viagem de milhares de pixels por cima do portal. Com a
- * constelação já assentada (um resize, um acervo novo), só o alvo muda e o
- * `damp` leva até lá.
+ * Enquanto a travessia não termina, ninguém viu a constelação ainda: o pan vai
+ * direto ao enquadramento de chegada (`home`, a publicação mais recente no
+ * centro), e o suavizado salta junto — deslizar dali encenaria uma viagem de
+ * milhares de pixels por cima do portal. Com a constelação já assentada (um
+ * resize, um acervo novo), o pan de quem já navegou é respeitado: só volta
+ * para dentro dos limites, e o `damp` leva até lá.
  */
-export function settle<S extends CameraState>(state: S, bounds: PanBounds): S {
-  const pan = clamp(state.pan, bounds);
-  if (pan === state.pan) return state;
+export function settle<S extends CameraState>(state: S, bounds: PanBounds, home: number): S {
   const crossed = state.enterS >= SETTLED_ENTER;
+  const pan = crossed ? clamp(state.pan, bounds) : clamp(home, bounds);
+  if (pan === state.pan && (crossed || pan === state.panS)) return state;
   return { ...state, pan, panS: crossed ? state.panS : pan, velocity: 0 };
 }
 

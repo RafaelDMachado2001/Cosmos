@@ -10,7 +10,7 @@
   margin: 0;
   color: var(--color-text-muted);
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-kicker);
 }
 
@@ -33,6 +33,29 @@
   font-weight: 400;
   line-height: 1.6;
   text-wrap: pretty;
+}
+
+/* Texto, não pílula: o ícone do mouse continua sendo a entrada principal. */
+.skip {
+  margin: 0;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 1px solid var(--color-accent-line);
+  background: transparent;
+  color: var(--color-accent-soft);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-nav);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color var(--dur-ui) var(--ease),
+    border-color var(--dur-ui) var(--ease);
+}
+
+.skip:hover {
+  border-color: var(--color-accent-hover);
+  color: var(--color-accent-hover);
 }
 
 /*

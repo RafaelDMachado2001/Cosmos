@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
-import { monthYearLabel, shortTitle } from '../core/format';
+import { monthYearLabel } from '../core/format';
 import type { PlacedStar } from '../core/timeline';
 import type { Locale, PublicationSummary } from '../core/types';
 import type { Dictionary } from '../i18n/pt';
@@ -58,7 +58,10 @@ export function useStarLookup(
         stars.map((star) => [
           star.slug,
           {
-            title: shortTitle(summaryBySlug.get(star.slug)?.title ?? star.slug),
+            // Inteiro: quem corta é o clamp de duas linhas do CSS, e só quando
+            // o título passa mesmo delas. O título completo também está no
+            // cartão de hover, que abre no ponteiro, no foco e no toque.
+            title: summaryBySlug.get(star.slug)?.title ?? star.slug,
             date: dateLabel(star.timestamp),
           },
         ]),

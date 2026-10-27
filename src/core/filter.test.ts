@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { countByCategory, dimmedStars, filterStars, matches, normalize } from './filter';
+import { categoryRows, countByCategory, dimmedStars, filterStars, matches, normalize } from './filter';
 import type { SearchableStar } from './filter';
 
 const STARS: readonly SearchableStar[] = [
@@ -122,6 +122,19 @@ describe('countByCategory', () => {
 
   it('zera todas as categorias num conjunto vazio', () => {
     expect(countByCategory([])).toEqual({ all: 0, artigo: 0, projeto: 0, estudo: 0, rotina: 0 });
+  });
+});
+
+describe('categoryRows', () => {
+  const counts = countByCategory(STARS);
+
+  it('esconde a categoria sem publicação, e "Tudo" fica sempre', () => {
+    expect(categoryRows(counts, 'all')).toEqual(['all', 'artigo', 'projeto', 'estudo']);
+    expect(categoryRows(countByCategory([]), 'all')).toEqual(['all']);
+  });
+
+  it('mantém a categoria ativa mesmo zerada, para o filtro ter saída', () => {
+    expect(categoryRows(counts, 'rotina')).toEqual(['all', 'artigo', 'projeto', 'estudo', 'rotina']);
   });
 });
 

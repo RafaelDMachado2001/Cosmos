@@ -23,6 +23,11 @@ export interface HoverPanelProps {
   /** Posição da estrela dentro da camada, em px — o cartão viaja com o pan. */
   readonly x: number;
   readonly yPx: number;
+  /**
+   * Em tela estreita o cartão não cabe ao lado da estrela (`hoverDocked`): sai
+   * da camada e encaixa centrado, longe da metade da tela onde ela está.
+   */
+  readonly dock?: { readonly edge: 'top' | 'bottom'; readonly offsetPx: number } | null;
 }
 
 /**
@@ -35,16 +40,18 @@ export interface HoverPanelProps {
  * título, categoria e data no `aria-label`, e repetir aqui faria o leitor de
  * tela anunciar tudo duas vezes.
  */
-export function HoverPanel({ card, category, x, yPx }: HoverPanelProps) {
+export function HoverPanel({ card, category, x, yPx, dock = null }: HoverPanelProps) {
   const { t } = useLocale();
 
   return (
     <div
       className={styles.panel}
-      data-side={card.side}
+      data-side={dock === null ? card.side : undefined}
+      data-docked={dock !== null}
       style={{
-        left: `${x}px`,
-        top: `${yPx}px`,
+        ...(dock === null
+          ? { left: `${x}px`, top: `${yPx}px` }
+          : { [dock.edge]: `${dock.offsetPx}px` }),
         ['--star-color' as string]: `var(--color-cat-${category})`,
       }}
       aria-hidden="true"

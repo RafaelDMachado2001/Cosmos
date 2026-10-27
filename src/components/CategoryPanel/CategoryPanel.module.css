@@ -33,7 +33,7 @@
   padding: 0 10px;
   color: var(--color-text-muted);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-meta);
 }
 
@@ -78,5 +78,5 @@
   margin-left: auto;
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
 }

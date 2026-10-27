@@ -169,10 +169,11 @@ export function dominantAxisDelta(deltaX: number, deltaY: number): number {
 /**
  * Margem em que uma estrela ainda conta como fora do enquadramento.
  *
- * É o alvo de clique da estrela (`--star-hit`): colada na borda ela aparece
- * pela metade, e o anel de foco sai da tela junto com ela.
+ * É a metade do rótulo (`--star-label-width`, 180) mais 24px de respiro:
+ * com só o alvo de clique de margem, a estrela entrava na tela e o título
+ * dela ficava cortado na borda.
  */
-export const FOCUS_MARGIN_PX = 88;
+export const FOCUS_MARGIN_PX = 90 + 24;
 
 /**
  * Se o foco numa estrela precisa levar a câmera junto.

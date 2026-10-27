@@ -93,8 +93,24 @@ export function zoomTarget(state: ReaderState): number {
   return state.phase === 'opening' || state.phase === 'open' ? 1 : 0;
 }
 
-/** Abaixo desta distância da borda direita o cartão de hover inverte de lado. */
-export const HOVER_FLIP_PX = 400;
+/**
+ * O que o cartão de hover ocupa ao lado da estrela: o recuo
+ * (`--hover-panel-offset`, 58), a largura (`--hover-panel-width`, 330) e os
+ * 24px que ele guarda da borda da tela. Abaixo desta distância da borda
+ * direita ele inverte de lado.
+ */
+export const HOVER_FLIP_PX = 58 + 330 + 24;
+
+/**
+ * Abaixo desta largura nenhum dos lados da estrela garante o cartão inteiro na
+ * tela, e ele sai da estrela para uma faixa fixa, acima ou abaixo dela.
+ */
+export const HOVER_DOCK_BELOW_PX = 2 * HOVER_FLIP_PX + 16;
+
+/** Se o cartão de hover vai encaixado na tela em vez de ao lado da estrela. */
+export function hoverDocked(viewportWidth: number): boolean {
+  return viewportWidth < HOVER_DOCK_BELOW_PX;
+}
 
 export type HoverSide = 'left' | 'right';
 

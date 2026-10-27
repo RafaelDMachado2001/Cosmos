@@ -4,11 +4,13 @@ import type { RefObject } from 'react';
 import styles from './Cosmos.module.css';
 import { giantYearX } from '../../core/atmosphere';
 import { revealDelayMs } from '../../core/collection';
+import { hoverDocked } from '../../core/reader';
 import { monthLabel, monthYearLabel } from '../../core/format';
 import {
   AXIS_PCT,
   connectors,
   monthMarkers,
+  occludedMonths,
   resolveBand,
   strandExtent,
   visibleRange,
@@ -88,7 +90,12 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   const links = useMemo(() => connectors(stars, band), [stars, band]);
   const years = useMemo(() => yearMarkers(stars), [stars]);
   const months = useMemo(() => monthMarkers(stars), [stars]);
+  const hiddenMonths = useMemo(
+    () => occludedMonths(months, stars, band, viewport.height * AXIS_PCT),
+    [months, stars, band, viewport.height],
+  );
   const { locale } = useLocale();
+  const docked = hoverDocked(viewport.width);
 
   // Acima do limiar, monta só a janela. Abaixo dele, content-visibility já
   // resolve o custo e manter tudo no DOM preserva a ordem de Tab sem truque.
@@ -178,7 +185,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
             data-active={marker.hasPublication}
             aria-hidden="true"
           >
-            {marker.withYear
+            {hiddenMonths.has(marker.key) ? null : marker.withYear
               ? monthYearLabel(marker.timestamp, locale)
               : monthLabel(marker.timestamp, locale)}
           </div>
@@ -202,7 +209,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
         ))}
 
         {/* Depois das estrelas: sem z-index, quem vem por último pinta por cima. */}
-        {hover && hoveredStar && (
+        {hover && hoveredStar && !docked && (
           <HoverPanel
             card={hover}
             category={hoveredStar.category}
@@ -211,6 +218,21 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
           />
         )}
       </div>
+
+      {/* Encaixado, fora da camada: não viaja com o pan. */}
+      {hover && hoveredStar && docked && (
+        <HoverPanel
+          card={hover}
+          category={hoveredStar.category}
+          x={hoveredStar.x}
+          yPx={yPx(hoveredStar, band)}
+          dock={
+            yPx(hoveredStar, band) > viewport.height / 2
+              ? { edge: 'top', offsetPx: viewport.headerPx + 8 }
+              : { edge: 'bottom', offsetPx: viewport.rulerPx + 24 }
+          }
+        />
+      )}
     </div>
   );
 });

@@ -118,7 +118,7 @@ ol.list {
   margin: 0 0 10px;
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
   text-transform: uppercase;
 }
@@ -375,7 +375,7 @@ ol.list {
 .codeHeaderLang {
   margin-left: auto;
   color: var(--color-text-faint);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
   text-transform: uppercase;
 }

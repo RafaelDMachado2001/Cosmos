@@ -231,7 +231,7 @@ describe('panToScrubFraction', () => {
 describe('needsSlide', () => {
   it('não move a câmera por uma estrela já enquadrada', () => {
     expect(needsSlide(640, 1280)).toBe(false);
-    expect(needsSlide(100, 1280)).toBe(false);
+    expect(needsSlide(114, 1280)).toBe(false);
   });
 
   it('move quando a estrela caiu fora da tela', () => {
@@ -244,9 +244,15 @@ describe('needsSlide', () => {
     expect(needsSlide(1275, 1280)).toBe(true);
   });
 
+  it('move quando o rótulo da estrela, e não só ela, encostaria na borda', () => {
+    // O núcleo cabe, mas metade do rótulo de 180px passaria da margem de 24px.
+    expect(needsSlide(100, 1280)).toBe(true);
+    expect(needsSlide(1180, 1280)).toBe(true);
+  });
+
   it('a margem é simétrica', () => {
     const width = 1280;
-    for (let margin = 0; margin < 120; margin += 7) {
+    for (let margin = 0; margin < 140; margin += 7) {
       expect(needsSlide(margin, width)).toBe(needsSlide(width - margin, width));
     }
   });

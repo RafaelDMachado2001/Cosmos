@@ -25,6 +25,13 @@
   transform: translate(calc(-100% - var(--hover-panel-offset)), -50%);
 }
 
+/* Encaixado: centrado na tela, com 24px de cada borda no mínimo. */
+.panel[data-docked='true'] {
+  left: 50%;
+  width: min(var(--hover-panel-width), calc(100% - 48px));
+  transform: translateX(-50%);
+}
+
 /* Só a opacidade: animar o transform brigaria com o posicionamento acima. */
 @keyframes cardIn {
   from {
@@ -42,7 +49,7 @@
   margin: 0 0 10px;
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-meta);
   text-transform: uppercase;
 }
@@ -80,6 +87,6 @@
   margin: 0;
   color: var(--color-accent-soft);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
 }

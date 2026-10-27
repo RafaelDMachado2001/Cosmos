@@ -4,6 +4,8 @@ import {
   CAPTION_BELOW_PX,
   connectors,
   monthMarkers,
+  occludedMonths,
+  homePan,
   panBounds,
   panBucket,
   panForStar,
@@ -223,6 +225,35 @@ describe('monthMarkers', () => {
   });
 });
 
+describe('occludedMonths', () => {
+  const stars = placeStars([
+    { slug: 'a', publishedAt: '2024-03-10T12:00:00.000Z', category: 'artigo' },
+    { slug: 'b', publishedAt: '2025-02-01T12:00:00.000Z', category: 'artigo' },
+  ]);
+  const months = monthMarkers(stars);
+  const axis = 500;
+
+  it('esconde o mês sob uma estrela assentada no eixo, e só os vizinhos dela', () => {
+    // A faixa reduzida ao eixo: as duas estrelas pendem o rótulo sobre ele.
+    const hidden = occludedMonths(months, stars, { topPx: axis, bottomPx: axis }, axis);
+
+    expect(hidden.has('2024-03')).toBe(true);
+    expect(hidden.has('2025-02')).toBe(true);
+    // O miolo do ano, longe das duas, continua com rótulo.
+    expect(hidden.has('2024-08')).toBe(false);
+    // Nenhum mês escondido está a mais de um rótulo de distância de uma estrela.
+    for (const marker of months.filter((m) => hidden.has(m.key))) {
+      expect(Math.min(...stars.map((s) => Math.abs(s.x - marker.x)))).toBeLessThan(90 + 80 + 16);
+    }
+  });
+
+  it('estrelas longe do eixo, acima ou abaixo, não escondem nada', () => {
+    expect(occludedMonths(months, stars, { topPx: 100, bottomPx: 100 }, axis).size).toBe(0);
+    // Abaixo: o núcleo começa depois do rótulo de mês e da folga.
+    expect(occludedMonths(months, stars, { topPx: axis + 80, bottomPx: axis + 80 }, axis).size).toBe(0);
+  });
+});
+
 describe('visibleRange', () => {
   it('bate com o filtro por força bruta', () => {
     const random = makeRandom(71);
@@ -294,6 +325,17 @@ describe('panBounds e panForStar', () => {
       expect(pan).toBeGreaterThanOrEqual(bounds.min);
       expect(pan).toBeLessThanOrEqual(bounds.max);
     }
+  });
+
+  it('abre com a mais recente no centro, em qualquer largura', () => {
+    const stars = placeStars(spaced(30));
+    const last = stars[stars.length - 1]?.x ?? 0;
+    for (const vw of [390, 768, 1280, 1440, 2560]) {
+      const pan = homePan(stars, vw);
+      expect(last - pan).toBeCloseTo(vw / 2, 9);
+      expect(pan).toBeLessThanOrEqual(panBounds(stars, vw).max);
+    }
+    expect(homePan([], 1280)).toBe(0);
   });
 
   it('a faixa cobre a última estrela mais a folga', () => {

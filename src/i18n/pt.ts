@@ -18,6 +18,8 @@ export const pt = {
       'Este é o lugar onde guardo o que penso, estudo e construo. Puxe uma cadeira, olhe para cima e navegue pelas constelações.',
     /** Nome acessível do botão de entrada: não é mais renderizado na tela. */
     scrollHint: 'Role para atravessar',
+    /** O atalho visível: vai à constelação sem a travessia animada. */
+    skip: 'Ver publicações',
   },
   nav: {
     brand: 'RDM LABS',

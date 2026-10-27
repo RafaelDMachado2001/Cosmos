@@ -22,7 +22,7 @@ import {
   zoomTarget,
 } from '../core/reader';
 import type { ReaderState } from '../core/reader';
-import { panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
+import { homePan, panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
 import type { PlacedStar } from '../core/timeline';
 import type { Category } from '../core/types';
 import type { CoreScene } from '../three/CoreScene';
@@ -76,6 +76,12 @@ export interface CosmosEngine {
   readonly viewportWidth: number;
   readonly marginPx: number;
   readonly panRef: MutableRefObject<number>;
+  /**
+   * O pan para onde a câmera vai, não onde ela está: logo depois de um
+   * `slideTo` os dois diferem, e decidir o lado do cartão de hover pelo pan
+   * de agora o punha do lado errado de onde a estrela vai parar.
+   */
+  targetPan: () => number;
   goHome: () => void;
   goCosmos: () => void;
   /** Leva a câmera até a estrela, sem abrir a vista de leitura. */
@@ -172,10 +178,13 @@ export function useCosmosEngine(
   );
   const boundsRef = useRef(bounds);
   boundsRef.current = bounds;
+  const home = useMemo(() => homePan(stars, viewportWidth), [stars, viewportWidth]);
+  const homeRef = useRef(home);
+  homeRef.current = home;
 
   useEffect(() => {
-    Object.assign(state.current, camera.settle(state.current, bounds));
-  }, [bounds]);
+    Object.assign(state.current, camera.settle(state.current, bounds, home));
+  }, [bounds, home]);
 
   const lambda = useMemo(() => lambdas(reducedMotion), [reducedMotion]);
 
@@ -190,12 +199,14 @@ export function useCosmosEngine(
   const locked = useCallback((): boolean => readerRef.current.state.phase !== 'closed', []);
 
   const goHome = useCallback(() => {
-    Object.assign(state.current, camera.goHome(state.current, boundsRef.current));
+    Object.assign(state.current, camera.goHome(state.current, homeRef.current));
   }, []);
 
   const goCosmos = useCallback(() => {
     state.current.enter = 1;
   }, []);
+
+  const targetPan = useCallback(() => state.current.pan, []);
 
   const slideTo = useCallback(
     (star: PlacedStar) => {
@@ -434,6 +445,7 @@ export function useCosmosEngine(
     viewportWidth,
     marginPx: viewportWidth * VIRTUAL_MARGIN_FACTOR,
     panRef,
+    targetPan,
     goHome,
     goCosmos,
     slideTo,

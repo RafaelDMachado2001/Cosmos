@@ -167,11 +167,11 @@ export function Shell({ route }: { route: Route }) {
       }
       setHovered({
         slug: star.slug,
-        side: hoverSide(star.x - engine.panRef.current, viewport.width),
+        side: hoverSide(star.x - engine.targetPan(), viewport.width),
         via,
       });
     },
-    [starBySlug, engine.panRef, viewport.width],
+    [starBySlug, engine, viewport.width],
   );
 
   /**
@@ -427,6 +427,31 @@ export function Shell({ route }: { route: Route }) {
 
   usePageHead(reader, article, locale, t);
 
+  /**
+   * Se a travessia partiu de um botão do hero com o foco nele.
+   *
+   * No cosmos o hero fica `inert`, e o foco de quem entrou pelo teclado caía no
+   * `body` — o próximo Tab recomeçava do topo da página. Ele vai para a régua,
+   * que é por onde a linha do tempo se percorre sem mouse.
+   */
+  const focusRailOnCrossRef = useRef(false);
+
+  const enterCosmos = useCallback(
+    (skip: boolean) => {
+      focusRailOnCrossRef.current = heroBlockRef.current?.contains(document.activeElement) ?? false;
+      // O atalho pula a esfera: atravessa sem animar, como a chegada pela URL.
+      if (skip) engine.jumpTo(null);
+      else engine.goCosmos();
+    },
+    [engine],
+  );
+
+  useEffect(() => {
+    if (engine.phase !== 'cosmos' || !focusRailOnCrossRef.current) return;
+    focusRailOnCrossRef.current = false;
+    railRef.current?.focus({ preventScroll: true });
+  }, [engine.phase]);
+
   // Voltar ao início recolhe o painel: reaparecer sozinho na próxima travessia
   // seria um filtro que o leitor não pediu de novo.
   const goHome = useCallback(() => {
@@ -519,6 +544,7 @@ export function Shell({ route }: { route: Route }) {
         <Header
           ref={headerRef}
           phase={engine.phase}
+          concealed={reader.phase !== 'closed'}
           query={query}
           categoriesOpen={categoriesOpen}
           onBrandClick={goHome}
@@ -529,14 +555,23 @@ export function Shell({ route }: { route: Route }) {
         />
 
         <CategoryPanel
-          open={categoriesOpen && engine.phase === 'cosmos'}
+          open={categoriesOpen && engine.phase === 'cosmos' && reader.phase === 'closed'}
           counts={counts}
           active={category}
           onPick={setCategory}
         />
 
         <main id="conteudo" className={styles.content} tabIndex={-1}>
-          <Hero ref={heroBlockRef} onEnter={engine.goCosmos} />
+          <Hero
+            ref={heroBlockRef}
+            onEnter={() => {
+              enterCosmos(false);
+            }}
+            onSkip={() => {
+              enterCosmos(true);
+            }}
+            active={engine.phase === 'hero'}
+          />
           <StarIndex items={summaries} label={t.star.indexLabel} hrefFor={hrefFor} />
         </main>
 

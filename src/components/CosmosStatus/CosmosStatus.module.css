@@ -65,7 +65,7 @@
   background: transparent;
   color: var(--color-accent-soft);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: var(--text-min);
   letter-spacing: 0.2em;
   cursor: pointer;
   transition:

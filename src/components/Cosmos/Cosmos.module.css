@@ -2,7 +2,13 @@
   position: absolute;
   inset: 0;
   z-index: var(--z-cosmos);
+  /*
+   * `clip`, como o palco: com `hidden`, focar uma estrela fora da tela rolava
+   * este contêiner por baixo do pan, e a estrela, o rótulo e o cartão iam
+   * parar fora da tela — a câmera e a rolagem somavam o mesmo deslocamento.
+   */
   overflow: hidden;
+  overflow: clip;
   opacity: 0;
   pointer-events: none;
   cursor: grab;
@@ -70,7 +76,7 @@
   border-left: 1px solid var(--color-border-accent-faint);
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-meta);
   white-space: nowrap;
   pointer-events: none;
@@ -84,5 +90,5 @@
 .month[data-january='true'] {
   padding-top: 16px;
   border-left-color: var(--color-month-filet-january);
-  font-size: 9.5px;
+  font-size: calc(var(--text-min) + 1px);
 }
