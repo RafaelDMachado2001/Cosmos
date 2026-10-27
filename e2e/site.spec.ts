@@ -8,7 +8,9 @@ function stars(page: Page): Locator {
 
 async function enterCosmos(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: 'Role para atravessar' }).click();
-  const star = stars(page).first();
+  // A mais recente: é nela que a constelação abre, no centro da tela. As mais
+  // antigas ficam fora do enquadramento, e o palco não rola para alcançá-las.
+  const star = stars(page).last();
   // Clicável só depois da travessia: antes disso a constelação e `inert`.
   await expect(star).toBeVisible();
   // O padrão de 5s do Playwright é menor que o próprio orçamento de quadro
