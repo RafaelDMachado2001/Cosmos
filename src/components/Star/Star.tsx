@@ -100,10 +100,11 @@ export const Star = memo(function Star({
         if (event.pointerType !== 'touch') onHover(null);
       }}
       onFocus={() => {
-        onHover(star.slug);
         // Sem isto o Tab levava o foco para estrelas fora do enquadramento: o
-        // anel de foco existia, mas do lado de fora da tela.
+        // anel de foco existia, mas do lado de fora da tela. Vem antes do
+        // cartão, que decide o lado pelo pan para onde a câmera vai.
         onFocusStar(star);
+        onHover(star.slug);
       }}
       onBlur={() => {
         onHover(null);

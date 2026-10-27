@@ -76,6 +76,12 @@ export interface CosmosEngine {
   readonly viewportWidth: number;
   readonly marginPx: number;
   readonly panRef: MutableRefObject<number>;
+  /**
+   * O pan para onde a câmera vai, não onde ela está: logo depois de um
+   * `slideTo` os dois diferem, e decidir o lado do cartão de hover pelo pan
+   * de agora o punha do lado errado de onde a estrela vai parar.
+   */
+  targetPan: () => number;
   goHome: () => void;
   goCosmos: () => void;
   /** Leva a câmera até a estrela, sem abrir a vista de leitura. */
@@ -196,6 +202,8 @@ export function useCosmosEngine(
   const goCosmos = useCallback(() => {
     state.current.enter = 1;
   }, []);
+
+  const targetPan = useCallback(() => state.current.pan, []);
 
   const slideTo = useCallback(
     (star: PlacedStar) => {
@@ -434,6 +442,7 @@ export function useCosmosEngine(
     viewportWidth,
     marginPx: viewportWidth * VIRTUAL_MARGIN_FACTOR,
     panRef,
+    targetPan,
     goHome,
     goCosmos,
     slideTo,

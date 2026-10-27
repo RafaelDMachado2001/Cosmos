@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CLOSED,
+  HOVER_DOCK_BELOW_PX,
   HOVER_FLIP_PX,
   asideCenterX,
   close,
+  hoverDocked,
   hoverSide,
   isMounted,
   landed,
@@ -134,6 +136,27 @@ describe('hoverSide', () => {
 
   it('exatamente no limite ainda cabe à direita', () => {
     expect(hoverSide(1440 - HOVER_FLIP_PX, 1440)).toBe('right');
+  });
+
+  it('fora do encaixe, um dos lados sempre guarda 24px da borda', () => {
+    // Recuo + largura do cartão: o que ele ocupa a partir da estrela.
+    const reach = 58 + 330;
+    for (let width = HOVER_DOCK_BELOW_PX; width <= 2560; width += 37) {
+      for (let x = 0; x <= width; x += 11) {
+        const side = hoverSide(x, width);
+        if (side === 'right') expect(x + reach).toBeLessThanOrEqual(width - 24);
+        else expect(x - reach).toBeGreaterThanOrEqual(24);
+      }
+    }
+  });
+});
+
+describe('hoverDocked', () => {
+  it('encaixa o cartão no tablet e no celular, nunca no desktop', () => {
+    expect(hoverDocked(390)).toBe(true);
+    expect(hoverDocked(768)).toBe(true);
+    expect(hoverDocked(1024)).toBe(false);
+    expect(hoverDocked(1440)).toBe(false);
   });
 });
 

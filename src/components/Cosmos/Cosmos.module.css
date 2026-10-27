@@ -2,7 +2,13 @@
   position: absolute;
   inset: 0;
   z-index: var(--z-cosmos);
+  /*
+   * `clip`, como o palco: com `hidden`, focar uma estrela fora da tela rolava
+   * este contêiner por baixo do pan, e a estrela, o rótulo e o cartão iam
+   * parar fora da tela — a câmera e a rolagem somavam o mesmo deslocamento.
+   */
   overflow: hidden;
+  overflow: clip;
   opacity: 0;
   pointer-events: none;
   cursor: grab;

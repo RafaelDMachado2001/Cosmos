@@ -25,6 +25,13 @@
   transform: translate(calc(-100% - var(--hover-panel-offset)), -50%);
 }
 
+/* Encaixado: centrado na tela, com 24px de cada borda no mínimo. */
+.panel[data-docked='true'] {
+  left: 50%;
+  width: min(var(--hover-panel-width), calc(100% - 48px));
+  transform: translateX(-50%);
+}
+
 /* Só a opacidade: animar o transform brigaria com o posicionamento acima. */
 @keyframes cardIn {
   from {

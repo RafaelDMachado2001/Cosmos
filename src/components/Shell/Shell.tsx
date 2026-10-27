@@ -167,11 +167,11 @@ export function Shell({ route }: { route: Route }) {
       }
       setHovered({
         slug: star.slug,
-        side: hoverSide(star.x - engine.panRef.current, viewport.width),
+        side: hoverSide(star.x - engine.targetPan(), viewport.width),
         via,
       });
     },
-    [starBySlug, engine.panRef, viewport.width],
+    [starBySlug, engine, viewport.width],
   );
 
   /**
