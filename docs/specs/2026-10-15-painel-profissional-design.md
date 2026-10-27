@@ -1,7 +1,7 @@
 # Painel profissional — desenho da fase 12
 
 Estado: aprovado em 15/10/2026. Sucede a fase 11 (blocos de leitura).
-Corresponde à "Spec C" citada em `docs/superpowers/specs/2026-09-18-publicacao-viva-design.md`.
+Corresponde à "Spec C" citada em [`2026-09-18-publicacao-viva-design.md`](2026-09-18-publicacao-viva-design.md).
 
 ## O problema
 

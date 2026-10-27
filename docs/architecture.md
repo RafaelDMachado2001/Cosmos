@@ -374,21 +374,12 @@ itself.
 
 ## Current state
 
-What runs today, before the migration:
-
-- The static site is live on Vercel, built from the seed archive bundled with
-  the code.
-- The backend runs locally under Docker Compose: Nginx, PHP-FPM, Postgres, a
-  queue worker and a scheduler. Publishing regenerates the site into a volume
-  served by Nginx.
-- The production path is built: the image, the Terraform, the edge Worker and
-  the deploy pipeline. What is missing is the first `terraform apply` and the
-  cut-over (stage 1, task 1.8 of the plan).
-- The backend of stage 2 is built: the Identity and Activity modules, social
+- The site and the backend are in production since October 2026: the static
+  site on Vercel, built from the API; the API and the studio on Cloud Run;
+  Postgres on Neon; media on R2; the edge Worker in front of the backend hosts.
+  The local Docker Compose stack runs the same code with the local drivers.
+- The backend for reader accounts is built: the Identity and Activity modules, social
   sign-in, the member API, data export and account deletion. The site does not
   show the session yet: its sign-in interface waits on a design handoff, as
   does the privacy page.
 - Community and Gamification are planned.
-
-The migration plan is in
-[`docs/superpowers/plans/2026-10-18-deploy-e-identidade.md`](superpowers/plans/2026-10-18-deploy-e-identidade.md).

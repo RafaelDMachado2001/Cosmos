@@ -223,7 +223,7 @@ Implemented: the interactive site and the Three.js scene, translated routing, pr
 
 Next: the reader sign-in interface and the privacy page, then comments and sharing, monitoring before opening to the public, and gamification as a projection over the activity log.
 
-A longer write-up of the architecture and its trade-offs is in [`docs/architecture.md`](docs/architecture.md). Designs and implementation plans live in `docs/superpowers/`.
+A longer write-up of the architecture and its trade-offs is in [`docs/architecture.md`](docs/architecture.md). The design specs of each phase, in Portuguese, are in [`docs/specs/`](docs/specs/).
 
 ## Why this project exists
 Cosmos is not trying to make a blog harder to use. It is trying to make the act of arriving somewhere feel intentional again.
