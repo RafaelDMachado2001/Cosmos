@@ -3,7 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { ArticlePage } from '../components/ArticlePage/ArticlePage';
 import type { ArticleLink } from '../components/ArticleIndex/ArticleIndex';
 import { HomePage } from '../components/HomePage/HomePage';
+import { parseBlocks } from '../core/blocks';
 import { monthYearLabel } from '../core/format';
+import { wordCount } from '../core/readingTime';
 import { articlePath, homePath, otherLocale } from '../core/routing';
 import type { OgCard } from '../core/og';
 import {
@@ -137,7 +139,10 @@ export async function prerenderPages(
     pages.push({
       path: homePath(locale),
       lang: LOCALE_TAG[locale],
-      head: renderHeadTags(homeMeta(SITE, locale, dictionary.meta), homeJsonLd(SITE, locale, dictionary.meta)),
+      head: renderHeadTags(
+        homeMeta(SITE, locale, dictionary.meta),
+        homeJsonLd(SITE, locale, dictionary.meta, summaries),
+      ),
       og: homeOgCard(SITE, locale, dictionary.meta),
       body: markup(
         locale,
@@ -162,6 +167,7 @@ export async function prerenderPages(
         ...(detail.seoTitle === undefined ? {} : { seoTitle: detail.seoTitle }),
         ...(detail.seoDescription === undefined ? {} : { seoDescription: detail.seoDescription }),
         ...(detail.indexable === undefined ? {} : { indexable: detail.indexable }),
+        wordCount: wordCount(parseBlocks(detail.body)),
       };
 
       const availableLocales = localesForSlug.get(detail.slug) ?? [locale];

@@ -41,7 +41,11 @@ function blockWords(block: Block): number {
   }
 }
 
+/** As palavras do corpo, com o mesmo peso do tempo de leitura: o `wordCount` do JSON-LD. */
+export function wordCount(blocks: readonly Block[]): number {
+  return blocks.reduce((sum, block) => sum + blockWords(block), 0);
+}
+
 export function readingMinutes(blocks: readonly Block[]): number {
-  const total = blocks.reduce((sum, block) => sum + blockWords(block), 0);
-  return Math.max(1, Math.ceil(total / WORDS_PER_MINUTE));
+  return Math.max(1, Math.ceil(wordCount(blocks) / WORDS_PER_MINUTE));
 }

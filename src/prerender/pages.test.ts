@@ -66,14 +66,20 @@ describe('prerenderPages', () => {
     );
   });
 
-  it('o artigo traz o Article em JSON-LD, a home o WebSite', () => {
-    expect(at('/pt/publicacoes/code-review-sem-atrito')?.head).toContain('"@type":"Article"');
-    expect(at('/pt')?.head).toContain('"@type":"WebSite"');
+  it('o artigo traz o BlogPosting e o breadcrumb em JSON-LD, a home o WebSite e o Blog', () => {
+    const article = at('/pt/publicacoes/code-review-sem-atrito')?.head ?? '';
+    expect(article).toContain('"@type":"BlogPosting"');
+    expect(article).toContain('"@type":"BreadcrumbList"');
+    expect(article).toMatch(/"wordCount":\d+/);
+    const home = at('/pt')?.head ?? '';
+    expect(home).toContain('"@type":"WebSite"');
+    expect(home.match(/"@type":"BlogPosting"/g)).toHaveLength(PUBLICATIONS.length);
   });
 
   it('declara o idioma do documento', () => {
     expect(at('/pt')?.lang).toBe('pt-BR');
-    expect(at('/en')?.lang).toBe('en');
+    // en-GB, como o og:locale (en_GB) e o formato das datas.
+    expect(at('/en')?.lang).toBe('en-GB');
   });
 
   it('escapa o que vai para o HTML', () => {

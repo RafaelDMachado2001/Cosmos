@@ -11,7 +11,7 @@ import {
   notFoundHeadTags,
   renderHeadTags,
 } from './seo';
-import type { MetaSite } from './seo';
+import type { JsonLd, MetaSite } from './seo';
 
 const SITE: MetaSite = {
   origin: 'https://rdmlabs.dev',
@@ -124,6 +124,26 @@ describe('articleMeta', () => {
   });
 });
 
+describe('cartão do X', () => {
+  it('artigo e home declaram título, descrição e imagem também em twitter:*', () => {
+    const article = articleMeta(SITE, 'pt', ARTICLE).og;
+    expect(article['twitter:title']).toBe(article['og:title']);
+    expect(article['twitter:description']).toBe(article['og:description']);
+    expect(article['twitter:image']).toBe(article['og:image']);
+
+    const home = homeMeta(SITE, 'en', { title: 'T', description: 'D' }).og;
+    expect([home['twitter:title'], home['twitter:description']]).toEqual(['T', 'D']);
+    expect(home['twitter:image']).toBe(home['og:image']);
+  });
+
+  it('og:locale segue o mesmo padrão nos dois idiomas, com o outro como alternate', () => {
+    expect(homeMeta(SITE, 'pt', { title: 'T', description: 'D' }).og['og:locale']).toBe('pt_BR');
+    expect(homeMeta(SITE, 'pt', { title: 'T', description: 'D' }).og['og:locale:alternate']).toBe('en_GB');
+    expect(articleMeta(SITE, 'en', ARTICLE).og['og:locale']).toBe('en_GB');
+    expect(articleMeta(SITE, 'en', ARTICLE).og['og:locale:alternate']).toBe('pt_BR');
+  });
+});
+
 describe('homeMeta', () => {
   const COPY = { title: 'RDM Labs · Cosmos', description: 'Uma constelação temporal.' };
 
@@ -155,12 +175,27 @@ describe('homeMeta', () => {
   });
 });
 
-describe('articleJsonLd', () => {
-  const json = articleJsonLd(SITE, 'pt', ARTICLE);
+/** O nó do grafo com este `@type`. */
+function node(graph: JsonLd, type: string): Record<string, unknown> {
+  const found = graph['@graph'].find((entry) => entry['@type'] === type);
+  if (!found) throw new Error(`sem ${type} no grafo`);
+  return found;
+}
 
-  it('é um Article do schema.org', () => {
-    expect(json['@context']).toBe('https://schema.org');
-    expect(json['@type']).toBe('Article');
+const FULL_SITE: MetaSite = {
+  ...SITE,
+  authorUrl: 'https://portfolio.rdmlabs.dev',
+  authorSameAs: ['https://github.com/fulano', 'https://www.linkedin.com/in/fulano'],
+  logoPath: '/apple-touch-icon.png',
+};
+
+describe('articleJsonLd', () => {
+  const graph = articleJsonLd(FULL_SITE, 'pt', { ...ARTICLE, wordCount: 812 });
+  const json = node(graph, 'BlogPosting');
+
+  it('é um grafo do schema.org com o BlogPosting e o breadcrumb', () => {
+    expect(graph['@context']).toBe('https://schema.org');
+    expect(graph['@graph'].map((entry) => entry['@type'])).toEqual(['BlogPosting', 'BreadcrumbList']);
   });
 
   it('leva título, resumo e seção', () => {
@@ -172,6 +207,7 @@ describe('articleJsonLd', () => {
   it('data em ISO e idioma da versão', () => {
     expect(json.datePublished).toBe('2025-09-09T00:00:00.000Z');
     expect(json.inLanguage).toBe('pt-BR');
+    expect(node(articleJsonLd(SITE, 'en', ARTICLE), 'BlogPosting').inLanguage).toBe('en-GB');
   });
 
   it('a entidade principal é a página canônica', () => {
@@ -181,12 +217,23 @@ describe('articleJsonLd', () => {
     });
   });
 
-  it('credita o autor', () => {
-    expect(json.author).toEqual({ '@type': 'Person', name: 'Rafael Dorneles Machado' });
+  it('credita o autor com a página dele e os outros perfis', () => {
+    expect(json.author).toEqual({
+      '@type': 'Person',
+      name: 'Rafael Dorneles Machado',
+      url: 'https://portfolio.rdmlabs.dev',
+      sameAs: ['https://github.com/fulano', 'https://www.linkedin.com/in/fulano'],
+    });
+    // Sem os dados, só o nome — nada de chave vazia no grafo.
+    expect(node(articleJsonLd(SITE, 'pt', ARTICLE), 'BlogPosting').author).toEqual({
+      '@type': 'Person',
+      name: 'Rafael Dorneles Machado',
+    });
   });
 
-  it('sobrevive a JSON.stringify sem escapar do <script>', () => {
-    expect(() => JSON.stringify(json)).not.toThrow();
+  it('conta as palavras quando sabe, e não inventa quando não sabe', () => {
+    expect(json.wordCount).toBe(812);
+    expect(node(articleJsonLd(SITE, 'pt', ARTICLE), 'BlogPosting')).not.toHaveProperty('wordCount');
   });
 
   it('leva a imagem do cartão, a mesma do og:image', () => {
@@ -198,26 +245,72 @@ describe('articleJsonLd', () => {
   it('dateModified é a última edição, ou a publicação quando nunca houve', () => {
     expect(json.dateModified).toBe('2025-09-09T00:00:00.000Z');
     const edited = articleJsonLd(SITE, 'pt', { ...ARTICLE, updatedAt: '2025-10-01T10:00:00.000Z' });
-    expect(edited.dateModified).toBe('2025-10-01T10:00:00.000Z');
+    expect(node(edited, 'BlogPosting').dateModified).toBe('2025-10-01T10:00:00.000Z');
   });
 
-  it('declara quem publica', () => {
+  it('declara quem publica, com o logo em URL absoluta', () => {
     expect(json.publisher).toEqual({
       '@type': 'Organization',
       name: SITE.siteName,
       url: 'https://rdmlabs.dev/',
+      logo: { '@type': 'ImageObject', url: 'https://rdmlabs.dev/apple-touch-icon.png' },
     });
+  });
+
+  it('o breadcrumb vai da home do idioma ao artigo, com URL em todo nível', () => {
+    expect(node(graph, 'BreadcrumbList').itemListElement).toEqual([
+      { '@type': 'ListItem', position: 1, name: 'RDM Labs', item: 'https://rdmlabs.dev/pt' },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Code review sem atrito',
+        item: 'https://rdmlabs.dev/pt/publicacoes/code-review-sem-atrito',
+      },
+    ]);
   });
 });
 
 describe('homeJsonLd', () => {
+  const posts = [
+    { slug: 'a', title: 'A', summary: 'Resumo A', publishedAt: '2026-01-01T12:00:00.000Z' },
+    { slug: 'b', title: 'B', summary: 'Resumo B', publishedAt: '2025-01-01T12:00:00.000Z' },
+  ];
+  const graph = homeJsonLd(SITE, 'en', { title: 'T', description: 'D' }, posts);
+
   it('a home é o WebSite, no idioma da versão', () => {
-    const json = homeJsonLd(SITE, 'en', { title: 'T', description: 'D' });
-    expect(json['@type']).toBe('WebSite');
+    const json = node(graph, 'WebSite');
     expect(json.name).toBe(SITE.siteName);
     expect(json.url).toBe('https://rdmlabs.dev/en');
-    expect(json.inLanguage).toBe('en');
+    expect(json.inLanguage).toBe('en-GB');
     expect(json.description).toBe('D');
+  });
+
+  it('e o Blog, com cada publicação do idioma em blogPost', () => {
+    const blog = node(graph, 'Blog');
+    expect(blog.url).toBe('https://rdmlabs.dev/en');
+    expect(blog.blogPost).toEqual([
+      {
+        '@type': 'BlogPosting',
+        headline: 'A',
+        description: 'Resumo A',
+        datePublished: '2026-01-01T12:00:00.000Z',
+        url: 'https://rdmlabs.dev/en/publications/a',
+      },
+      {
+        '@type': 'BlogPosting',
+        headline: 'B',
+        description: 'Resumo B',
+        datePublished: '2025-01-01T12:00:00.000Z',
+        url: 'https://rdmlabs.dev/en/publications/b',
+      },
+    ]);
+  });
+
+  it('o artigo declara fazer parte do Blog da home', () => {
+    expect(node(articleJsonLd(SITE, 'en', ARTICLE), 'BlogPosting').isPartOf).toEqual({
+      '@type': 'Blog',
+      '@id': node(graph, 'Blog')['@id'],
+    });
   });
 });
 

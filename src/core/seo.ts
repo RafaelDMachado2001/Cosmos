@@ -22,6 +22,12 @@ export interface MetaSite {
   readonly origin: string;
   readonly siteName: string;
   readonly authorName: string;
+  /** A página de quem escreve: o `author.url` do JSON-LD. */
+  readonly authorUrl?: string;
+  /** Os perfis da mesma pessoa em outros sites: o `author.sameAs`. */
+  readonly authorSameAs?: readonly string[];
+  /** Raiz-relativo; o `publisher.logo` do JSON-LD. */
+  readonly logoPath?: string;
 }
 
 export interface MetaArticle {
@@ -40,6 +46,16 @@ export interface MetaArticle {
   readonly seoDescription?: string;
   /** `false` tira a página do índice de busca — ver `PublicationInput.indexable`. */
   readonly indexable?: boolean;
+  /** Palavras do corpo (`core/readingTime.ts`); só o artigo aberto tem. */
+  readonly wordCount?: number;
+}
+
+/** Uma publicação na lista do `Blog` da home. */
+export interface MetaPost {
+  readonly slug: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly publishedAt: string;
 }
 
 export interface Alternate {
@@ -64,39 +80,19 @@ export interface PageMeta {
   readonly robots?: string;
 }
 
-export interface ArticleJsonLd {
-  readonly '@context': string;
-  readonly '@type': string;
-  readonly headline: string;
-  readonly description: string;
-  readonly datePublished: string;
-  readonly inLanguage: string;
-  readonly articleSection: string;
-  readonly url: string;
-  readonly mainEntityOfPage: { readonly '@type': string; readonly '@id': string };
-  readonly image: string;
-  readonly dateModified: string;
-  readonly author: { readonly '@type': string; readonly name: string };
-  readonly publisher: JsonLdPublisher;
-}
+/** Um nó do grafo do schema.org. Os tipos ficam soltos: quem garante a forma são os testes. */
+export type JsonLdNode = Readonly<Record<string, unknown>> & { readonly '@type': string };
 
-interface JsonLdPublisher {
-  readonly '@type': string;
-  readonly name: string;
-  readonly url: string;
+/**
+ * O que vai no `<script type="application/ld+json">`: um grafo só por página.
+ *
+ * O artigo tem o `BlogPosting` e o `BreadcrumbList`; a home, o `WebSite` e o
+ * `Blog`. Um `@graph` cabe numa tag, que é o que `useHeadMeta` governa.
+ */
+export interface JsonLd {
+  readonly '@context': 'https://schema.org';
+  readonly '@graph': readonly JsonLdNode[];
 }
-
-export interface WebSiteJsonLd {
-  readonly '@context': string;
-  readonly '@type': string;
-  readonly name: string;
-  readonly description: string;
-  readonly url: string;
-  readonly inLanguage: string;
-  readonly publisher: JsonLdPublisher;
-}
-
-export type JsonLd = ArticleJsonLd | WebSiteJsonLd;
 
 /**
  * Os idiomas disponíveis mais o `x-default`.
@@ -160,6 +156,8 @@ function ogImageTags(site: MetaSite, card: OgCard): Readonly<Record<string, stri
     // O X lê título, descrição e imagem do Open Graph, mas não o tamanho do
     // cartão: sem isto ele mostra o pequeno, com a imagem cortada num quadrado.
     'twitter:card': 'summary_large_image',
+    'twitter:image': absolute(site.origin, ogImagePath(card)),
+    'twitter:image:alt': card.title,
     'og:image': absolute(site.origin, ogImagePath(card)),
     'og:image:width': String(OG_SIZE.width),
     'og:image:height': String(OG_SIZE.height),
@@ -196,6 +194,10 @@ export function articleMeta(
       'og:url': canonical,
       'og:title': title,
       'og:description': description,
+      // O X cai no og:* quando faltam os dele, mas outros leitores de cartão
+      // não: declarar os dois custa duas linhas.
+      'twitter:title': title,
+      'twitter:description': description,
       'og:site_name': site.siteName,
       'og:locale': OG_LOCALE[locale],
       'og:locale:alternate': otherOgLocales(locale, locales),
@@ -226,6 +228,8 @@ export function homeMeta(
       'og:url': canonical,
       'og:title': copy.title,
       'og:description': copy.description,
+      'twitter:title': copy.title,
+      'twitter:description': copy.description,
       'og:site_name': site.siteName,
       'og:locale': OG_LOCALE[locale],
       'og:locale:alternate': otherOgLocales(locale),
@@ -236,30 +240,50 @@ export function homeMeta(
 }
 
 /**
- * O `Article` que vai no `<script type="application/ld+json">`.
+ * O grafo do artigo: o `BlogPosting` e o caminho até ele.
  *
- * Só o artigo é um `Article`: a tela de entrada é uma porta, não um texto, e se
- * apresenta como `WebSite` (ver `homeJsonLd`).
+ * `BlogPosting`, e não `Article`: são textos de um blog pessoal, datados e
+ * assinados, e o Google lê os dois como artigo para o resultado enriquecido.
+ * A tela de entrada é uma porta, não um texto, e se apresenta como `WebSite`
+ * e `Blog` (ver `homeJsonLd`).
+ *
+ * O breadcrumb tem dois níveis, Cosmos › artigo. A categoria ficaria entre os
+ * dois, mas não tem página própria, e todo nível que não é o último precisa de
+ * uma URL (`item`) para o Google aceitá-lo.
  */
-export function articleJsonLd(site: MetaSite, locale: Locale, article: MetaArticle): ArticleJsonLd {
+export function articleJsonLd(site: MetaSite, locale: Locale, article: MetaArticle): JsonLd {
   const url = absolute(site.origin, articlePath(locale, article.slug));
+  const home = absolute(site.origin, homePath(locale));
 
   return {
     '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: article.title,
-    description: article.summary,
-    datePublished: article.publishedAt,
-    inLanguage: LOCALE_TAG[locale],
-    articleSection: article.categoryLabel,
-    url,
-    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
-    // O mesmo cartão do og:image: o Google pede imagem para o resultado
-    // enriquecido de artigo, e o cartão já existe para cada um.
-    image: absolute(site.origin, ogImagePath(articleOgCard(locale, article))),
-    dateModified: article.updatedAt ?? article.publishedAt,
-    author: { '@type': 'Person', name: site.authorName },
-    publisher: publisher(site),
+    '@graph': [
+      {
+        '@type': 'BlogPosting',
+        headline: article.title,
+        description: article.summary,
+        datePublished: article.publishedAt,
+        dateModified: article.updatedAt ?? article.publishedAt,
+        inLanguage: LOCALE_TAG[locale],
+        articleSection: article.categoryLabel,
+        url,
+        mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+        // O mesmo cartão do og:image: o Google pede imagem para o resultado
+        // enriquecido de artigo, e o cartão já existe para cada um.
+        image: absolute(site.origin, ogImagePath(articleOgCard(locale, article))),
+        ...(article.wordCount === undefined ? {} : { wordCount: article.wordCount }),
+        author: author(site),
+        publisher: publisher(site),
+        isPartOf: { '@type': 'Blog', '@id': home },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: site.siteName, item: home },
+          { '@type': 'ListItem', position: 2, name: article.title, item: url },
+        ],
+      },
+    ],
   };
 }
 
@@ -270,24 +294,67 @@ function isEdited(article: MetaArticle): article is MetaArticle & { readonly upd
   );
 }
 
-function publisher(site: MetaSite): JsonLdPublisher {
-  return { '@type': 'Organization', name: site.siteName, url: absolute(site.origin, '/') };
+function author(site: MetaSite): JsonLdNode {
+  return {
+    '@type': 'Person',
+    name: site.authorName,
+    ...(site.authorUrl === undefined ? {} : { url: site.authorUrl }),
+    ...(site.authorSameAs === undefined ? {} : { sameAs: site.authorSameAs }),
+  };
 }
 
-/** A home se apresenta como o site: o nome que o Google mostra acima do resultado. */
+function publisher(site: MetaSite): JsonLdNode {
+  return {
+    '@type': 'Organization',
+    name: site.siteName,
+    url: absolute(site.origin, '/'),
+    ...(site.logoPath === undefined
+      ? {}
+      : { logo: { '@type': 'ImageObject', url: absolute(site.origin, site.logoPath) } }),
+  };
+}
+
+/**
+ * A home é o site e o blog: o `WebSite` dá o nome que o Google mostra acima do
+ * resultado; o `Blog` lista as publicações daquele idioma, as mesmas da lista
+ * pré-renderizada.
+ */
 export function homeJsonLd(
   site: MetaSite,
   locale: Locale,
   copy: { readonly title: string; readonly description: string },
-): WebSiteJsonLd {
+  posts: readonly MetaPost[],
+): JsonLd {
+  const url = absolute(site.origin, homePath(locale));
+
   return {
     '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: site.siteName,
-    description: copy.description,
-    url: absolute(site.origin, homePath(locale)),
-    inLanguage: LOCALE_TAG[locale],
-    publisher: publisher(site),
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        name: site.siteName,
+        description: copy.description,
+        url,
+        inLanguage: LOCALE_TAG[locale],
+        publisher: publisher(site),
+      },
+      {
+        '@type': 'Blog',
+        '@id': url,
+        name: copy.title,
+        description: copy.description,
+        url,
+        inLanguage: LOCALE_TAG[locale],
+        author: author(site),
+        blogPost: posts.map((post) => ({
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: post.summary,
+          datePublished: post.publishedAt,
+          url: absolute(site.origin, articlePath(locale, post.slug)),
+        })),
+      },
+    ],
   };
 }
 
