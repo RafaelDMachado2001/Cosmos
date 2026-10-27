@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Http\Middleware\PublicCors;
 use App\Http\Middleware\VerifyGoogleOidc;
 use App\Modules\Content\Http\Controllers\Api\PublicationController;
 use App\Modules\Content\Http\Controllers\Internal\TickController;
@@ -14,12 +13,11 @@ use Illuminate\Support\Facades\Route;
  *
  * Os parâmetros são os mesmos que `PublicationsSource` no frontend já
  * espelhava desde a fase 1 — `locale`, `category`, `q`, `before`, `limit` —
- * para que trocar o adapter estático pelo HTTP não mexa na constelação.
+ * para que trocar o adapter estático pelo HTTP não mexa na constelação. O
+ * CORS aberto (`*`) vem do PublicCors, que é global (bootstrap/app.php).
  */
-Route::middleware(PublicCors::class)->group(function (): void {
-    Route::get('/publications', [PublicationController::class, 'index']);
-    Route::get('/publications/{slug}', [PublicationController::class, 'show']);
-});
+Route::get('/publications', [PublicationController::class, 'index']);
+Route::get('/publications/{slug}', [PublicationController::class, 'show']);
 
 // A conta do leitor: sessão do Sanctum vinda do site (config/sanctum.php),
 // com CSRF e CORS de credenciais (config/cors.php).

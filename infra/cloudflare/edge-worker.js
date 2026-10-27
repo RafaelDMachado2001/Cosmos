@@ -127,6 +127,12 @@ export async function handle(request, env, ctx, deps) {
     ctx.waitUntil(deps.cache.put(key, response.clone()));
   }
   response.headers.set('X-Edge-Cache', 'MISS');
+  // Um 503 do próprio Cloud Run (instância que não subiu a tempo) nunca passou
+  // pelo PublicCors do Laravel, e sem o cabeçalho o navegador só vê "Failed to
+  // fetch". A leitura pública é `*` em qualquer status.
+  if (!response.headers.has('Access-Control-Allow-Origin')) {
+    response.headers.set('Access-Control-Allow-Origin', '*');
+  }
   return response;
 }
 
