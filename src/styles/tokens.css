@@ -88,6 +88,12 @@
   --tracking-meta: 0.22em;
   --tracking-nav: 0.14em;
 
+  /*
+   * O piso do texto da interface: rótulos em mono, datas, contadores, dicas.
+   * Nada abaixo disto, e 12px no celular (fim do arquivo).
+   */
+  --text-min: 11px;
+
   /* --- Raios ------------------------------------------------------------- */
   --radius-menu: 7px;
   --radius-pill: 10px;
@@ -145,4 +151,10 @@
     rgba(5, 6, 11, 0) 38%,
     rgba(3, 4, 9, 0.92) 100%
   );
+}
+
+@media (max-width: 640px) {
+  :root {
+    --text-min: 12px;
+  }
 }

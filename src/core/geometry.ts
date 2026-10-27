@@ -247,11 +247,12 @@ export function monthMarkers(
 }
 
 /**
- * A caixa do rótulo de mês, em mono de 11px com `--tracking-meta` (0.22em):
- * 0.6em de avanço + 0.22em de tracking dá ~9px por caractere, mais os 8px de
- * recuo do filete. A altura cobre o recuo de janeiro (16px) e a linha.
+ * A caixa do rótulo de mês, no pior caso: o janeiro do celular, em mono de
+ * 13px (`--text-min` + 1) com `--tracking-meta` (0.22em). 0.6em de avanço +
+ * 0.22em de tracking dá ~11px por caractere, mais os 8px de recuo do filete.
+ * A altura cobre o recuo de janeiro (16px) e a linha.
  */
-const MONTH_LABEL = { padPx: 8, charPx: 9, heightPx: 32 } as const;
+const MONTH_LABEL = { padPx: 8, charPx: 11, heightPx: 34 } as const;
 
 /** Até onde a estrela chega acima do centro: metade do núcleo em destaque. */
 const STAR_REACH_ABOVE_PX = 22;

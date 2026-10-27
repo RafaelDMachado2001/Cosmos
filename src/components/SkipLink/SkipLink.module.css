@@ -10,7 +10,7 @@
   backdrop-filter: blur(var(--blur-header));
   color: var(--color-accent-soft);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
   text-transform: uppercase;
 

@@ -220,14 +220,14 @@
 
 .asideDate {
   color: var(--color-text-muted);
-  font-size: 10.5px;
+  font-size: var(--text-min);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .asidePosition {
   color: var(--color-text-faint);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: 0.2em;
 }
 
@@ -243,7 +243,7 @@
   margin: 0 0 12px;
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
   text-transform: uppercase;
 }
@@ -309,7 +309,7 @@
   display: flex;
   justify-content: space-between;
   color: var(--color-text-faint);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
   text-transform: uppercase;
 }
@@ -345,7 +345,7 @@
   background: color-mix(in oklch, var(--cat) 10%, transparent);
   color: var(--color-text-primary);
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: var(--text-min);
   letter-spacing: 0.08em;
   cursor: pointer;
 }
@@ -491,7 +491,7 @@
   background: transparent;
   color: color-mix(in oklch, var(--cat) 40%, var(--color-text-primary));
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: 0.2em;
   cursor: pointer;
   transition: all var(--dur-ui) var(--ease);

@@ -22,7 +22,7 @@
   backdrop-filter: blur(var(--blur-header));
   color: var(--color-text-primary);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-nav);
   cursor: pointer;
   transition: border-color var(--dur-ui) var(--ease);
@@ -72,7 +72,7 @@
   background: transparent;
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-nav);
   cursor: pointer;
   transition:

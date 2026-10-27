@@ -13,7 +13,7 @@
   border-radius: var(--radius-menu);
   color: var(--color-text-faint);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--text-min);
   letter-spacing: var(--tracking-nav);
   cursor: pointer;
   transition:
