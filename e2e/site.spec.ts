@@ -81,6 +81,21 @@ test.describe('sem JavaScript', () => {
   });
 });
 
+test('o contato de segurança é servido, apesar da regra que esconde arquivos com ponto', async ({ request }) => {
+  const response = await request.get('/.well-known/security.txt');
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toContain('text/plain');
+  expect(await response.text()).toMatch(/^Contact: https:\/\//m);
+  // O resto do que começa com ponto continua 404.
+  expect((await request.get('/.vite/manifest.json')).status()).toBe(404);
+});
+
+test('o site isola a própria janela', async ({ request }) => {
+  const response = await request.get('/pt');
+  expect(response.headers()['cross-origin-opener-policy']).toBe('same-origin');
+  expect(response.headers()['content-security-policy']).toContain("img-src 'self' data:;");
+});
+
 test('a CSP do Nginx não bloqueia nada do próprio site', async ({ page }) => {
   test.setTimeout(60_000);
   const violations: string[] = [];
