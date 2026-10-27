@@ -1,0 +1,8 @@
+# Achou uma falha de segurança no RDM Labs · Cosmos? Conte em particular,
+# antes de publicar. / Found a security issue? Please report it privately.
+Contact: https://github.com/RafaelDMachado2001/Cosmos/security/advisories/new
+Contact: https://www.linkedin.com/in/rafael-dorneles-machado-8478b3172
+Expires: 2027-10-27T00:00:00.000Z
+Preferred-Languages: pt, en
+Canonical: https://cosmos.rdmlabs.com.br/.well-known/security.txt
+Policy: https://github.com/RafaelDMachado2001/Cosmos/security/policy

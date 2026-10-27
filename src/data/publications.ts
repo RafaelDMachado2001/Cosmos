@@ -43,7 +43,7 @@ O parser do corpo é só isto, em TypeScript puro:
 const blocos = parseBlocks(corpoEmMarkdown);
 \`\`\`
 
-![a constelação, vista de cima, com as estrelas posicionadas por data](https://example.com/constelacao.png "Vista aérea do acervo")
+![a constelação, vista de cima, com as estrelas posicionadas por data](/demo/constelacao.svg "Vista aérea do acervo")
 
 Ao fechar, a câmera retorna exatamente ao ponto de onde saiu, sem recarregar a constelação.`,
   en: `## How this text gets here
@@ -64,7 +64,7 @@ The body parser is just this, in plain TypeScript:
 const blocks = parseBlocks(markdownBody);
 \`\`\`
 
-![the constellation, seen from above, stars placed by date](https://example.com/constelacao.png "Aerial view of the archive")
+![the constellation, seen from above, stars placed by date](/demo/constelacao.svg "Aerial view of the archive")
 
 On close, the camera returns to the exact point it left from, with no constellation reload.`,
 } as const;
