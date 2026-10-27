@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import type { Locator, Page } from '@playwright/test';
+import type { Browser, Locator, Page } from '@playwright/test';
 
 /**
  * Um texto com todos os tipos de bloco, nas duas línguas, com uma imagem
@@ -16,6 +16,18 @@ test.skip(cookie === undefined, 'sem E2E_ADMIN_COOKIE: precisa da stack com back
 
 test.setTimeout(300_000);
 const JOB_TIMEOUT = 180_000;
+
+/**
+ * O artigo do HTML que o job gravou, lido sem JavaScript — como um crawler o
+ * recebe. Com JavaScript a casca sai do DOM assim que o React monta (um H1 por
+ * página), e `#prerender` deixa de existir.
+ */
+async function staticArticle(browser: Browser, url: string): Promise<{ article: Locator; close: () => Promise<void> }> {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto(url);
+  return { article: page.locator('#prerender article'), close: () => context.close() };
+}
 
 /** Um PNG de 2x2, para o upload não depender de arquivo no repositório. */
 const PNG = Buffer.from(
@@ -98,7 +110,7 @@ async function expectPtBody(article: Locator): Promise<void> {
   await expect(article.locator('figure figcaption', { hasText: 'Legenda da imagem' })).toHaveCount(1);
 }
 
-test('todos os blocos e uma imagem enviada chegam ao site nas duas línguas', async ({ page, baseURL, request }) => {
+test('todos os blocos e uma imagem enviada chegam ao site nas duas línguas', async ({ page, baseURL, request, browser }) => {
   const { name, value } = JSON.parse(cookie ?? '{}') as { name: string; value: string };
   await page.context().addCookies([{ name, value, url: baseURL ?? 'http://localhost:8080' }]);
 
@@ -150,16 +162,20 @@ test('todos os blocos e uma imagem enviada chegam ao site nas duas línguas', as
       .toBe(true);
   }
 
+  const ptShell = await staticArticle(browser, new URL(ptUrl, baseURL).href);
+  await expectPtBody(ptShell.article);
+  await ptShell.close();
   await page.goto(ptUrl);
-  await expectPtBody(page.locator('#prerender article'));
   await expectPtBody(page.getByRole('dialog').locator('article'));
 
+  const enShell = await staticArticle(browser, new URL(enUrl, baseURL).href);
   await page.goto(enUrl);
-  for (const article of [page.locator('#prerender article'), page.getByRole('dialog').locator('article')]) {
+  for (const article of [enShell.article, page.getByRole('dialog').locator('article')]) {
     await expect(article.locator('h2', { hasText: 'Proof heading' })).toHaveCount(1);
     await expect(article.locator('[role="note"]')).toContainText('Note title');
     await expect(article.locator('table td')).toHaveText(['alpha', '1']);
   }
+  await enShell.close();
 
   await page.goto('/admin/studio');
   await page.getByText(title).first().click();
