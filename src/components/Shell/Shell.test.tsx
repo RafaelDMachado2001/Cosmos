@@ -220,6 +220,25 @@ describe('Shell', () => {
     );
   });
 
+  it('no cosmos o botão do hero sai da ordem de Tab, e volta com o INICIO', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const entrar = await screen.findByRole('button', { name: 'Role para atravessar' });
+    expect(entrar.closest('[inert]')).toBeNull();
+
+    await entrarNaConstelacao(user);
+    // Fora da tela mas focável, ele rolava o palco e cortava o cabeçalho.
+    expect(entrar.closest('[inert]')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'INÍCIO' }));
+    await waitFor(
+      () => {
+        expect(entrar.closest('[inert]')).toBeNull();
+      },
+      { timeout: 4000 },
+    );
+  });
+
   it('carga direta num slug que não existe mostra o 404 dentro da constelação', async () => {
     window.history.replaceState(null, '', '/pt/publicacoes/nao-existe');
     render(<App />);

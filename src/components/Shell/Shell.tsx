@@ -536,7 +536,7 @@ export function Shell({ route }: { route: Route }) {
         />
 
         <main id="conteudo" className={styles.content} tabIndex={-1}>
-          <Hero ref={heroBlockRef} onEnter={engine.goCosmos} />
+          <Hero ref={heroBlockRef} onEnter={engine.goCosmos} active={engine.phase === 'hero'} />
           <StarIndex items={summaries} label={t.star.indexLabel} hrefFor={hrefFor} />
         </main>
 

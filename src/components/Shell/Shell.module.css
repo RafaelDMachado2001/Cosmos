@@ -1,8 +1,14 @@
-/* A experiência inteira é uma camada fixa: nada rola nativamente. */
+/*
+ * A experiência inteira é uma camada fixa: nada rola nativamente. `clip`, e
+ * não só `hidden`: um contêiner `hidden` ainda rola quando o foco cai num
+ * elemento fora dele, e o cabeçalho subia junto. O `hidden` fica para quem não
+ * conhece `clip`.
+ */
 .stage {
   position: fixed;
   inset: 0;
   overflow: hidden;
+  overflow: clip;
   background: var(--color-bg);
 
   /*
