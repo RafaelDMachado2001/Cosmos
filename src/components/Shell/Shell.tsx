@@ -571,6 +571,7 @@ export function Shell({ route }: { route: Route }) {
               enterCosmos(true);
             }}
             active={engine.phase === 'hero'}
+            heading={readerCard === null}
           />
           <StarIndex items={summaries} label={t.star.indexLabel} hrefFor={hrefFor} />
         </main>

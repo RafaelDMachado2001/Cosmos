@@ -1,6 +1,8 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 
+import { restoreShell } from '../../prerenderShell';
+
 interface Props {
   readonly children: ReactNode;
 }
@@ -25,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
   override componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('A constelacao falhou; a casca pre-renderizada fica no lugar.', error, info);
     document.getElementById('root')?.setAttribute('hidden', '');
-    document.getElementById('prerender')?.removeAttribute('hidden');
+    restoreShell();
   }
 
   override render(): ReactNode {

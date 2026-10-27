@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ErrorBoundary } from './ErrorBoundary';
+import { detachShell } from '../../prerenderShell';
 
 function Quebra(): never {
   throw new Error('falha de proposito');
@@ -38,6 +39,24 @@ describe('ErrorBoundary', () => {
     expect(shell.hidden).toBe(false);
     expect(shell.textContent).toContain('Texto ja no HTML');
     expect(root.hidden).toBe(true);
+  });
+
+  it('devolve a casca também depois de ela sair do DOM', () => {
+    detachShell();
+    expect(document.getElementById('prerender')).toBeNull();
+
+    act(() => {
+      createRoot(root).render(
+        <ErrorBoundary>
+          <Quebra />
+        </ErrorBoundary>,
+      );
+    });
+
+    expect(document.getElementById('prerender')).toBe(shell);
+    expect(shell.hidden).toBe(false);
+    // De volta no mesmo lugar: antes do #root, como o HTML a gravou.
+    expect(shell.nextElementSibling).toBe(root);
   });
 
   it('sem erro, não mexe em nada', () => {

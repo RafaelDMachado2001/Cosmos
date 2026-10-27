@@ -14,6 +14,12 @@ export interface HeroProps {
    * palco e puxava o cabeçalho para cima.
    */
   readonly active: boolean;
+  /**
+   * Se o título do hero é o `<h1>` da página. Com um artigo aberto o `<h1>` é o
+   * título dele, e o do hero vira parágrafo: dois H1 diziam a um buscador que a
+   * página tinha dois assuntos principais.
+   */
+  readonly heading: boolean;
 }
 
 /**
@@ -22,13 +28,17 @@ export interface HeroProps {
  * A ref aponta para o bloco de texto, não para o container: é a posição real
  * dele que define a faixa livre onde o núcleo é enquadrado.
  */
-export const Hero = forwardRef<HTMLDivElement, HeroProps>(function Hero({ onEnter, onSkip, active }, ref) {
+export const Hero = forwardRef<HTMLDivElement, HeroProps>(function Hero({ onEnter, onSkip, active, heading }, ref) {
   const { t } = useLocale();
 
   return (
     <div ref={ref} className={styles.block} {...(active ? {} : { inert: '' })}>
       <p className={styles.kicker}>{t.hero.kicker}</p>
-      <h1 className={styles.title}>{t.hero.title}</h1>
+      {heading ? (
+        <h1 className={styles.title}>{t.hero.title}</h1>
+      ) : (
+        <p className={styles.title}>{t.hero.title}</p>
+      )}
       <p className={styles.subtitle}>{t.hero.subtitle}</p>
 
       {/*
