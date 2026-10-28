@@ -16,9 +16,6 @@
   /* --- Bordas ------------------------------------------------------------ */
   --color-border: rgba(255, 255, 255, 0.07);
   --color-border-soft: rgba(255, 255, 255, 0.09);
-  --color-border-accent: rgba(124, 92, 255, 0.22);
-  --color-border-accent-strong: rgba(124, 92, 255, 0.4);
-  --color-border-accent-faint: rgba(124, 92, 255, 0.14);
 
   /* --- Texto -------------------------------------------------------------
    * Não usar cinza abaixo de --color-text-faint sobre o fundo: a revisão de
@@ -38,16 +35,12 @@
   --color-month-filet-january: rgba(169, 155, 255, 0.45);
   --color-focus: #e8e9f2; /* anel de foco */
 
-  /* --- Acento ------------------------------------------------------------ */
-  --color-accent: #8c6bff; /* roxo dominante */
-  --color-accent-soft: #a99bff; /* links, chamadas */
-  --color-accent-hover: #d8d2ff;
-  --color-accent-line: rgba(124, 92, 255, 0.3);
-  --color-accent-line-strong: rgba(124, 92, 255, 0.8);
-  --color-accent-wash: rgba(124, 92, 255, 0.1);
-  --color-accent-active: rgba(124, 92, 255, 0.16);
-  --color-accent-filet: rgba(124, 92, 255, 0.18);
-  --color-selection: rgba(124, 92, 255, 0.35);
+  /* --- Marcas ------------------------------------------------------------
+   * A cor primária de cada produto RDM: a lua do logo (`BrandMark`, os
+   * favicons). O Cosmos é o próprio roxo dominante; o Studio pinta o acento
+   * do painel com o dele (`src/admin/admin.css`). */
+  --color-brand-cosmos: #8c6bff;
+  --color-brand-studio: #ff8a4c;
 
   /* --- Categorias --------------------------------------------------------
    * Sinal de navegação e classificação apenas: o roxo é que domina. */
@@ -151,6 +144,27 @@
     rgba(5, 6, 11, 0) 38%,
     rgba(3, 4, 9, 0.92) 100%
   );
+}
+
+/* --- Acento -----------------------------------------------------------------
+ * Num bloco à parte porque o RDM Studio o redefine com a cor dele
+ * (`src/admin/admin.css`): o que dentro do painel mostra o site — a prévia do
+ * artigo — declara `data-brand="cosmos"` e volta a estes valores. */
+:root,
+[data-brand='cosmos'] {
+  --color-accent: #8c6bff; /* roxo dominante */
+  --color-accent-soft: #a99bff; /* links, chamadas */
+  --color-accent-hover: #d8d2ff;
+  --color-accent-ink: #f2f1fa; /* texto sobre o acento cheio */
+  --color-accent-line: rgba(124, 92, 255, 0.3);
+  --color-accent-line-strong: rgba(124, 92, 255, 0.8);
+  --color-accent-wash: rgba(124, 92, 255, 0.1);
+  --color-accent-active: rgba(124, 92, 255, 0.16);
+  --color-accent-filet: rgba(124, 92, 255, 0.18);
+  --color-selection: rgba(124, 92, 255, 0.35);
+  --color-border-accent: rgba(124, 92, 255, 0.22);
+  --color-border-accent-strong: rgba(124, 92, 255, 0.4);
+  --color-border-accent-faint: rgba(124, 92, 255, 0.14);
 }
 
 @media (max-width: 640px) {

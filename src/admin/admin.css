@@ -18,7 +18,27 @@ body {
   padding: 0;
 }
 
+/*
+ * O acento do Studio é a cor da marca dele, não o roxo do Cosmos. Redefine o
+ * bloco de acento de `tokens.css` inteiro; a prévia do artigo declara
+ * `data-brand="cosmos"` e volta ao roxo, porque mostra o site como ele é.
+ * Texto escuro sobre o laranja cheio: o claro do Cosmos ficaria em 2:1.
+ */
 body {
+  --color-accent: var(--color-brand-studio);
+  --color-accent-soft: #ffab7e;
+  --color-accent-hover: #ffdcc9;
+  --color-accent-ink: var(--color-bg);
+  --color-accent-line: rgba(255, 138, 76, 0.3);
+  --color-accent-line-strong: rgba(255, 138, 76, 0.8);
+  --color-accent-wash: rgba(255, 138, 76, 0.1);
+  --color-accent-active: rgba(255, 138, 76, 0.16);
+  --color-accent-filet: rgba(255, 138, 76, 0.18);
+  --color-selection: rgba(255, 138, 76, 0.35);
+  --color-border-accent: rgba(255, 138, 76, 0.22);
+  --color-border-accent-strong: rgba(255, 138, 76, 0.4);
+  --color-border-accent-faint: rgba(255, 138, 76, 0.14);
+
   background: var(--color-bg);
   color: var(--color-text-primary);
   font-family: var(--font-sans);

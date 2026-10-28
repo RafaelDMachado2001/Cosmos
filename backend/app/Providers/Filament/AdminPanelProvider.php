@@ -20,10 +20,23 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    /** O `BrandMark` do Studio (`src/components/BrandMark`), com o nome ao lado. */
+    private const BRAND_LOGO = <<<'HTML'
+        <span style="display:flex;align-items:center;gap:.6rem;height:100%;font-weight:600">
+            <svg viewBox="0 0 32 32" aria-hidden="true" style="height:100%;width:auto">
+                <circle cx="16" cy="16" r="11" fill="none" stroke="#C9CBE0" stroke-opacity="0.55" stroke-width="2.4"/>
+                <circle cx="16" cy="16" r="5" fill="#F2F1FA"/>
+                <circle cx="16" cy="27" r="4" fill="#FF8A4C"/>
+            </svg>
+            RDM Studio
+        </span>
+        HTML;
+
     public function panel(Panel $panel): Panel
     {
         return $panel
@@ -31,9 +44,16 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(GoogleLogin::class)
+            // A marca do RDM Studio: a cor dele (`--color-brand-studio` em
+            // tokens.css) e o mesmo logo do Studio em React. Sempre escuro: o
+            // núcleo do logo é quase branco e sumiria no tema claro.
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#ff8a4c'),
             ])
+            ->darkMode(isForced: true)
+            ->brandName('RDM Studio')
+            ->brandLogo(fn (): HtmlString => new HtmlString(self::BRAND_LOGO))
+            ->favicon(fn (): string => asset('admin/rdm-studio/favicon.svg'))
             ->discoverResources(in: app_path('Modules/Content/Filament/Resources'), for: 'App\Modules\Content\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

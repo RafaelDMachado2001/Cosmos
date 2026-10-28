@@ -2,6 +2,7 @@ import styles from './HomePage.module.css';
 import { useLocale } from '../../i18n/useLocale';
 import { ArticleIndex } from '../ArticleIndex/ArticleIndex';
 import type { ArticleLink } from '../ArticleIndex/ArticleIndex';
+import { BrandMark } from '../BrandMark/BrandMark';
 
 export interface HomePageProps {
   readonly otherLocaleHref: string;
@@ -30,7 +31,10 @@ export function HomePage({ otherLocaleHref, index, notice }: HomePageProps) {
   return (
     <div className={styles.page}>
       <header className={styles.top}>
-        <span className={styles.brand}>{t.nav.brand}</span>
+        <span className={styles.brand}>
+          <BrandMark product="cosmos" className={styles.mark} />
+          {t.nav.brand}
+        </span>
         <a
           className={styles.other}
           href={otherLocaleHref}

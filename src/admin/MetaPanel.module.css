@@ -175,7 +175,16 @@
 }
 
 .cardFooter {
+  display: flex;
+  align-items: center;
+  gap: 1.33cqw;
   color: var(--color-text-muted);
+}
+
+/* 30px num cartão de 1200, como `src/prerender/og.tsx` desenha. */
+.cardMark {
+  width: 2.5cqw;
+  height: 2.5cqw;
 }
 
 .cardTitle {
@@ -275,7 +284,7 @@
 
 .primaryButton {
   background: var(--color-accent);
-  color: var(--color-text-primary);
+  color: var(--color-accent-ink);
   border-color: var(--color-accent);
 }
 

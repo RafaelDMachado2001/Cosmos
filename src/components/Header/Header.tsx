@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 
 import styles from './Header.module.css';
 import { useLocale } from '../../i18n/useLocale';
+import { BrandMark } from '../BrandMark/BrandMark';
 import { LocaleToggle } from '../LocaleToggle/LocaleToggle';
 import { SearchField } from '../SearchField/SearchField';
 
@@ -38,7 +39,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header(
       {...(concealed ? { inert: '' } : {})}
     >
       <button type="button" className={styles.brand} onClick={onBrandClick}>
-        <span className={styles.mark} aria-hidden="true" />
+        <BrandMark product="cosmos" className={styles.mark} />
         <span className={styles.brandText}>{t.nav.brand}</span>
       </button>
 

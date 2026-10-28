@@ -1,0 +1,26 @@
+.mark {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
+.ring {
+  fill: none;
+  stroke: var(--color-text-ui);
+  stroke-opacity: 0.55;
+  stroke-width: 2.4;
+}
+
+.core {
+  fill: var(--color-text-primary);
+}
+
+.mark[data-product='cosmos'] .moon {
+  fill: var(--color-brand-cosmos);
+}
+
+.mark[data-product='studio'] .moon {
+  fill: var(--color-brand-studio);
+}

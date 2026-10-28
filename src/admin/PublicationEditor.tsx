@@ -95,7 +95,7 @@ export function PublicationEditor({ editor }: PublicationEditorProps): React.JSX
       )}
 
       {preview ? (
-        <div className={styles.preview}>
+        <div className={styles.preview} data-brand="cosmos">
           <ArticleBody markdown={draftBlocksToMarkdown(editor.currentDraft.blocks)} />
         </div>
       ) : (

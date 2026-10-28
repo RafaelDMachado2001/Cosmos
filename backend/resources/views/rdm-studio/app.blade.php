@@ -7,6 +7,7 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="site-url" content="{{ config('hosts.site') }}">
 <title>RDM Studio</title>
+<link rel="icon" href="{{ asset('admin/rdm-studio/favicon.svg') }}" type="image/svg+xml">
 <link rel="stylesheet" href="{{ asset('admin/rdm-studio/admin.css') }}">
 </head>
 <body>
