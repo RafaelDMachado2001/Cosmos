@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 
+import { BrandMark } from '../components/BrandMark/BrandMark';
 import { CATEGORY_LABEL, STATUS_LABEL } from './categoryLabels';
 import styles from './PublicationList.module.css';
 import type { AdminPublication, PublicationStatus } from './api';
@@ -38,7 +39,10 @@ export function PublicationList({
   return (
     <div className={styles.column}>
       <div className={styles.header}>
-        <h1 className={styles.title}>RDM Studio</h1>
+        <h1 className={styles.title}>
+          <BrandMark product="studio" className={styles.mark} />
+          RDM Studio
+        </h1>
         <button type="button" className={styles.createButton} onClick={onCreate}>
           + Nova
         </button>

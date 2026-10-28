@@ -148,7 +148,23 @@ function cardElement(card: OgCard) {
           paddingTop: 28,
         }}
       >
-        <span>RDM Labs / Cosmos</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* A marca do Cosmos (`BrandMark`), com as cores lidas dos tokens. */}
+          <svg width={30} height={30} viewBox="0 0 32 32">
+            <circle
+              cx={16}
+              cy={16}
+              r={11}
+              fill="none"
+              stroke={token('color-text-ui')}
+              strokeOpacity={0.55}
+              strokeWidth={2.4}
+            />
+            <circle cx={16} cy={16} r={5} fill={token('color-text-primary')} />
+            <circle cx={16} cy={5} r={4} fill={token('color-brand-cosmos')} />
+          </svg>
+          RDM Labs / Cosmos
+        </span>
         {date === null ? null : <span>{date}</span>}
       </div>
     </div>

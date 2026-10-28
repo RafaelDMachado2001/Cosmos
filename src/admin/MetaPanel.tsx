@@ -4,6 +4,7 @@ import { DEFAULT_APPEARANCE, NEBULA_MAX } from '../core/appearance';
 import { articlePath } from '../core/routing';
 import { CATEGORIES } from '../core/types';
 import type { Category } from '../core/types';
+import { BrandMark } from '../components/BrandMark/BrandMark';
 import { CategoryTheme } from '../components/CategoryTheme/CategoryTheme';
 import { Nebula } from '../components/Nebula/Nebula';
 import { CATEGORY_LABEL, STATUS_LABEL } from './categoryLabels';
@@ -198,7 +199,10 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
             <span className={styles.cardStar} aria-hidden="true" />
             <span className={styles.cardKicker}>{CATEGORY_LABEL[editor.category]}</span>
             <span className={styles.cardTitle}>{editor.currentDraft.title === '' ? '(sem título)' : editor.currentDraft.title}</span>
-            <span className={styles.cardFooter}>RDM Labs / Cosmos</span>
+            <span className={styles.cardFooter}>
+              <BrandMark product="cosmos" className={styles.cardMark} />
+              RDM Labs / Cosmos
+            </span>
           </div>
           <div className={styles.cardMeta}>
             <span className={styles.cardHost}>{host.toUpperCase()}</span>

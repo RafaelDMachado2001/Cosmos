@@ -1,0 +1,11 @@
+<!--
+  A marca do RDM Studio: a do Cosmos com a lua embaixo, em color-brand-studio (tokens.css).
+  Copiada para backend/public/admin/rdm-studio/ pelo build (`publicDir` de
+  vite.admin.config.ts); o Blade do Studio e o painel do Filament apontam para ela.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="RDM Studio">
+  <rect width="32" height="32" rx="7" fill="#05060B" />
+  <circle cx="16" cy="16" r="11" fill="none" stroke="#C9CBE0" stroke-opacity="0.55" stroke-width="2.4" />
+  <circle cx="16" cy="16" r="5" fill="#F2F1FA" />
+  <circle cx="16" cy="27" r="4" fill="#FF8A4C" />
+</svg>

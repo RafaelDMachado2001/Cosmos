@@ -3,6 +3,7 @@ import { ArticleBody } from '../ArticleBody/ArticleBody';
 import { ArticleIndex } from '../ArticleIndex/ArticleIndex';
 import type { ArticleLink } from '../ArticleIndex/ArticleIndex';
 import { ArticleTags } from '../ArticleTags/ArticleTags';
+import { BrandMark } from '../BrandMark/BrandMark';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
 import { parseBlocks } from '../../core/blocks';
 import { readingMinutes } from '../../core/readingTime';
@@ -66,6 +67,7 @@ export function ArticlePage({
     <div className={styles.page} style={categoryThemeStyle(category)}>
       <header className={styles.top}>
         <a className={styles.brand} href={homeHref}>
+          <BrandMark product="cosmos" className={styles.mark} />
           {t.nav.brand}
         </a>
         {otherLocaleHref !== null && (
