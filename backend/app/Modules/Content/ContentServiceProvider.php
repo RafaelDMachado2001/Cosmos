@@ -7,10 +7,12 @@ namespace App\Modules\Content;
 use App\Modules\Content\Console\Commands\MigrateMediaToBucket;
 use App\Modules\Content\Console\Commands\PublishScheduled;
 use App\Modules\Content\Console\Commands\SeedDrafts;
+use App\Modules\Content\Contracts\PublicationSlugs;
 use App\Modules\Content\Contracts\PublishedPublications;
 use App\Modules\Content\Models\Publication;
 use App\Modules\Content\Models\PublicationTranslation;
 use App\Modules\Content\Observers\PublicationObserver;
+use App\Modules\Content\Support\EloquentPublicationSlugs;
 use App\Modules\Content\Support\LivePublications;
 use App\Modules\Content\Support\SiteRebuild;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +22,7 @@ class ContentServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PublishedPublications::class, LivePublications::class);
+        $this->app->singleton(PublicationSlugs::class, EloquentPublicationSlugs::class);
     }
 
     public function boot(): void
