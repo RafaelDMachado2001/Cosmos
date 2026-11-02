@@ -21,9 +21,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class PublicationTranslation extends Model
 {
     /**
-     * Lidos de config/publications.php, gerado de src/core/types.ts por
-     * `npm run emit:seed`.
-     *
      * @return list<string>
      */
     public static function locales(): array
@@ -33,10 +30,6 @@ class PublicationTranslation extends Model
 
     protected $fillable = ['publication_id', 'locale', 'title', 'summary', 'body', 'seo_title', 'seo_description'];
 
-    /**
-     * Coluna gerada pelo Postgres. Listá-la aqui impede o Eloquent de tentar
-     * escrevê-la num `update`, o que o banco recusaria.
-     */
     protected $guarded = ['search_vector'];
 
     /** @return BelongsTo<Publication, $this> */

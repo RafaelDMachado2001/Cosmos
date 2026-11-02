@@ -13,12 +13,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
 
 /**
- * Um leitor com conta, autenticado pelo guard `member`.
- *
- * Nunca é o admin: o guard `web` lê `users`, este lê `members`, e cada um
- * guarda a sessão sob a própria chave. Sem senha e sem "lembrar de mim": a
- * única entrada é o login social.
- *
  * @property int $id
  * @property string $name
  * @property string $handle
@@ -40,7 +34,6 @@ class Member extends Authenticatable
 
     protected $hidden = ['email'];
 
-    /** Sem coluna: o SessionGuard não tenta girar um token que não existe. */
     protected $rememberTokenName = '';
 
     /**

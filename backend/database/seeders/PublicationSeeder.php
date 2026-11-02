@@ -7,15 +7,6 @@ namespace Database\Seeders;
 use App\Modules\Content\Models\Publication;
 use Illuminate\Database\Seeder;
 
-/**
- * O acervo semente.
- *
- * O JSON ao lado é gerado de `src/data/publications.ts` por
- * `npm run emit:seed` — o mesmo conteúdo que a constelação usa quando não há
- * API configurada. Duas cópias escritas à mão divergiriam no primeiro ajuste de
- * texto, e a paridade entre as duas fontes é o que torna a troca de adapter
- * invisível.
- */
 class PublicationSeeder extends Seeder
 {
     public function run(): void

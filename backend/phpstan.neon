@@ -1,4 +1,3 @@
-# Nivel 8 e sem baseline: baseline e uma lista de erros aceitos que so cresce.
 includes:
     - vendor/larastan/larastan/extension.neon
 

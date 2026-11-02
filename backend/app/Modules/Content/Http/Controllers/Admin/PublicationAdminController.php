@@ -18,11 +18,6 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-/**
- * O CRUD do RDM Studio. Nunca a API pública — aqui dentro `status` pode ser
- * qualquer um dos três valores, `body` não existe (só `publication_drafts`),
- * e nada disto é filtrado por `published_at`.
- */
 class PublicationAdminController extends Controller
 {
     private const string SLUG_REGEX = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
@@ -70,7 +65,6 @@ class PublicationAdminController extends Controller
         return new PublicationAdminResource($publication);
     }
 
-    /** O autosave: qualquer subconjunto dos campos, aplicado por cima do que já existe. */
     public function update(Request $request, Publication $publication): PublicationAdminResource
     {
         $locales = PublicationTranslation::locales();
@@ -110,8 +104,6 @@ class PublicationAdminController extends Controller
             'indexable' => $data['indexable'] ?? null,
         ], fn (mixed $value): bool => $value !== null));
 
-        // Nulo é um valor aqui ("herdar da categoria"), então não passa pelo
-        // filtro de cima: só a ausência da chave deixa a aparência como está.
         if (array_key_exists('appearance', $data)) {
             $publication->appearance = $data['appearance'] === null ? null : [
                 'nebula' => (float) $data['appearance']['nebula'],
@@ -171,13 +163,6 @@ class PublicationAdminController extends Controller
         return response()->json(null, 204);
     }
 
-    /**
-     * Copia cada rascunho com conteúdo para `publication_translations`,
-     * serializando blocos em Markdown (`DraftBlocksCli`). `published_at` no
-     * futuro vira `scheduled`, não `published` direto — é
-     * `publications:publish-scheduled` quem faz a segunda transição quando a
-     * data chega.
-     */
     public function publish(Publication $publication): PublicationAdminResource
     {
         $publication->load('drafts');
@@ -192,8 +177,6 @@ class PublicationAdminController extends Controller
 
         foreach ($publication->drafts as $draft) {
             if (trim((string) $draft->title) === '' || $draft->blocks === []) {
-                // Um idioma sem conteúdo ainda não publica aquela tradução —
-                // a publicação simplesmente não aparece lá, como sempre foi.
                 continue;
             }
 
@@ -212,8 +195,6 @@ class PublicationAdminController extends Controller
         $publication->status = $publication->published_at->isFuture()
             ? Publication::STATUS_SCHEDULED
             : Publication::STATUS_PUBLISHED;
-        // Republicar também passa por aqui: é o "Atualizar publicado" do Studio.
-        // O `saved` dispara mesmo sem outra mudança, e a marca garante que dispare.
         $publication->content_published_at = now()->toImmutable();
         $publication->save();
 

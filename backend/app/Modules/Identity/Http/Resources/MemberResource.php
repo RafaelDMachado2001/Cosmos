@@ -9,8 +9,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * O perfil do próprio leitor. O e-mail aparece só aqui, para o dono.
- *
  * @mixin Member
  */
 class MemberResource extends JsonResource

@@ -29,9 +29,6 @@ class PublicationForm
                         ->required()
                         ->maxLength(255)
                         ->unique(ignoreRecord: true)
-                        // ASCII e sem acento: o FNV-1a precisa render o mesmo
-                        // inteiro sobre bytes UTF-8 aqui e sobre code units
-                        // UTF-16 no navegador, senão a estrela muda de altura.
                         ->rule('regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
                         ->helperText('Minúsculas, números e hífens. Sem acento.'),
 
@@ -70,9 +67,6 @@ class PublicationForm
                         ->hiddenLabel()
                         ->relationship()
                         ->addActionLabel('Acrescentar idioma')
-                        // Dois idiomas e nada mais: a chave única do banco é
-                        // (publication_id, locale), e uma terceira linha seria
-                        // recusada lá embaixo, depois de a pessoa ter escrito.
                         ->maxItems(count(PublicationTranslation::locales()))
                         ->itemLabel(fn (array $state): ?string => match ($state['locale'] ?? null) {
                             'pt' => 'Português',
@@ -102,10 +96,6 @@ class PublicationForm
                                 ->label('Texto')
                                 ->required()
                                 ->minHeight('22rem')
-                                // Restrita ao subconjunto que core/blocks.ts interpreta:
-                                // sem tabela e sem upload de arquivo, que não têm bloco
-                                // correspondente nesta fase. Uma imagem continua possível
-                                // digitando `![alt](url)` à mão.
                                 ->toolbarButtons([
                                     ['bold', 'italic', 'link'],
                                     ['heading'],
@@ -121,7 +111,6 @@ class PublicationForm
         ]);
     }
 
-    /** O que a lista mostra como nome de cada linha. */
     public static function titleFor(Publication $record): string
     {
         return $record->translations->firstWhere('locale', 'pt')->title

@@ -10,16 +10,6 @@ use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 
-/**
- * Uma sessão autenticada do admin, para o e2e do RDM Studio.
- *
- * O painel só entra por Google, e o CI não tem como passar pelo OAuth. Em vez
- * de uma rota de login de teste — uma porta a mais no código servido —, isto
- * grava a sessão direto no driver configurado e imprime o cookie já
- * criptografado, do jeito que `EncryptCookies` o espera; o Playwright só o
- * injeta no navegador. Recusa rodar fora de `local`/`testing`: em produção o
- * comando existe, mas não faz nada.
- */
 class E2eAdminSession extends Command
 {
     protected $signature = 'e2e:admin-session';

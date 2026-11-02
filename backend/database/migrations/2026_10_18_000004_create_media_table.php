@@ -4,12 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Uma linha por imagem enviada pelo RDM Studio.
- *
- * `width`/`height` gravados no upload (não lidos de novo a cada leitura): é o
- * que permite a página pública reservar o espaço certo e evitar layout shift.
- */
 return new class extends Migration
 {
     public function up(): void

@@ -15,15 +15,8 @@ use Spatie\Image\Image;
 
 class MediaController extends Controller
 {
-    /** O alvo do handoff: 1600px de largura, nunca upscale. */
     private const int MAX_WIDTH = 1600;
 
-    /**
-     * O teto de área antes de o GD abrir a imagem. Decodificada, ela ocupa 4
-     * bytes por pixel: 16 MP são ~64 MB, dentro dos 128 MB do PHP. Um PNG de
-     * poucos KB com 20000×20000 ("bomba de descompressão") derrubaria o
-     * processo; o getimagesize lê só o cabeçalho e recusa antes.
-     */
     private const int MAX_PIXELS = 16_000_000;
 
     public function store(Request $request): MediaResource
@@ -43,9 +36,6 @@ class MediaController extends Controller
 
         $path = 'media/'.Str::uuid()->toString().'.webp';
 
-        // O GD grava em arquivo; o disco pode ser um bucket. Converte num
-        // temporário e envia — nome por UUID, conteúdo nunca reescrito, então
-        // cache eterno na CDN.
         $reserved = (string) tempnam(sys_get_temp_dir(), 'media');
         $temporary = $reserved.'.webp';
         try {

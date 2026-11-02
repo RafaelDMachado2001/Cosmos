@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-// O único administrador do painel, criado pelo DatabaseSeeder. Os valores vem
-// do ambiente para não existir credencial escrita no repositório; env() só e
-// lido aqui, porque com o config em cache ele devolve null fora de config/.
-
 return [
     'name' => env('ADMIN_NAME', 'RDM Labs'),
     'email' => env('ADMIN_EMAIL', 'admin@rdmlabs.dev'),

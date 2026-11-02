@@ -7,7 +7,6 @@ namespace App\Modules\Activity\PersonalData;
 use App\Modules\Activity\Models\Activity;
 use App\Modules\Identity\Contracts\PersonalDataSource;
 
-/** As atividades do membro, no export dos dados dele. */
 final class ActivityPersonalData implements PersonalDataSource
 {
     public function key(): string

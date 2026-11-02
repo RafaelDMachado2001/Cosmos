@@ -25,7 +25,6 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
-    /** O `BrandMark` do Studio (`src/components/BrandMark`), com o nome ao lado. */
     private const BRAND_LOGO = <<<'HTML'
         <span style="display:flex;align-items:center;gap:.6rem;height:100%;font-weight:600">
             <svg viewBox="0 0 32 32" aria-hidden="true" style="height:100%;width:auto">
@@ -44,9 +43,6 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(GoogleLogin::class)
-            // A marca do RDM Studio: a cor dele (`--color-brand-studio` em
-            // tokens.css) e o mesmo logo do Studio em React. Sempre escuro: o
-            // núcleo do logo é quase branco e sumiria no tema claro.
             ->colors([
                 'primary' => Color::hex('#ff8a4c'),
             ])
@@ -59,8 +55,6 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
-            // O editor de verdade é o RDM Studio, fora do Filament (é React,
-            // e o Livewire disputaria o DOM): o menu leva até ele.
             ->navigationItems([
                 NavigationItem::make('RDM Studio')
                     ->url(fn (): string => route('rdm-studio'))

@@ -19,8 +19,6 @@ class PublicationsTable
     public static function configure(Table $table): Table
     {
         return $table
-            // Mesma ordem da constelação e do índice do banco: do mais novo
-            // para o mais antigo.
             ->defaultSort('published_at', 'desc')
             ->columns([
                 TextColumn::make('translations.title')
@@ -51,10 +49,6 @@ class PublicationsTable
                 TextColumn::make('status')
                     ->label('Situação')
                     ->badge()
-                    // "Publicado" com published_at no futuro não é visível na
-                    // API pública ainda — ver PublicationController::published().
-                    // O rótulo precisa dizer isso, senão pareceria publicado de
-                    // verdade até o comando de agendamento regenerar o site.
                     ->color(fn (Publication $record): string => match (true) {
                         $record->status !== Publication::STATUS_PUBLISHED => 'gray',
                         $record->published_at->isFuture() => 'warning',
@@ -87,9 +81,6 @@ class PublicationsTable
                         'Rotina',
                     ])),
             ])
-            // Editar é no Studio. O formulário do Filament grava o Markdown
-            // publicado direto, sem passar pelo rascunho, e o próximo
-            // "publicar" do Studio sobrescreveria o que foi feito ali.
             ->recordUrl(fn (Publication $record): string => self::studioUrl($record))
             ->recordActions([
                 Action::make('studio')

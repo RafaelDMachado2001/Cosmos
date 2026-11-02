@@ -7,7 +7,6 @@ namespace App\Modules\Activity\Listeners;
 use App\Modules\Activity\Models\Activity;
 use App\Modules\Identity\Events\MemberRegistered;
 
-/** A primeira atividade de toda conta. */
 final class RecordMemberRegistered
 {
     public function handle(MemberRegistered $event): void

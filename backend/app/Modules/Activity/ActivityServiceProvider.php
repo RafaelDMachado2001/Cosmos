@@ -13,12 +13,6 @@ use App\Modules\Identity\Events\MemberRegistered;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
-/**
- * O registro de atividades: escuta os eventos dos outros módulos e grava.
- *
- * Depende dos eventos e contratos de quem publica, nunca o contrário
- * (deptrac.yaml): o Identity não sabe que alguém o escuta.
- */
 class ActivityServiceProvider extends ServiceProvider
 {
     public function boot(): void

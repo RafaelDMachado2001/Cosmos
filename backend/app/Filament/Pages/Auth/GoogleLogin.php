@@ -10,14 +10,6 @@ use Filament\Pages\SimplePage;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Schema;
 
-/**
- * A tela de login do painel: um botão só, "Entrar com Google".
- *
- * Não estende `Filament\Auth\Pages\Login` de propósito — aquela classe
- * carrega formulário de credenciais, autenticação multifator e rate
- * limiting por tentativa de senha, e nada disso se aplica a um botão único.
- * `SimplePage` continua dando o layout, o logo e a moldura do painel.
- */
 class GoogleLogin extends SimplePage
 {
     public function mount(): void

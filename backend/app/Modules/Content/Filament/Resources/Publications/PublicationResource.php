@@ -42,12 +42,6 @@ class PublicationResource extends Resource
         return [];
     }
 
-    /**
-     * As traduções vêm junto.
-     *
-     * A lista mostra o título, que mora na tabela de traduções: sem isto seria
-     * uma consulta por linha só para escrever o nome de cada publicação.
-     */
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with('translations');

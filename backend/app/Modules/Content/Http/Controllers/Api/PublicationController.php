@@ -16,7 +16,6 @@ use Illuminate\Validation\Rule;
 
 class PublicationController extends Controller
 {
-    /** Sem `limit`, devolve até isto. A paginação real é por janela temporal. */
     private const int DEFAULT_LIMIT = 100;
 
     private const string DEFAULT_LOCALE = 'pt';
@@ -31,7 +30,6 @@ class PublicationController extends Controller
         ]);
 
         $locale = $input['locale'];
-        // A query string entrega texto; o contrato de `meta.limit` e inteiro.
         $limit = (int) ($input['limit'] ?? self::DEFAULT_LIMIT);
 
         $publications = $this->published($locale)
@@ -47,21 +45,16 @@ class PublicationController extends Controller
                 isset($input['q']) && trim((string) $input['q']) !== '',
                 fn (Builder $query) => $query->whereRaw(
                     'translation.search_vector @@ websearch_to_tsquery(?::regconfig, ?)',
-                    // O dicionário de cada idioma, como na coluna gerada.
                     [config('publications.dictionaries')[$locale], $input['q']]
                 )
             )
             ->orderByDesc('publications.published_at')
-            // Pede uma a mais do que cabe: e assim que se sabe que havia mais sem
-            // pagar um segundo count() sobre o join.
             ->limit($limit + 1)
             ->get();
 
         $truncated = $publications->count() > $limit;
         $publications = $publications->take($limit);
 
-        // Cortar sem avisar publicava metade do acervo em silencio. O prerender
-        // lê `truncated` e prefere um build vermelho a um site pela metade.
         return PublicationResource::collection($publications)->additional([
             'meta' => [
                 'count' => $publications->count(),
@@ -80,30 +73,15 @@ class PublicationController extends Controller
             ->where('publications.slug', $slug)
             ->first();
 
-        // 404 e não uma publicação vazia: o adapter do frontend distingue os
-        // dois, e "não existe" tem tela própria enquanto "falhou" tem outra.
         abort_if($publication === null, 404);
 
-        // Os idiomas em que o artigo existe, na ordem do vocabulário. É o que o
-        // cliente precisa para o hreflang: sem isto ele assumia os dois, e o
-        // DOM renderizado apontava para uma tradução que dava 404.
         $translated = PublicationTranslation::where('publication_id', $publication->id)->pluck('locale')->all();
         $publication->setAttribute('locales', array_values(array_intersect(config('publications.locales'), $translated)));
-        // Em ordem alfabética: o pivô não guarda a ordem em que foram dadas, e
-        // uma ordem que muda entre builds mudaria o HTML gravado sem motivo.
         $publication->setAttribute('tags', $publication->tags()->orderBy('tags.slug')->pluck('tags.slug')->all());
 
         return new PublicationDetailResource($publication);
     }
 
-    /**
-     * A base de toda consulta pública.
-     *
-     * O `join` é o que resolve o idioma: uma publicação sem tradução no idioma
-     * pedido simplesmente não aparece, em vez de aparecer sem título. O filtro
-     * por `status` fica aqui, e não em cada método, porque esquecê-lo em um
-     * deles publicaria rascunhos.
-     */
     /** @return Builder<Publication> */
     private function published(string $locale): Builder
     {
@@ -124,10 +102,6 @@ class PublicationController extends Controller
                     ->where('translation.locale', '=', $locale);
             })
             ->where('publications.status', Publication::STATUS_PUBLISHED)
-            // Sem isto, "Publicado" com data futura aparecia na hora. A
-            // publicação agendada só vira elegível quando a data chega — ver
-            // o comando `publications:publish-scheduled`, que é quem nota a
-            // mudanca e manda regenerar o site.
             ->where('publications.published_at', '<=', now());
     }
 
