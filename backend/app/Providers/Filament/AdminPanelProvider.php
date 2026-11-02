@@ -51,6 +51,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(fn (): HtmlString => new HtmlString(self::BRAND_LOGO))
             ->favicon(fn (): string => asset('admin/rdm-studio/favicon.svg'))
             ->discoverResources(in: app_path('Modules/Content/Filament/Resources'), for: 'App\Modules\Content\Filament\Resources')
+            ->discoverResources(in: app_path('Modules/Community/Filament/Resources'), for: 'App\Modules\Community\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
