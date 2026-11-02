@@ -318,6 +318,129 @@ studio preview all import the same functions.
 hash of its slug, never stored. Publishing a new post never moves an existing
 one, so shared links and the reader's memory of the sky stay valid.
 
+## Implementation notes
+
+The code carries no prose comments: names say what a piece does, and the
+reasons that are not obvious from the code live here and in commit messages.
+The only comments left are the ones a tool reads (PHPStan types, lint and
+test-runner directives).
+
+### Constellation layout
+
+- **Spacing is a Lindley recurrence**: `x[i] = max(dateX[i], x[i-1] + minGapPx)`.
+  Each position depends only on earlier ones, so appending the newest post never
+  moves an existing star. A retroactive post can push its neighbours right, but
+  only up to the next point where a star sits on its own date. The mirrored pass
+  would be stable for prepends and unstable for appends, and appending is the
+  real case.
+- **The scale is fixed** (4.6 px per day, `minGapPx` 200: the 180px label plus
+  20). Deriving it from the collection would shift the whole sky on every
+  publish and place the same slug differently across pages, so the adaptive
+  value (`suggestGapPxPerDay`) is advisory and only read by a test.
+- **The epoch is fixed, the strand is not.** Anchoring the axis on the first
+  post would let a retroactive post re-origin everything; but the visible
+  strand, the month ruler and the giant year start at the oldest post's month,
+  so deleting old posts never opens the sky on an empty stretch. A collection
+  that fits the screen is centred, and the constellation opens on the newest
+  post.
+- **The height hash is FNV-1a over UTF-8 bytes**, quantized to 10,000 steps.
+  The prototype hashed UTF-16 code units, which diverges from a PHP port on any
+  accented input; a PHP port also needs `& 0xFFFFFFFF` after each multiply,
+  or the product becomes a float above 2^53.
+- **The sky has a fixed seed** and walks the timeline with `mulberry32`, so
+  the sky already generated is a prefix of the next one: publishing extends the
+  right edge and retints only the neighbouring nebulae.
+- **The vertical band depends on the viewport, the relative height does not.**
+  The prototype's fixed 30–80% band covered the ruler on short screens; the band
+  now reserves the header, the ruler and the caption that hangs under the
+  lowest star.
+
+### Motion and input
+
+- **Smoothing is framerate-independent.** The handoff's per-frame coefficients
+  `k` are converted once to `λ = −fps · ln(1 − k)` at 60 fps, and `damp` applies
+  `λ` against the real frame delta, so a 144 Hz screen moves on the same curve.
+  The delta is capped, so returning to a background tab does not jump.
+- **Reduced motion speeds the curves up instead of removing gestures**: the
+  gesture still exists and arrives almost at once. Shader clocks run at 25–30%.
+- **A drag is measured by path length**, not net displacement, with a small
+  threshold: a real mouse rarely releases on the pixel it pressed, and treating
+  any movement as a drag would swallow the click.
+- **A large wheel gesture stops exactly at `enter = 1`** instead of crossing
+  the portal and sliding on through the constellation in the same motion.
+- **Pressing the main mouse button on the timeline cancels the default**:
+  `user-select: none` alone does not stop a selection that started in the hero
+  from growing over it. Touch and the middle button keep their defaults.
+
+### Reader
+
+- **Opening is an explicit phase machine** (centre, camera push, mount). The
+  steps are separated by time, not by user events, and a bare `setTimeout`
+  would remount the view after the reader had already closed it.
+- **Closing returns the camera to the exact pan it left from** (`originPan`,
+  clamped again in case the collection changed). A direct arrival by URL has
+  no origin: it opens with no portal crossing or camera push, and closing just
+  undoes the zoom.
+- **Closing is history navigation.** Opening a star pushes an entry, so the
+  "×" and the browser's back button do the same thing. On a direct arrival a
+  `back` would leave the site, so the entry is replaced with the locale root.
+- **Tab moves the camera only when the focused star is out of frame**, with a
+  margin of half a label plus 24px. Sliding on every Tab between neighbours
+  would undo the return the reader view promised.
+
+### Loading and failure
+
+- **"No stars on screen" has three causes with three screens**: still loading,
+  failed, or the search matched nothing. A failure discards the previous
+  collection rather than leaving stale stars beside the error, and a network
+  error never becomes an empty list.
+- **Retries cover only what can succeed next time**: network errors, timeouts
+  and 5xx, with an 8s deadline per attempt. Cloud Run scales to zero and Neon
+  suspends, so the first call after idle can take 15–27s or return 503. A 4xx
+  is an answer and returns at once.
+- **The build snapshot is all or nothing.** One invalid row discards the file:
+  a constellation silently missing a star is worse than waiting for the API.
+- **New API fields are optional on the client.** The site and the API deploy
+  separately, and a Vercel build can read an API one deploy behind.
+- **Truncation fails the build.** In the prerender, a site published with half
+  the collection is worse than a red build; in the browser it is a console
+  warning. The prerender identifies itself so the API exempts it from the
+  public throttle, since a full rebuild makes dozens of calls.
+- **A whitespace-only query is never sent**: `websearch_to_tsquery` would
+  return nothing and dim the whole constellation.
+
+### Search
+
+- **Both sides are lowercased and stripped of accents**, so "indice" finds
+  "índices".
+- **Non-matching stars dim to 7% and lose pointer events, but stay in the DOM**,
+  in the Tab order and in Ctrl+F. Searching or filtering slides the camera to
+  the first match.
+- **A category with no posts is hidden from the panel**, except the active
+  one: hiding it would remove the only control that clears the filter.
+
+### Head, SEO and dates
+
+- **One `PageMeta` produces both outputs**: the client writes it to the DOM,
+  the prerender serializes it to text. The HTML on disk cannot drift from what
+  React mounts over it.
+- **JSON-LD inside `<script>` is HTML containing JSON**: `<` is escaped as
+  `<`, so a title containing `</script>` cannot close the tag.
+- **`hreflang` lists only locales that exist**, plus `x-default` (the default
+  locale when available). Announcing a pair the prerender never wrote sent
+  crawlers and the locale toggle to a 404. A 404 page has `noindex` and no
+  canonical or alternates.
+- **Articles are `BlogPosting`**, with a two-level breadcrumb: a category has
+  no page of its own, and every non-final level needs a URL. The home is
+  `WebSite` plus `Blog`. `twitter:card` is declared explicitly, since X reads
+  `og:*` but not the card size.
+- **Route segments are translated** (`/pt/publicacoes/`, `/en/publications/`)
+  and `routing.ts` owns the map: crossing them would be a second URL for one
+  article. A malformed percent-encoded slug becomes a 404 instead of throwing
+  on first render.
+- **Dates are assembled from `Intl` parts, in UTC**: `pt-BR` yields
+  "set. de 2025", and a post's date must not depend on the reader's time zone.
+
 ## Quality attributes
 
 - **Performance:**

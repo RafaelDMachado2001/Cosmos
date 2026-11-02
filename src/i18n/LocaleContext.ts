@@ -8,5 +8,4 @@ export interface LocaleValue {
   readonly setLocale: (next: Locale) => void;
 }
 
-// Contexto sozinho num arquivo: manter componentes fora daqui preserva o fast refresh.
 export const LocaleContext = createContext<LocaleValue | null>(null);

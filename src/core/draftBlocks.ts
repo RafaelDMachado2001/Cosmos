@@ -1,22 +1,3 @@
-/**
- * A ponte entre o corpo publicado (Markdown cru) e o editor em blocos do
- * RDM Studio.
- *
- * `DraftBlock.text` guarda Markdown inline cru (`**negrito**`, `` `código` ``,
- * `[link](url)`) — o mesmo texto que o autor vê e edita, nunca uma árvore
- * parseada. Isso faz `draftBlocksToMarkdown` (o caminho de publicar) trivial:
- * cada tipo só precisa da própria sintaxe de bloco por cima de um texto que
- * já é Markdown. A ida (`blocksToDraftBlocks`, só para migrar o acervo
- * existente para rascunhos) reusa `parseBlocks`/`inlineToMarkdown` em vez de
- * duplicar a gramática de blocos.
- *
- * Um tipo a mais que o handoff do RDM Studio não lista: `list`. O acervo já
- * publicado tem listas (`core/blocks.ts` as interpreta desde a fase 11), e a
- * migração de dados desta fase não pode perder conteúdo que já existe.
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 import { inlineToMarkdown, parseBlocks } from './blocks';
 import type { TableAlign } from './blocks';
 
@@ -37,7 +18,6 @@ export type DraftBlock =
       readonly id: string;
       readonly type: 'code';
       readonly lang: string | null;
-      /** Ausente nos rascunhos gravados antes do campo existir: vale `null`. */
       readonly filename?: string | null;
       readonly text: string;
     }
@@ -45,7 +25,6 @@ export type DraftBlock =
       readonly id: string;
       readonly type: 'table';
       readonly align: readonly TableAlign[];
-      /** Markdown inline cru por célula, como `text` nos outros blocos. */
       readonly header: readonly string[];
       readonly rows: readonly (readonly string[])[];
     }
@@ -53,22 +32,15 @@ export type DraftBlock =
       readonly id: string;
       readonly type: 'img';
       readonly url: string;
-      /** Só quando a imagem veio do upload do painel, não de uma URL digitada. */
       readonly mediaId: number | null;
       readonly alt: string;
       readonly caption: string | null;
     };
 
-/**
- * Um `id` estável por posição, só para a migração de dados. O editor (fase
- * 5) gera os seus próprios ids ao criar um bloco; estes nunca são lidos de
- * volta como identidade de nada no banco.
- */
 function blockId(index: number): string {
   return `b${index}`;
 }
 
-/** Markdown publicado -> blocos do editor. Só para migrar o acervo existente. */
 export function blocksToDraftBlocks(markdown: string): readonly DraftBlock[] {
   return parseBlocks(markdown).map((block, index): DraftBlock => {
     const id = blockId(index);
@@ -113,11 +85,6 @@ export function blocksToDraftBlocks(markdown: string): readonly DraftBlock[] {
   });
 }
 
-/**
- * Uma linha só. `parseBlocks` já reflui as linhas de um parágrafo com um
- * espaço; fazer isso aqui, antes, é o que impede uma linha em branco de
- * partir o bloco em dois, ou uma linha começada por `- ` de virar lista.
- */
 function oneLine(text: string): string {
   return text
     .split(/\r?\n/)
@@ -126,19 +93,13 @@ function oneLine(text: string): string {
     .join(' ');
 }
 
-/**
- * O começo de um parágrafo que `parseBlocks` leria como outro bloco ganha uma
- * barra invertida — o escape que `parseInline` desfaz na leitura.
- */
 function escapeParagraphStart(line: string): string {
   if (/^\d+\./.test(line)) return line.replace(/^(\d+)\./, '$1\\.');
   if (/^(#{2,3}\s|>|```|[-*]\s)/.test(line)) return `\\${line}`;
-  // Imagem só existe como bloco próprio: num parágrafo, a sintaxe fica literal.
   if (line.startsWith('![')) return `!\\${line.slice(1)}`;
   return line;
 }
 
-/** A barra vertical separa colunas: dentro da célula, só escapada. */
 function tableCell(text: string): string {
   return oneLine(text).replace(/\|/g, '\\|');
 }
@@ -154,7 +115,6 @@ function tableRow(cells: readonly string[]): string {
   return `| ${cells.map(tableCell).join(' | ')} |`;
 }
 
-/** Uma cerca maior que qualquer sequência de crases que abra uma linha do código. */
 function codeFence(code: string): string {
   const longest = code
     .split('\n')
@@ -162,10 +122,6 @@ function codeFence(code: string): string {
   return '`'.repeat(Math.max(3, longest + 1));
 }
 
-/**
- * A URL não tem escape no subconjunto: o que fecharia o parêntese ou abriria
- * a legenda vira percent-encoding, o mesmo endereço para o navegador.
- */
 const PERCENT: Readonly<Record<string, string>> = { '(': '%28', ')': '%29', '"': '%22' };
 
 function imageUrl(url: string): string {
@@ -176,13 +132,6 @@ function escapeImageText(text: string, special: string): string {
   return oneLine(text).replace(new RegExp(`[\\\\${special}]`, 'g'), '\\$&');
 }
 
-/**
- * Blocos do editor -> o mesmo Markdown que `core/blocks.ts` sabe ler de volta.
- *
- * O contrato é de fidelidade: cada bloco do rascunho volta de `parseBlocks`
- * como um bloco só, do mesmo tipo e com o mesmo conteúdo — é o que faz a
- * pré-visualização e a página publicada mostrarem o que o autor escreveu.
- */
 export function draftBlocksToMarkdown(blocks: readonly DraftBlock[]): string {
   return blocks
     .map((block) => {
@@ -192,7 +141,6 @@ export function draftBlocksToMarkdown(blocks: readonly DraftBlock[]): string {
         case 'quote':
           return block.text
             .split(/\r?\n/)
-            // Uma citação que começa com `[!` seria lida como destaque/nota/fluxo.
             .map((line, index) => `> ${index === 0 && line.trimStart().startsWith('[!') ? `\\${line.trimStart()}` : line}`)
             .join('\n');
         case 'highlight':
@@ -218,8 +166,6 @@ export function draftBlocksToMarkdown(blocks: readonly DraftBlock[]): string {
           return `${fence}${block.lang?.trim() ?? ''}${title}\n${block.text}\n${fence}`;
         }
         case 'table': {
-          // Sempre uma célula por coluna do alinhamento: o parser descarta a
-          // mais e completa a menos, e o rascunho tem de sair igual de lá.
           const fit = (cells: readonly string[]): string[] => block.align.map((_, column) => cells[column] ?? '');
           return [
             tableRow(fit(block.header)),

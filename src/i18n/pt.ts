@@ -1,9 +1,5 @@
 import { LOCALE_TAG } from '../core/types';
 
-/**
- * Fonte de verdade do vocabulário. `en.ts` é tipado contra este objeto, então
- * uma chave faltando quebra o typecheck em vez de renderizar vazio.
- */
 export const pt = {
   meta: {
     localeTag: LOCALE_TAG.pt,
@@ -16,21 +12,16 @@ export const pt = {
     title: 'Bem-vindo ao meu Cosmos!',
     subtitle:
       'Este é o lugar onde guardo o que penso, estudo e construo. Puxe uma cadeira, olhe para cima e navegue pelas constelações.',
-    /** Nome acessível do botão de entrada: não é mais renderizado na tela. */
     scrollHint: 'Role para atravessar',
-    /** O atalho visível: vai à constelação sem a travessia animada. */
     skip: 'Ver publicações',
   },
   nav: {
     brand: 'RDM LABS',
-    /** Volta à entrada pelo caminho da travessia. A seta é decorativa. */
     home: 'INÍCIO',
     categories: 'CATEGORIAS',
-    /** Distingue este landmark dos outros `nav` da página. */
     primaryLabel: 'Navegação principal',
     skipToContent: 'Pular para o conteúdo',
     localeLabel: 'Idioma',
-    /** O outro idioma, nomeado na língua dele. */
     otherLocale: 'ENGLISH',
     otherLocaleTag: 'en',
   },
@@ -46,17 +37,14 @@ export const pt = {
   },
   star: {
     openHint: 'CLIQUE PARA ABRIR',
-    /** No toque, o primeiro toque só mostra o painel. */
     tapHint: 'TOQUE DE NOVO PARA ABRIR',
     indexLabel: 'Todas as publicações',
   },
   reader: {
     back: 'VOLTAR À CONSTELAÇÃO',
     close: 'Fechar e voltar à constelação',
-    /** O link do topo do painel; a seta é decorativa. */
     constellation: 'Constelação',
     inThisArticle: 'Neste artigo',
-    /** Depois do número: `7 min de leitura`. */
     minutes: 'min de leitura',
     progress: 'Progresso da leitura',
     resume: 'Continuar de onde parou',

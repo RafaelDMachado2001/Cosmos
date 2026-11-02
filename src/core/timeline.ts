@@ -1,41 +1,17 @@
-/**
- * Posicionamento derivado da constelação.
- *
- * Nenhuma coordenada é armazenada: a posição de cada estrela é função pura da
- * data de publicação e de um hash do slug. Publicar um item novo o coloca na
- * constelação sozinho, sem nenhuma edição de layout.
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 import { hash01 } from './hash';
 import type { Category, PublicationInput } from './types';
 
-// ---------------------------------------------------------------------------
-// Configuração
-// ---------------------------------------------------------------------------
-
 export interface TimelineConfig {
-  /** Origem do eixo. Constante: ancorar na primeira publicação faria um item
-   *  retroativo re-originar o universo inteiro. */
   readonly epochISO: string;
-  /** x da época, em px. */
   readonly originX: number;
-  /** Escala do eixo. FIXA — ver a nota sobre adaptividade em suggestGapPxPerDay. */
   readonly gapPxPerDay: number;
-  /** Distância mínima entre estrelas consecutivas: a largura do rótulo
-   *  (`--star-label-width`, 180px) + 20 de respiro. O alvo de clique (88px)
-   *  era o piso antigo, e com ele publicações de datas próximas sobrepunham
-   *  os títulos. */
   readonly minGapPx: number;
-  /** Folga à direita da última estrela, para a faixa não terminar no ponto. */
   readonly trailingPadPx: number;
 }
 
 export const TIMELINE: TimelineConfig = {
   epochISO: '2024-01-01',
   originX: 300,
-  /** 3.4 no handoff base; 4.6 desde a fase 10, que pôs um marcador por mês. */
   gapPxPerDay: 4.6,
   minGapPx: 200,
   trailingPadPx: 380,
@@ -45,60 +21,31 @@ export const MS_PER_DAY = 86400000;
 
 export interface PlacedStar {
   readonly slug: string;
-  /** ms desde a época Unix, UTC. */
   readonly timestamp: number;
-  /** Posição cronológica no conjunto posicionado. */
   readonly index: number;
-  /** x derivado só da data, antes do passe de espaçamento. */
   readonly dateX: number;
-  /** x final, depois do passe. */
   readonly x: number;
-  /** x - dateX. Zero marca um ponto de reset. */
   readonly pushPx: number;
-  /** Altura relativa em [0, 1), invariante ao viewport. */
   readonly y01: number;
   readonly category: Category;
   readonly featured: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Posicionamento horizontal
-// ---------------------------------------------------------------------------
-
-/** Dias fracionários desde a época, em UTC. Fracionário de propósito: assim
- *  publicações do mesmo dia ainda ordenam por hora, como fará o timestamptz. */
 export function dayOffset(iso: string, epochISO: string = TIMELINE.epochISO): number {
   const epoch = Date.parse(`${epochISO}T00:00:00.000Z`);
   return (Date.parse(iso) - epoch) / MS_PER_DAY;
 }
 
-/** x derivado apenas da data. Pode ser negativo: publicações anteriores à
- *  época são legais, e quem lida com isso são os limites de pan. */
 export function dateX(iso: string, config: TimelineConfig = TIMELINE): number {
   return config.originX + dayOffset(iso, config.epochISO) * config.gapPxPerDay;
 }
 
-/**
- * Posiciona as estrelas resolvendo sobreposição sem sacrificar a estabilidade.
- *
- *   x[i] = max(dateX[i], x[i-1] + minGapPx)
- *
- * É a recorrência de Lindley, e dela decorre a garantia central do handoff:
- * como x[i] só depende de índices menores, **acrescentar o item mais novo não
- * move nenhum existente**. Onde `pushPx === 0` há um ponto de reset: dali para
- * a direita nada à esquerda importa mais.
- *
- * O que se abre mão: publicar algo retroativo pode empurrar alguns vizinhos
- * para a direita, e só até o próximo reset. O passe espelhado seria estável no
- * prepend e instável no append — e o append é o caso real.
- */
 export function placeStars(
   items: readonly PublicationInput[],
   config: TimelineConfig = TIMELINE,
 ): readonly PlacedStar[] {
   const sorted = [...items].sort((a, b) => {
     const byTime = Date.parse(a.publishedAt) - Date.parse(b.publishedAt);
-    // Desempate por slug: sem ordem total o passe dependeria da ordem de entrada.
     return byTime !== 0 ? byTime : a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0;
   });
 
@@ -126,10 +73,6 @@ export function placeStars(
   return placed;
 }
 
-// ---------------------------------------------------------------------------
-// Diagnóstico do layout
-// ---------------------------------------------------------------------------
-
 export interface LayoutHealth {
   readonly widthPx: number;
   readonly minSpacingPx: number;
@@ -138,11 +81,6 @@ export interface LayoutHealth {
   readonly pushedRatio: number;
 }
 
-/**
- * Métricas do conjunto posicionado. Existe para ser asserido em teste contra o
- * acervo real: quando `pushedRatio` sobe, é sinal de que `gapPxPerDay` ficou
- * apertado e precisa subir — num commit explícito, nunca sozinho.
- */
 export function layoutHealth(stars: readonly PlacedStar[]): LayoutHealth {
   if (stars.length === 0) {
     return {
@@ -173,16 +111,6 @@ export function layoutHealth(stars: readonly PlacedStar[]): LayoutHealth {
   };
 }
 
-/**
- * Escala que o acervo pediria para respirar. **Consultiva**: nunca alimenta
- * placeStars.
- *
- * Derivar o gap do conjunto em tempo de execução é incompatível com "publicar
- * não move ninguém" — a cada publicação o gap mudaria e a constelação inteira
- * se deslocaria. Também quebraria a paginação, porque o mesmo slug cairia em x
- * diferente na página 1 e na página 2. Então a adaptividade vive aqui, como
- * recomendação lida por um teste, e o valor efetivo é fixado em TIMELINE.
- */
 export function suggestGapPxPerDay(
   items: readonly PublicationInput[],
   targetSpacingPx = 120,

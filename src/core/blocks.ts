@@ -1,29 +1,3 @@
-/**
- * O corpo de uma publicação, de Markdown para uma árvore de blocos.
- *
- * O banco guarda um `text` só (`PublicationTranslation::body`); quem decide
- * como ele se divide em título, parágrafo, citação, lista, código e imagem é
- * este módulo — uma vez, em TypeScript puro, consumido tanto pelo prerender
- * (Node) quanto pelo cliente. Mesmo princípio do `core/seo.ts` na fase 9: o
- * Laravel só guarda e devolve a string crua.
- *
- * Deliberadamente não é Markdown completo: sem HTML embutido, sem
- * lista aninhada, sem item de lista em múltiplas linhas. O acervo é de
- * artigos técnicos de um autor só, e cada recurso a mais é uma nova superfície
- * de parsing para manter e testar. Ver a spec da fase 11. Tabela entrou
- * depois, no formato do GFM (cabeçalho, linha de alinhamento, linhas), sem
- * célula em múltiplas linhas.
- *
- * Destaque, nota e fluxo são citações com um marcador na primeira linha, no
- * estilo dos alertas do GitHub (`> [!note] Título`): fora daqui, o mesmo texto
- * ainda se lê como uma citação comum. O código aceita `title="arquivo"` na
- * cerca de abertura, como as ferramentas de documentação.
- *
- * Nunca produz HTML: a árvore é renderizada como elementos React normais, e o
- * texto sai escapado pelo próprio React. O único vetor que resta é a URL de
- * link e imagem — por isso `safeUrl` existe.
- */
-
 export type InlineNode =
   | { readonly type: 'text'; readonly text: string }
   | { readonly type: 'strong'; readonly children: readonly InlineNode[] }
@@ -59,7 +33,6 @@ export type Block =
       readonly type: 'table';
       readonly align: readonly TableAlign[];
       readonly header: readonly (readonly InlineNode[])[];
-      /** Cada linha com exatamente uma célula por coluna do cabeçalho. */
       readonly rows: readonly (readonly (readonly InlineNode[])[])[];
     }
   | {
@@ -69,50 +42,22 @@ export type Block =
       readonly caption: string | null;
     };
 
-// ---------------------------------------------------------------------------
-// URLs
-// ---------------------------------------------------------------------------
-
-/**
- * Protocolos aceitos em `href`/`src`, mais raiz-relativo (`/...`) e âncora
- * (`#...`). Uma URL fora desta lista nunca é descartada — o texto do link ou
- * o `alt` da imagem permanece, só perde o elemento clicável/carregável.
- */
-/** Exportada para `core/draftValidation.ts` — a mesma regra, não uma cópia. */
 export function safeUrl(url: string): string | null {
   const trimmed = url.trim();
   if (trimmed === '') return null;
-  // `//host` e `/\host` não são raiz-relativos: o navegador lê os dois como
-  // outro host, e um link que parece interno levaria para fora do site.
   if (/^\/(?![/\\])/.test(trimmed) || trimmed.startsWith('#')) return trimmed;
   if (/^(https?|mailto):/i.test(trimmed)) return trimmed;
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// Inline
-// ---------------------------------------------------------------------------
-
-/**
- * Alt e legenda aceitam escape com barra invertida (`\]`, `\"`): é como
- * `core/draftBlocks.ts` grava um alt com colchete ou uma legenda com aspas
- * sem que a linha deixe de ser uma imagem.
- */
 const IMAGE_RE = /^!\[((?:\\.|[^\]\\])*)\]\(([^)"]*)(?:\s+"((?:\\.|[^"\\])*)")?\)$/;
 
-/** Pontuação ASCII: o que uma barra invertida escapa, como no CommonMark. */
 const ESCAPABLE_RE = /\\([!-/:-@[-`{-~])/g;
 
 export function unescapeMarkdown(value: string): string {
   return value.replace(ESCAPABLE_RE, '$1');
 }
 
-/**
- * Um token por vez, na ordem de precedência que impede sobreposição: escape
- * (`\*` é um asterisco, nunca marcação), código (protege o conteúdo de
- * qualquer outra marcação — dentro dele a barra é literal), depois link,
- * depois negrito, depois itálico.
- */
 const INLINE_TOKEN_RE =
   /\\(?<escaped>[!-/:-@[-`{-~])|`(?<code>[^`]+)`|!\[(?<imageAlt>[^\]]*)\]\([^)]*\)|\[(?<linkText>[^\]]*)\]\((?<linkHref>[^)"]*)(?:\s+"[^"]*")?\)|\*\*(?<strong>[^*]+)\*\*|\*(?<em1>[^*]+)\*|_(?<em2>[^_]+)_/g;
 
@@ -141,8 +86,6 @@ function parseInline(raw: string): readonly InlineNode[] {
     } else if (groups.code !== undefined) {
       nodes.push({ type: 'code', text: groups.code });
     } else if (groups.imageAlt !== undefined) {
-      // A spec trata imagem como bloco, nunca como marca inline: no meio de
-      // um parágrafo a sintaxe `![alt](...)` sobra só como o `alt`.
       pushText(groups.imageAlt);
     } else if (groups.linkText !== undefined && groups.linkHref !== undefined) {
       const href = safeUrl(groups.linkHref);
@@ -164,16 +107,6 @@ function parseInline(raw: string): readonly InlineNode[] {
   return nodes;
 }
 
-/**
- * O inverso de `parseInline`: uma árvore de volta para o mesmo subconjunto de
- * Markdown. Usado só para migrar o corpo já publicado para os blocos do RDM
- * Studio (ver `core/draftBlocks.ts`) — nunca no caminho de leitura, que já
- * tem a árvore e nunca precisa do texto de volta.
- *
- * Um nó de texto volta cru quando `parseInline` o leria de volta igual — o
- * caso comum, para que o editor não se encha de barras. Só quando ele veio de
- * um escape (`\*` virou `*`) a marcação é escapada de novo.
- */
 function escapeText(value: string): string {
   const [first, ...rest] = parseInline(value);
   const same = first === undefined || (rest.length === 0 && first.type === 'text' && first.text === value);
@@ -199,20 +132,9 @@ export function inlineToMarkdown(nodes: readonly InlineNode[]): string {
     .join('');
 }
 
-// ---------------------------------------------------------------------------
-// Blocos
-// ---------------------------------------------------------------------------
-
 const HEADING_RE = /^(#{2,3})\s+(.*)$/;
 const QUOTE_RE = /^>\s?(.*)$/;
-/**
- * Cerca de três crases ou mais; a de fechamento precisa ter ao menos tantas
- * quanto a de abertura e nenhuma linguagem, como no CommonMark. É o que deixa
- * um bloco de código conter ```` ``` ```` — `core/draftBlocks.ts` abre com uma
- * cerca maior que qualquer uma de dentro.
- */
 const CODE_FENCE_RE = /^(`{3,})\s*((?!title=)[^\s`]*)(?:\s+title="((?:\\.|[^"\\])*)")?\s*$/;
-/** O marcador de citação especial: `[!note] Título opcional`. */
 const CALLOUT_RE = /^\[!(highlight|note|flow)\](?:\s+(.*))?$/i;
 const CLOSING_FENCE_RE = /^(`{3,})\s*$/;
 const UNORDERED_ITEM_RE = /^[-*]\s+(.*)$/;
@@ -222,11 +144,6 @@ function isBlank(line: string): boolean {
   return line.trim() === '';
 }
 
-/**
- * As células de uma linha de tabela. A barra vertical só separa quando não
- * vem escapada (`\|`); o escape é desfeito antes do inline — inclusive dentro
- * de código, como no GFM, que é o único jeito de pôr `|` numa célula.
- */
 export function splitTableRow(line: string): readonly string[] | null {
   let row = line.trim();
   if (!/(?<!\\)\|/.test(row)) return null;
@@ -251,18 +168,12 @@ function tableAlign(line: string): readonly TableAlign[] | null {
   return align;
 }
 
-/** Cabeçalho seguido da linha de alinhamento, com o mesmo número de colunas. */
 function tableStart(lines: readonly string[], index: number): readonly TableAlign[] | null {
   const header = splitTableRow(lines[index] ?? '');
   const align = tableAlign(lines[index + 1] ?? '');
   return header !== null && align !== null && header.length === align.length ? align : null;
 }
 
-/**
- * Uma citação, ou o bloco especial que o marcador da primeira linha pede.
- * O fluxo tem uma etapa por linha (o `- ` é opcional); destaque e nota
- * refluem as linhas num texto só, como a citação.
- */
 function quoteBlock(quoteLines: readonly string[]): Block {
   const [first = '', ...rest] = quoteLines;
   const callout = CALLOUT_RE.exec(first.trim());
@@ -281,7 +192,6 @@ function quoteBlock(quoteLines: readonly string[]): Block {
   if (kind === 'note') {
     return { type: 'note', title: inline === '' ? null : parseInline(inline), children: parseInline(body) };
   }
-  // Destaque não tem título: texto na linha do marcador é começo do texto.
   return { type: 'highlight', children: parseInline([inline, body].filter((part) => part !== '').join(' ')) };
 }
 
@@ -332,7 +242,6 @@ export function parseBlocks(markdown: string): readonly Block[] {
       while (index < lines.length && !isBlank(lines[index] ?? '')) {
         const cells = splitTableRow(lines[index] ?? '');
         if (cells === null) break;
-        // Como no GFM: célula a menos vira vazia, célula a mais é ignorada.
         rows.push(align.map((_, column) => parseInline(cells[column] ?? '')));
         index += 1;
       }
@@ -353,8 +262,6 @@ export function parseBlocks(markdown: string): readonly Block[] {
         index += 1;
         continue;
       }
-      // Protocolo recusado: cai para o tratamento de parágrafo abaixo, que
-      // preserva o `alt` como texto em vez de descartar a linha inteira.
     }
 
     if (QUOTE_RE.test(line)) {
@@ -385,8 +292,6 @@ export function parseBlocks(markdown: string): readonly Block[] {
       continue;
     }
 
-    // Parágrafo: consome linhas seguidas até a próxima linha em branco ou o
-    // início de outro tipo de bloco, e as reflui numa só, como Markdown faz.
     const paragraphLines: string[] = [];
     while (
       index < lines.length &&

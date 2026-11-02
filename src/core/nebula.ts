@@ -1,14 +1,3 @@
-/**
- * A nebulosa da tela de leitura: manchas de cor, faixas de poeira e estrelas,
- * desenhadas em HTML por `<Nebula>` com as cores do tema (`--n1`, `--cat`...).
- *
- * Este módulo só decide onde cada coisa fica, a partir de uma semente: a
- * mesma publicação abre sempre com o mesmo céu, no prerender e no cliente,
- * e o React não precisa de estado nenhum para isso.
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 import { fnv1a32 } from './hash';
 import { mulberry32 } from './random';
 
@@ -16,14 +5,12 @@ export type NebulaVariant = 'tall' | 'wide';
 
 export type NebulaTone = 'cat' | 'n1' | 'n2' | 'n3' | 'warm';
 
-/** Posições e tamanhos em % do contêiner. */
 export interface NebulaBlob {
   readonly x: number;
   readonly y: number;
   readonly width: number;
   readonly height: number;
   readonly tone: NebulaTone;
-  /** Opacidade antes da intensidade: 0.14 a 0.55. */
   readonly base: number;
   readonly blurPx: number;
   readonly driftSec: number;
@@ -44,7 +31,6 @@ export interface NebulaStar {
   readonly sizePx: number;
   readonly twinkle: boolean;
   readonly delaySec: number;
-  /** Estrela com brilho em cruz, maior. */
   readonly sparkle: boolean;
 }
 
@@ -54,7 +40,6 @@ export interface NebulaLayout {
   readonly stars: readonly NebulaStar[];
 }
 
-/** Cor quente só numa mancha: é tempero, não base. */
 const TONES: readonly NebulaTone[] = ['n1', 'cat', 'n2', 'n3', 'n1', 'n2'];
 
 export function nebulaLayout(seed: string, variant: NebulaVariant): NebulaLayout {
@@ -78,7 +63,6 @@ export function nebulaLayout(seed: string, variant: NebulaVariant): NebulaLayout
       delaySec: -between(0, 20),
     });
   }
-  // A mancha quente, pequena e afastada do centro.
   blobs.push({
     x: between(60, 90),
     y: between(tall ? 55 : 10, tall ? 85 : 50),
@@ -121,7 +105,6 @@ export function nebulaLayout(seed: string, variant: NebulaVariant): NebulaLayout
   return { blobs, dust, stars };
 }
 
-/** Opacidade final de uma mancha: base × intensidade, com teto em 1. */
 export function blobOpacity(base: number, intensity: number): number {
   return Math.min(1, Math.max(0, base * intensity));
 }

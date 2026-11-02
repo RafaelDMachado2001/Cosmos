@@ -1,12 +1,3 @@
-/**
- * A fonte de publicações.
- *
- * Hoje só existe o adapter estático, que lê as fixtures locais. Quando o
- * backend em Laravel entrar, um adapter HTTP implementa esta mesma interface e
- * a constelação não muda — é por isso que a assinatura já espelha os
- * parâmetros da API planejada (`locale`, `category`, `q`, `before`, `limit`).
- */
-
 import { parseAppearance } from '../core/appearance';
 import type { Appearance } from '../core/appearance';
 import { matches } from '../core/filter';
@@ -20,35 +11,20 @@ export interface ListQuery {
   readonly locale: Locale;
   readonly category?: Category | 'all';
   readonly q?: string;
-  /** Janela temporal: só publicações estritamente anteriores a este instante. */
   readonly before?: string;
   readonly limit?: number;
 }
 
-/** A publicação completa, já resolvida num idioma. */
 export interface PublicationDetail extends PublicationSummary {
-  /** Markdown cru — ver `PublicationContent.body` em `core/types.ts`. */
   readonly body: string;
-  /**
-   * Override de `<title>`/`og:title` e da meta description, com fallback
-   * para `title`/`summary` quando ausente. Só a API conhece — o acervo
-   * semente nunca define nenhum dos dois.
-   */
   readonly seoTitle?: string;
   readonly seoDescription?: string;
-  /**
-   * Os idiomas em que este artigo existe — o hreflang e o
-   * `og:locale:alternate` só podem apontar para estes.
-   */
   readonly locales: readonly Locale[];
-  /** Nula ou ausente herda o padrão (`core/appearance.ts`). */
   readonly appearance?: Appearance | null;
-  /** Slugs, em ordem alfabética. O acervo semente não tem nenhuma. */
   readonly tags: readonly string[];
 }
 
 export interface PublicationsSource {
-  /** Lista enxuta, do mais novo para o mais antigo, para montar a constelação. */
   list(query: ListQuery): Promise<readonly PublicationSummary[]>;
   get(slug: string, locale: Locale): Promise<PublicationDetail | null>;
 }
@@ -68,8 +44,6 @@ function toSummary(publication: Publication, locale: Locale): PublicationSummary
 }
 
 export function createStaticSource(publications: readonly Publication[]): PublicationsSource {
-  // Ordena uma vez: a ordem decrescente é a mesma do índice
-  // publications(published_at desc) que o backend vai usar.
   const newestFirst = [...publications].sort(
     (a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt),
   );
@@ -91,9 +65,6 @@ export function createStaticSource(publications: readonly Publication[]): Public
             category: publication.category,
             title: content.title,
             summary: content.summary,
-            // O adapter estático não conhece rótulos traduzidos nem formatação
-            // de data — quem os tem é a camada de apresentação. A busca por
-            // categoria e por data acontece lá, sobre a projeção já traduzida.
             categoryLabel: '',
             dateLabel: publication.publishedAt,
           },
@@ -118,16 +89,6 @@ export function createStaticSource(publications: readonly Publication[]): Public
   };
 }
 
-// ---------------------------------------------------------------------------
-// Adapter HTTP
-// ---------------------------------------------------------------------------
-
-/**
- * A publicação como o Laravel a devolve.
- *
- * `published_at` em snake_case. O corpo vem como a string de Markdown crua —
- * dividir em blocos é trabalho de `core/blocks.ts`, uma vez, não do servidor.
- */
 interface ApiPublication {
   readonly slug: string;
   readonly category: Category;
@@ -143,15 +104,8 @@ interface ApiPublicationDetail extends ApiPublication {
   readonly body: string;
   readonly seo_title: string | null;
   readonly seo_description: string | null;
-  /**
-   * Opcional no tipo de propósito: o site e a API têm deploys separados, e o
-   * build da Vercel pode ler uma API um deploy atrás. Campo novo nunca derruba
-   * o build — ausente, vale o padrão de antes (os dois idiomas).
-   */
   readonly locales?: readonly string[];
-  /** Opcional pelo mesmo motivo de `locales`. */
   readonly appearance?: unknown;
-  /** Opcional pelo mesmo motivo de `locales`. */
   readonly tags?: readonly unknown[];
 }
 
@@ -168,13 +122,6 @@ function fromApi(row: ApiPublication): PublicationSummary {
   };
 }
 
-/**
- * O adapter que fala com a API do Laravel.
- *
- * Mesma interface do estático — é o que a fase 1 prometeu ao espelhar aqui os
- * parâmetros da API planejada. A constelação não sabe qual dos dois está
- * montado, e a suíte de contrato roda contra os dois.
- */
 interface ApiMeta {
   readonly count: number;
   readonly limit: number;
@@ -182,26 +129,8 @@ interface ApiMeta {
 }
 
 export interface HttpSourceOptions {
-  /**
-   * Chamado quando a API declara que cortou o acervo.
-   *
-   * Sem isto, truncamento lança — que é o comportamento que o prerender quer:
-   * um site publicado com metade do acervo e pior que um build vermelho. No
-   * cliente, truncamento e falha de operação, não estado de leitura, então lá
-   * quem chama passa um aviso de console e a constelação segue.
-   */
   readonly onTruncated?: (meta: { count: number; limit: number }) => void;
-  /**
-   * Identifica o prerender para a API, que o isenta do throttle público.
-   *
-   * Uma regeração completa já soma dezenas de chamadas (duas listas mais uma
-   * por publicação por idioma) e cresce com o acervo — mais rápido do que
-   * qualquer limite pensado para um cliente público aguentaria. Nunca vem do
-   * navegador: só `src/prerender/main.ts`, que roda em Node, lê o processo e
-   * passa aqui.
-   */
   readonly internalToken?: string | null;
-  /** Prazo e novas tentativas de cada chamada (`fetchWithRetry`). */
   readonly retry?: RetryPolicy;
 }
 
@@ -217,13 +146,6 @@ export function createHttpSource(
       : { 'X-Internal-Token': options.internalToken };
   const retry = options.retry ?? DEFAULT_RETRY;
 
-  /**
-   * Um erro de rede precisa chegar como erro.
-   *
-   * Devolver lista vazia aqui daria a tela de "nenhuma estrela encontrada" a
-   * quem na verdade perdeu a conexão — e a única saída oferecida seria ajustar
-   * uma busca que a pessoa não fez. Ver `src/core/collection.ts`.
-   */
   async function json<T>(url: string): Promise<T> {
     const response = await fetchWithRetry(fetchImpl, url, { headers }, retry);
     if (!response.ok) throw new Error(`${url} respondeu ${String(response.status)}`);
@@ -236,8 +158,6 @@ export function createHttpSource(
       if (query.category !== undefined && query.category !== 'all') {
         params.set('category', query.category);
       }
-      // Espaço em branco não é busca: mandá-lo faria o `websearch_to_tsquery`
-      // devolver vazio, e a constelação inteira apagaria por um campo em branco.
       if (query.q !== undefined && query.q.trim() !== '') params.set('q', query.q);
       if (query.before !== undefined) params.set('before', query.before);
       if (query.limit !== undefined) params.set('limit', String(query.limit));
@@ -263,8 +183,6 @@ export function createHttpSource(
     async get(slug, locale) {
       const url = `${root}/${encodeURIComponent(slug)}?locale=${locale}`;
       const response = await fetchWithRetry(fetchImpl, url, { headers }, retry);
-      // 404 é ausência — o slug não existe — e quem chama decide o que fazer.
-      // Qualquer outro status é falha, e não pode virar "publicação sem texto".
       if (response.status === 404) return null;
       if (!response.ok) throw new Error(`${url} respondeu ${String(response.status)}`);
 

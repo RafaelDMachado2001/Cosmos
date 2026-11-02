@@ -1,19 +1,9 @@
-/**
- * Gerador de acervo sintético para teste de carga.
- *
- * O acervo real tem 14 publicações, o que não exercita nem o passe de
- * espaçamento nem a virtualização. Este gerador existe para provar que os dois
- * funcionam com centenas de itens, e fica atrás de uma flag de dev — nunca vai
- * para produção.
- */
-
 import { mulberry32 } from '../core/random';
 import { CATEGORIES } from '../core/types';
 import type { Publication } from '../core/types';
 
 export interface SyntheticOptions {
   readonly count: number;
-  /** Mesma semente, mesmo acervo: uma falha de layout é reproduzível. */
   readonly seed?: number;
   readonly startISO?: string;
   readonly spanDays?: number;
@@ -55,7 +45,6 @@ export function makeSyntheticPublications(options: SyntheticOptions): readonly P
     const offsetMinutes = Math.floor(random() * 1440);
 
     return {
-      // Prefixo próprio: nunca colide com um slug real.
       slug: `sintetica-${index}`,
       publishedAt: new Date(start + offsetDays * 86400000 + offsetMinutes * 60000).toISOString(),
       category,

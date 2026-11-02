@@ -1,46 +1,20 @@
-/**
- * A travessia do portal e a navegação pela constelação.
- *
- * Um único progresso contínuo em duas fases: `enter` (0→1) atravessa o portal,
- * e depois disso o mesmo gesto move `pan`. Ao recuar, `pan` volta primeiro e só
- * então `enter` retrocede.
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 import type { PanBounds } from './geometry';
 
 export interface NavState {
-  /** Progresso da travessia, 0 a 1. */
   readonly enter: number;
-  /** Deslocamento horizontal da constelação, em px. */
   readonly pan: number;
 }
 
-/** Ganhos de entrada, conforme o handoff e o protótipo. */
 export const INPUT = {
-  /** Aplicado ao deltaY da roda antes de tudo. */
   wheelGain: 1.05,
   enterGain: 0.00085,
-  /** Roda sobre o pan. 1.15 no handoff base; 0.62 desde a fase 10. */
   panGain: 0.62,
-  /** Setas e PageUp/PageDown. */
   keyStepPx: 260,
-  /** Arraste por toque, no eixo dominante. */
   touchGain: 2.4,
-  /** Arraste com ponteiro sobre a constelação. 1.35 no handoff base. */
   dragGain: 1,
-  /** Velocidade que o arraste deixa para a inércia, por px movido. Era 1.15. */
   inertiaGain: 0.9,
 } as const;
 
-/**
- * Aplica um deslocamento bruto ao progresso.
- *
- * A fase termina exatamente em `enter === 1`: um gesto grande completa a
- * travessia e para ali, em vez de atravessar o portal e sair deslizando pela
- * constelação no mesmo movimento.
- */
 export function push(state: NavState, delta: number, bounds: PanBounds): NavState {
   if (delta === 0) return state;
 
@@ -57,7 +31,6 @@ export function push(state: NavState, delta: number, bounds: PanBounds): NavStat
   return { ...state, enter: Math.max(0, state.enter + delta * INPUT.enterGain) };
 }
 
-/** Acima disto a interface do cosmos assume o header e ganha ponteiro. */
 export const COSMOS_PHASE_ENTER = 0.9;
 
 export type Phase = 'hero' | 'cosmos';
@@ -66,79 +39,51 @@ export function phaseFor(enter: number): Phase {
   return enter > COSMOS_PHASE_ENTER ? 'cosmos' : 'hero';
 }
 
-// ---------------------------------------------------------------------------
-// Funções de transferência
-//
-// As faixas vêm da seção "Transição de portal" do handoff. Ficam aqui, puras e
-// testadas, porque tanto o DOM quanto os uniforms do shader as consomem — e
-// porque errar uma faixa é o tipo de defeito que só aparece no meio da
-// animação, onde é caro de notar.
-// ---------------------------------------------------------------------------
-
 function ramp(value: number, from: number, to: number): number {
   return Math.min(1, Math.max(0, (value - from) / (to - from)));
 }
 
-/** Opacidade do hero cai de 1 a 0. */
 export function heroFade(enter: number): number {
   return ramp(enter, 0.02, 0.44);
 }
 
-/** Opacidade do cosmos sobe de 0 a 1. */
 export function cosmosReveal(enter: number): number {
   return ramp(enter, 0.62, 0.96);
 }
 
-/** uOpacity do shader do núcleo. */
 export function coreOpacity(enter: number): number {
   return 1 - ramp(enter, 0.5, 0.92);
 }
 
-/**
- * O brilho interno do núcleo, apagando na faixa `enter` 0→0.7.
- *
- * Até a fase 10 era uma esfera opaca a 90%, que lia como um furo; agora é luz
- * aditiva, e a intensidade inteira é o ponto de partida.
- */
 export function innerGlow(enter: number): number {
   return Math.max(0, 1 - enter / 0.7);
 }
 
-/** Escala da esfera interna, encolhendo conforme se atravessa. */
 export function innerScale(enter: number): number {
   return 1 - enter * 0.45;
 }
 
-/** Posição z da câmera: 4.3 na entrada, 0.25 ao atravessar. */
 export function cameraZ(enter: number): number {
   return 4.3 - enter * 4.05;
 }
 
-/** Amplitude do ruído no vertex shader: 0.34 a 0.84. */
 export function coreAmp(enter: number): number {
   return 0.34 + enter * 0.5;
 }
 
-/** O núcleo cresce até 3.9x enquanto se aproxima. */
 export function coreScale(baseScale: number, enter: number): number {
   return baseScale * (1 + enter * 2.9);
 }
 
-/** A poeira avança em z, reforçando a sensação de atravessar. */
 export function dustZ(enter: number): number {
   return enter * 6;
 }
-
-// ---------------------------------------------------------------------------
-// Tradução de entrada
-// ---------------------------------------------------------------------------
 
 export type KeyAction =
   | { readonly kind: 'delta'; readonly value: number }
   | { readonly kind: 'home' }
   | { readonly kind: 'end' };
 
-/** Traduz uma tecla em ação de navegação, ou `null` se não for nossa. */
 export function keyToDelta(key: string): KeyAction | null {
   switch (key) {
     case 'ArrowRight':
@@ -156,34 +101,12 @@ export function keyToDelta(key: string): KeyAction | null {
   }
 }
 
-/**
- * Num arraste por toque, vale o eixo de maior deslocamento.
- *
- * No empate fica o horizontal: é o eixo da constelação, e hesitar entre os
- * dois faria o gesto parecer travado.
- */
 export function dominantAxisDelta(deltaX: number, deltaY: number): number {
   return Math.abs(deltaX) >= Math.abs(deltaY) ? deltaX : deltaY;
 }
 
-/**
- * Margem em que uma estrela ainda conta como fora do enquadramento.
- *
- * É a metade do rótulo (`--star-label-width`, 180) mais 24px de respiro:
- * com só o alvo de clique de margem, a estrela entrava na tela e o título
- * dela ficava cortado na borda.
- */
 export const FOCUS_MARGIN_PX = 90 + 24;
 
-/**
- * Se o foco numa estrela precisa levar a câmera junto.
- *
- * O Tab percorre o acervo inteiro, e a maior parte dele está fora da tela a
- * qualquer momento — sem isto o anel de foco existia, mas do lado de fora. A
- * guarda é o que impede o inverso: arrastar a câmera a cada Tab entre duas
- * estrelas vizinhas, e desfazer o recuo que o fechamento da vista de leitura
- * acabou de prometer.
- */
 export function needsSlide(
   screenX: number,
   viewportWidth: number,
@@ -197,14 +120,12 @@ export interface RailRect {
   readonly width: number;
 }
 
-/** Arrastar a régua mapeia a posição horizontal direto para o pan. */
 export function scrubToPan(clientX: number, rail: RailRect, bounds: PanBounds): number {
   if (rail.width <= 0) return bounds.min;
   const fraction = Math.min(1, Math.max(0, (clientX - rail.left) / rail.width));
   return bounds.min + fraction * (bounds.max - bounds.min);
 }
 
-/** Posição do marcador na régua, de 0 a 1. */
 export function panToScrubFraction(pan: number, bounds: PanBounds): number {
   const span = bounds.max - bounds.min;
   if (span <= 0) return 0;
