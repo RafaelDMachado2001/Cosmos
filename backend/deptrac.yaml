@@ -9,7 +9,11 @@ deptrac:
     - name: Content
       collectors:
         - type: directory
-          value: app/Modules/Content/.*
+          value: app/Modules/Content/(?!Contracts/).*
+    - name: ContentContract
+      collectors:
+        - type: directory
+          value: app/Modules/Content/Contracts/.*
     - name: Identity
       collectors:
         - type: directory
@@ -26,6 +30,8 @@ deptrac:
     Platform: ~
     Content:
       - Platform
+      - ContentContract
+    ContentContract: ~
     Identity:
       - Platform
       - IdentityContract

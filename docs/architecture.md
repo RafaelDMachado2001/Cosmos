@@ -260,6 +260,12 @@ modules. Identity publishes a `PersonalDataSource` interface, and each module
 registers its own implementation. A new module adds itself to the export
 without Identity changing.
 
+Reading works the same way in the other direction. Content publishes
+`PublishedPublications`, which answers whether a slug is live in a language,
+so a module that attaches things to publications never queries Content's
+tables. Both the contract and the public API use the same `live` scope
+(published, dated in the past), so "visible to readers" has one definition.
+
 **An append-only activity log from day one.** Every domain action a member
 takes is recorded by the Activity module, which listens to the other modules'
 events. Gamification, when it arrives, is a projection over that history, so
@@ -408,6 +414,12 @@ test-runner directives).
   public throttle, since a full rebuild makes dozens of calls.
 - **A whitespace-only query is never sent**: `websearch_to_tsquery` would
   return nothing and dim the whole constellation.
+- **Credentialed calls share one JSON client** (`src/data/http.ts`): headers,
+  CSRF, and the mapping of 422, 413 and 429 to typed errors. The member
+  account and the studio differ only in base URL, credentials mode and CSRF
+  source (the `XSRF-TOKEN` cookie for the site, a meta tag for the studio).
+  The public reading source stays separate: it never writes, never sends
+  credentials, and retries, which writes must not.
 
 ### Search
 

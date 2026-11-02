@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BlockEditor } from './BlockEditor';
 import type * as apiModule from './api';
-import { PayloadTooLargeError } from './api';
+import { PayloadTooLargeError } from '../data/http';
 
 const { uploadMedia } = vi.hoisted(() => ({ uploadMedia: vi.fn() }));
 

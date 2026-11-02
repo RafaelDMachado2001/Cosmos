@@ -1,6 +1,7 @@
 import type { Appearance } from '../core/appearance';
 import type { DraftBlock } from '../core/draftBlocks';
 import type { Category, Locale } from '../core/types';
+import { createJsonClient, dataOf } from '../data/http';
 
 export type PublicationStatus = 'draft' | 'scheduled' | 'published';
 
@@ -65,89 +66,52 @@ export interface PublicationPatch {
   readonly drafts?: Partial<Record<Locale, DraftPatch>>;
 }
 
-export class ValidationError extends Error {
-  constructor(public readonly fields: Readonly<Record<string, readonly string[]>>) {
-    super(Object.values(fields).flat()[0] ?? 'Dados inválidos.');
-    this.name = 'ValidationError';
-  }
+const client = createJsonClient({
+  baseUrl: '/admin/api',
+  credentials: 'same-origin',
+  csrfHeaders: () => ({
+    'X-CSRF-TOKEN':
+      document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+  }),
+});
+
+async function read<T>(path: string): Promise<T> {
+  return dataOf<T>(await client.get(path));
 }
 
-export class PayloadTooLargeError extends Error {
-  constructor(path: string) {
-    super(`/admin/api${path} recusou o corpo: grande demais`);
-    this.name = 'PayloadTooLargeError';
-  }
-}
-
-function csrfToken(): string {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-}
-
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const method = (init.method ?? 'GET').toUpperCase();
-  const isJsonBody = typeof init.body === 'string';
-
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    ...(isJsonBody ? { 'Content-Type': 'application/json' } : {}),
-    ...(method === 'GET' ? {} : { 'X-CSRF-TOKEN': csrfToken() }),
-  };
-
-  const response = await fetch(`/admin/api${path}`, {
-    ...init,
-    method,
-    headers,
-    credentials: 'same-origin',
-  });
-
-  if (response.status === 422) {
-    const payload = (await response.json()) as { errors?: Record<string, readonly string[]> };
-    throw new ValidationError(payload.errors ?? {});
-  }
-
-  if (response.status === 413) throw new PayloadTooLargeError(path);
-
-  if (!response.ok) {
-    throw new Error(`/admin/api${path} respondeu ${String(response.status)}`);
-  }
-
-  if (response.status === 204) return undefined as T;
-
-  const payload = (await response.json()) as { data: T };
-  return payload.data;
+async function write<T>(method: string, path: string, body?: unknown): Promise<T> {
+  return dataOf<T>(await client.send(method, path, body));
 }
 
 export const api = {
-  list: (): Promise<readonly AdminPublication[]> => request('/publications'),
+  list: (): Promise<readonly AdminPublication[]> => read('/publications'),
 
-  get: (id: number): Promise<AdminPublication> => request(`/publications/${String(id)}`),
+  get: (id: number): Promise<AdminPublication> => read(`/publications/${String(id)}`),
 
   create: (data: {
     readonly slug: string;
     readonly category: Category;
     readonly publishedAt: string;
     readonly featured?: boolean;
-  }): Promise<AdminPublication> =>
-    request('/publications', { method: 'POST', body: JSON.stringify(data) }),
+  }): Promise<AdminPublication> => write('POST', '/publications', data),
 
   update: (id: number, patch: PublicationPatch): Promise<AdminPublication> =>
-    request(`/publications/${String(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    write('PATCH', `/publications/${String(id)}`, patch),
 
-  destroy: (id: number): Promise<void> => request(`/publications/${String(id)}`, { method: 'DELETE' }),
+  destroy: (id: number): Promise<void> => write('DELETE', `/publications/${String(id)}`),
 
   publish: (id: number): Promise<AdminPublication> =>
-    request(`/publications/${String(id)}/publish`, { method: 'POST' }),
+    write('POST', `/publications/${String(id)}/publish`),
 
   unpublish: (id: number): Promise<AdminPublication> =>
-    request(`/publications/${String(id)}/unpublish`, { method: 'POST' }),
+    write('POST', `/publications/${String(id)}/unpublish`),
 
   uploadMedia: (file: File, alt: string): Promise<AdminMedia> => {
     const form = new FormData();
     form.append('file', file);
     if (alt !== '') form.append('alt', alt);
-    return request('/media', { method: 'POST', body: form });
+    return write('POST', '/media', form);
   },
 
-  searchTags: (q: string): Promise<readonly string[]> =>
-    request(`/tags?q=${encodeURIComponent(q)}`),
+  searchTags: (q: string): Promise<readonly string[]> => read(`/tags?q=${encodeURIComponent(q)}`),
 };
