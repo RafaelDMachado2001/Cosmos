@@ -8,11 +8,6 @@ use App\Modules\Content\Models\Publication;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * A forma que o RDM Studio consome — sempre com o conteúdo de trabalho
- * completo (os rascunhos têm no máximo duas traduções, nunca justifica uma
- * versão "leve" separada como a API pública tem).
- */
 class PublicationAdminResource extends JsonResource
 {
     /** @return array<string, mixed> */
@@ -36,10 +31,6 @@ class PublicationAdminResource extends JsonResource
         ];
     }
 
-    /**
-     * No ar, com rascunho editado depois da última publicação. Num rascunho
-     * a pergunta não existe: nada está no ar para ficar desatualizado.
-     */
     private function pendingChanges(): bool
     {
         if ($this->resource->status === Publication::STATUS_DRAFT) {

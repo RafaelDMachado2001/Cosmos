@@ -4,13 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Support;
 
-/**
- * Para onde o login devolve o leitor: só um caminho do próprio site.
- *
- * Aceitar uma URL qualquer faria do callback um redirecionamento aberto —
- * um link legítimo do rdmlabs que termina num site de phishing. `//host` e
- * `/\host` são lidos pelo navegador como outro host, por isso também caem.
- */
 final class ReturnUrl
 {
     public static function path(mixed $candidate): string
@@ -25,13 +18,11 @@ final class ReturnUrl
         return $valid ? $candidate : '/';
     }
 
-    /** O idioma da conta nova sai do caminho de onde a pessoa veio. */
     public static function locale(string $path): string
     {
         return str_starts_with($path, '/en/') || $path === '/en' ? 'en' : 'pt';
     }
 
-    /** O endereço completo no site (SITE_URL), ou o caminho no mesmo host. */
     public static function absolute(string $path, ?string $login = null): string
     {
         if ($login !== null) {

@@ -12,19 +12,6 @@ use Throwable;
 
 use function Illuminate\Support\defer;
 
-/**
- * O único caminho para "o site público precisa refletir o banco".
- *
- * Dois drivers (`publishing.rebuild_driver`):
- *
- * - `local`: o `RegenerateSite` de sempre, que roda o prerender e grava no
- *   volume do Nginx. É o do `docker compose`.
- * - `vercel`: produção. O site mora na Vercel e o build dela já lê da API;
- *   reconstruir é chamar o deploy hook. Sem worker: marca o site como sujo e
- *   tenta disparar depois da resposta. Disparo no máximo a cada
- *   `rebuild_min_interval` segundos — dez salvamentos seguidos custam um
- *   build, não dez — e o que sobrar sujo o tick do agendador leva.
- */
 final class SiteRebuild
 {
     private const string DIRTY = 'site-rebuild:dirty-at';
@@ -43,12 +30,6 @@ final class SiteRebuild
         defer(static fn () => self::flush(), 'site-rebuild');
     }
 
-    /**
-     * Dispara o hook se há mudança pendente e o intervalo mínimo passou.
-     *
-     * `true` só quando o hook respondeu 2xx. Falha não lança: o salvamento já
-     * aconteceu, e o site continua sujo para a próxima tentativa.
-     */
     public static function flush(): bool
     {
         if (config('publishing.rebuild_driver') !== 'vercel') {
@@ -66,8 +47,6 @@ final class SiteRebuild
             return false;
         }
 
-        // Dois flushes simultâneos (o defer de um request e o tick) não
-        // podem disparar dois builds.
         $lock = Cache::lock('site-rebuild:lock', 30);
         if (! $lock->get()) {
             return false;
@@ -89,8 +68,6 @@ final class SiteRebuild
         }
 
         Cache::forever(self::FIRED, now()->getTimestamp());
-        // Só limpa se ninguém sujou de novo enquanto o hook respondia: o build
-        // que acabou de começar pode já ter lido a API antes dessa edição.
         if (Cache::get(self::DIRTY) === $dirtyAt) {
             Cache::forget(self::DIRTY);
         }

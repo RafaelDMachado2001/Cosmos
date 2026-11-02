@@ -13,7 +13,6 @@ class ListPublications extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            // Criar também é no Studio (ver PublicationsTable).
             Action::make('studio')
                 ->label('Nova publicação')
                 ->url(fn (): string => route('rdm-studio')),

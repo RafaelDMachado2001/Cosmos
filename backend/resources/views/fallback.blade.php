@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-{{-- O caminho de excecao nunca e indexado: quem indexa e o arquivo do disco. --}}
 <meta name="robots" content="noindex">
 <title>{{ $title }}</title>
 </head>

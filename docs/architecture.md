@@ -532,6 +532,97 @@ test-runner directives).
   with dark text (light text measured 2:1); the article preview switches back
   to the Cosmos purple.
 
+### Backend: requests and boundaries
+
+- **Middleware order matters.** `TrustProxies` trusts any proxy only because
+  `VerifyEdge` has already refused whatever did not come from the Worker with
+  the shared secret. `HostBoundary` runs after it (so it reads the edge's host)
+  and before `StartSession` (so it picks the right cookie). `/up` stays open on
+  every host: it is Cloud Run's health check, which does not cross the edge.
+- **Two CORS policies.** The account routes allow credentials from the exact
+  site origin; the public reading API allows `*` without credentials. `*` with
+  credentials would make the package reflect any origin, and any site could
+  read a signed-in profile. `PublicCors` is global so that a 404 or a 429 also
+  carries the header, instead of the browser reporting "Failed to fetch".
+- **`GET /api/me` answers 204 without a session**, not 401: every anonymous
+  visitor asks, and a 401 per page would fill the console with errors that are
+  not errors. It also pins 200, because `JsonResource` answers 201 for a model
+  created earlier in the same process.
+- **The public query has one base.** Joining the translation resolves the
+  language (a post without that translation does not appear, rather than
+  appearing untitled), and the status filter lives there, so no endpoint can
+  forget it and publish a draft. Lists ask for one row more than the limit to
+  report truncation without a second `count()`.
+- **The admin's own security headers come from Laravel**, with only
+  `frame-ancestors` as CSP, since Filament and Livewire need inline scripts;
+  the one-button Google sign-in is exactly what clickjacking targets. Nothing
+  served by the backend is indexable.
+
+### Backend: identity
+
+- **The admin signs in with Google against a one-address allowlist**, matched
+  case-insensitively and only when Google says the address is verified. The
+  account is looked up by the allowlisted address, not the one Google returns,
+  so a change of capitalization cannot create a second admin. A failure at
+  Google returns the person to the button instead of a stack trace; a real
+  account outside the allowlist is logged as an access attempt.
+- **Concurrent sign-in callbacks** (double click, two tabs) race for the
+  handle or the identity; the loser retries and finds the winner. Signing in
+  rotates the session id.
+- **The return path is a path, never a URL**, so the callback cannot become
+  an open redirect; `//host` and `/\host` are refused because browsers read
+  them as another host.
+- **Handles** are derived from the name (or the e-mail), get a numeric suffix
+  when taken (`ana`, `ana2`), and include a reserved list of names someone
+  could use to impersonate the site. Deleting an account randomizes its handle
+  and frees the old one.
+- **`MemberDeleted` fires inside the deleting transaction**: whoever listens
+  clears their own personal data in the same commit, and a failure leaves the
+  account intact rather than half deleted.
+- **Activities refer to their subject by a stable alias** (`member`,
+  `publication`), never the class name: moving a model must not rewrite
+  history.
+- **Test sessions are seeded, not signed into.** `e2e:admin-session` and
+  `e2e:member-session` write a session straight into the driver and print the
+  encrypted cookie; there is no test login route, and the commands refuse to
+  run outside `local` and `testing`.
+
+### Backend: publishing
+
+- **Publishing serializes the draft through the TypeScript grammar.** PHP runs
+  the compiled `draft-blocks-cli.js` with `Process` instead of reimplementing
+  the parser. The URL allowlist is the one rule duplicated in PHP, because it
+  is small and stable.
+- **The site rebuild has a single entry point** (`SiteRebuild`). With the
+  Vercel driver, a save marks the site dirty and the hook fires at most every
+  60 seconds; concurrent flushes take a lock, and the dirty flag is cleared
+  only if nobody wrote again while the hook was answering.
+- **The process timeout is shorter than the job's**, so a slow prerender is
+  stopped by `Process`, with stderr and elapsed time logged, before the worker
+  kills PHP and orphans a `node` child still writing to the site volume.
+- **Scheduled posts are detected by count, not by time window.** The count of
+  eligible posts is compared against a cached integer, which survives a paused
+  scheduler; the first run after a deploy only records the baseline. Each
+  transition is its own `update()`, so the observer fires and regenerates.
+- **Uploads check the pixel area before decoding.** A tiny PNG declaring
+  20000×20000 would decode to gigabytes; `getimagesize` reads only the header.
+  Images are resized to 1600px wide, never upscaled, stored under a UUID name
+  (cacheable forever), and their width and height are saved so pages reserve
+  the space.
+- **Search is a generated `tsvector` column**, not a trigger: no write path,
+  the admin panel included, can skip indexing. The dictionary comes from the
+  row's own locale.
+
+### Backend: database
+
+- **The Postgres session speaks UTC.** `published_at` is `timestamptz`, and a
+  container whose time zone was `America/Sao_Paulo` read naive timestamps as
+  local and stored them three hours off, which moves stars.
+- **Prepares are emulated behind Neon's pooler.** PgBouncer in transaction
+  mode sent the second statement of a transaction to another connection.
+  For the same reason, nothing relies on a session-level `SET`; the
+  anonymization flag is a `SET LOCAL` inside its transaction.
+
 ## Quality attributes
 
 - **Performance:**

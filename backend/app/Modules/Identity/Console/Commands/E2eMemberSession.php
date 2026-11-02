@@ -11,14 +11,6 @@ use Illuminate\Cookie\CookieValuePrefix;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 
-/**
- * Uma sessão de leitor, para o e2e do site com sessão.
- *
- * O mesmo padrão do e2e:admin-session: sem rota de login de teste, a sessão
- * vai direto para o driver e o cookie sai criptografado. A conta passa pelo
- * mesmo SignInWithProvider do login de verdade, com um provedor fictício
- * (`google`, id `e2e`). Recusa rodar fora de `local`/`testing`.
- */
 class E2eMemberSession extends Command
 {
     protected $signature = 'e2e:member-session';

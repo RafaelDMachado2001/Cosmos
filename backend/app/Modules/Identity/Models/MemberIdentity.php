@@ -8,9 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Uma conta de provedor (Google, GitHub) ligada a um membro. O par
- * provedor + id do provedor é único: é por ele que o login acha a conta.
- *
  * @property int $id
  * @property int $member_id
  * @property string $provider

@@ -7,15 +7,6 @@ namespace App\Modules\Content\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-/**
- * O mesmo contrato de `DraftBlock` (`src/core/draftBlocks.ts`), validado em
- * PHP porque é aqui que a requisição chega. Cada tipo aceito pelo editor do
- * RDM Studio; nenhum outro passa.
- *
- * `img.url` passa pela mesma allow-list de `safeUrl` em `core/blocks.ts` —
- * porta do regex, não importação: o TypeScript não cruza para o PHP, e a
- * regra é pequena e estável o bastante para valer a duplicação.
- */
 class ValidDraftBlocks implements ValidationRule
 {
     private const array TYPES = ['p', 'h2', 'h3', 'quote', 'list', 'code', 'img', 'table', 'highlight', 'note', 'flow'];
@@ -83,8 +74,6 @@ class ValidDraftBlocks implements ValidationRule
             return;
         }
 
-        // A linguagem vai na cerca de abertura do bloco; com espaço ou crase
-        // a cerca deixa de ser reconhecida e o código vira parágrafo.
         if (is_string($block['lang'] ?? null) && preg_match('/[\s`]/', trim($block['lang'])) === 1) {
             $fail("{$attribute}.{$index}.lang não pode ter espaços nem crases.");
 
@@ -102,9 +91,6 @@ class ValidDraftBlocks implements ValidationRule
     }
 
     /**
-     * Fluxo de uma etapa só não é fluxo: as pílulas ligadas por traços
-     * pedem ao menos duas.
-     *
      * @param  array<string, mixed>  $block
      */
     private function validateFlow(string $attribute, int|string $index, array $block, Closure $fail): void
@@ -165,9 +151,6 @@ class ValidDraftBlocks implements ValidationRule
     }
 
     /**
-     * Uma célula por coluna em toda linha: o serializador completa e corta
-     * pelo alinhamento, e uma linha torta perderia texto em silêncio.
-     *
      * @param  array<string, mixed>  $block
      */
     private function validateTable(string $attribute, int|string $index, array $block, Closure $fail): void
@@ -203,8 +186,6 @@ class ValidDraftBlocks implements ValidationRule
             }
 
             foreach ($row as $cell) {
-                // Nulo é a célula vazia depois do ConvertEmptyStringsToNull;
-                // `normalizeTables` a devolve como texto antes de gravar.
                 if ($cell !== null && ! is_string($cell)) {
                     $fail("{$attribute}.{$index} só aceita texto nas células.");
 
@@ -222,8 +203,6 @@ class ValidDraftBlocks implements ValidationRule
     /** @param array<string, mixed> $block */
     private function validateImage(string $attribute, int|string $index, array $block, Closure $fail): void
     {
-        // Alt obrigatório: é o único texto que sobra para quem não vê a
-        // imagem, e a spec do RDM Studio não abre excecão pra isso.
         if (! isset($block['alt']) || ! is_string($block['alt']) || trim($block['alt']) === '') {
             $fail("{$attribute}.{$index}.alt é obrigatório.");
 
@@ -261,9 +240,6 @@ class ValidDraftBlocks implements ValidationRule
     }
 
     /**
-     * Célula vazia de volta a `''`: o middleware global troca string vazia
-     * por nulo, e o editor (`DraftBlock` em TS) só conhece texto na célula.
-     *
      * @param  array<int, array<string, mixed>>  $blocks
      * @return array<int, array<string, mixed>>
      */
@@ -282,7 +258,6 @@ class ValidDraftBlocks implements ValidationRule
         }, $blocks);
     }
 
-    /** O mesmo allow-list de `safeUrl` em `src/core/blocks.ts`. */
     public static function safeUrl(string $url): ?string
     {
         $trimmed = trim($url);
@@ -291,7 +266,6 @@ class ValidDraftBlocks implements ValidationRule
             return null;
         }
 
-        // `//host` e `/\host` o navegador lê como outro host (ver core/blocks.ts).
         if (preg_match('#^/(?![/\\\\])#', $trimmed) === 1 || str_starts_with($trimmed, '#')) {
             return $trimmed;
         }

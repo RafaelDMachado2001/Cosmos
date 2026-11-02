@@ -11,22 +11,12 @@ use App\Modules\Content\Support\SiteRebuild;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
-/**
- * Leva a mídia do disco local para o bucket e reescreve as URLs que a citam.
- *
- * Roda uma vez, na virada para produção: até ali o upload gravava em
- * storage/app/public, e o Markdown publicado e os rascunhos guardam
- * `/storage/media/{uuid}.webp`. Idempotente — arquivo que já está no bucket
- * não é reenviado, e texto que já aponta para o bucket não tem mais o prefixo
- * antigo para trocar.
- */
 class MigrateMediaToBucket extends Command
 {
     protected $signature = 'media:migrate-to-r2';
 
     protected $description = 'Envia a mídia local ao bucket e reescreve /storage/media/ nos corpos e rascunhos';
 
-    /** O prefixo que o disco local devolvia — raiz-relativo, por isso único. */
     private const string LOCAL_PREFIX = '/storage/media/';
 
     public function handle(): int
@@ -59,7 +49,6 @@ class MigrateMediaToBucket extends Command
             $rewritten = self::rewriteMarkdown($translation->body, $target);
             if ($rewritten !== $translation->body) {
                 $translation->body = $rewritten;
-                // Sem eventos: cada save dispararia uma regeneração. Uma só, no fim.
                 $translation->saveQuietly();
                 $bodies++;
             }
@@ -84,10 +73,6 @@ class MigrateMediaToBucket extends Command
         return self::SUCCESS;
     }
 
-    /**
-     * Só o alvo de imagem ou link — `](/storage/media/` —, nunca o texto
-     * corrido nem uma URL de outro host que por acaso contenha o caminho.
-     */
     public static function rewriteMarkdown(string $markdown, string $target): string
     {
         return str_replace('('.self::LOCAL_PREFIX, '('.$target, $markdown);

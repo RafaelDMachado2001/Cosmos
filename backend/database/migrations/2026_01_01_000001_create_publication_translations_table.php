@@ -5,17 +5,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * O conteúdo, uma linha por idioma.
- *
- * O `search_vector` é uma coluna gerada, não um gatilho: o Postgres a mantém em
- * dia sozinho, e não há caminho pelo qual um texto entre sem ser indexado —
- * inclusive pelo painel administrativo, que escreve pelo Eloquent.
- *
- * O dicionário sai do próprio `locale` da linha. É o que faz "índices" encontrar
- * "indexação" em português e "indexing" encontrar "index" em inglês, com a
- * mesma coluna.
- */
 return new class extends Migration
 {
     public function up(): void
@@ -32,9 +21,6 @@ return new class extends Migration
             $table->unique(['publication_id', 'locale']);
         });
 
-        // Copia congelada de config/publications.php (gerado de src/core/types.ts).
-        // Migration aplicada nao se reescreve: um idioma novo pede migration nova
-        // que recrie a coluna, nao edicao desta.
         $dictionary = "CASE WHEN locale = 'pt' THEN 'portuguese'::regconfig ELSE 'english'::regconfig END";
 
         DB::statement(<<<SQL

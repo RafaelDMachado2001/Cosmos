@@ -27,26 +27,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Publication extends Model
 {
-    /** Só publicações com este status chegam à API pública. */
     public const string STATUS_PUBLISHED = 'published';
 
     public const string STATUS_DRAFT = 'draft';
 
-    /**
-     * `published_at` continua a única data: nenhuma coluna nova guarda
-     * "quando entra no ar" — o RDM Studio só expõe este status a mais para o
-     * autor ver "agendada" em vez de calcular a toda hora se a data é futura.
-     * `publications:publish-scheduled` transiciona para STATUS_PUBLISHED
-     * quando a data chega.
-     */
     public const string STATUS_SCHEDULED = 'scheduled';
 
     /**
-     * As quatro do handoff. A constelação colore a estrela por elas.
-     *
-     * Lidas de config/publications.php, gerado de src/core/types.ts por
-     * `npm run emit:seed`: uma cópia escrita à mão divergiria no primeiro ajuste.
-     *
      * @return list<string>
      */
     public static function categories(): array
@@ -74,8 +61,6 @@ class Publication extends Model
     }
 
     /**
-     * O conteúdo de trabalho do RDM Studio — nunca o que o público vê.
-     *
      * @return HasMany<PublicationDraft, $this>
      */
     public function drafts(): HasMany

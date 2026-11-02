@@ -13,12 +13,6 @@ use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
-/**
- * Aceita só o token OIDC que o Google emite para a conta de serviço do Cloud
- * Scheduler: assinatura pelas chaves públicas do Google, emissor do Google, a
- * audiência e o e-mail configurados em `config/scheduler.php`. Qualquer outra
- * coisa é 401, sem dizer qual parte falhou.
- */
 class VerifyGoogleOidc
 {
     private const array ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
@@ -50,9 +44,6 @@ class VerifyGoogleOidc
     }
 
     /**
-     * As chaves públicas do Google, em cache por uma hora: elas giram, mas
-     * com antecedência de dias, e o tick roda a cada 15 minutos.
-     *
      * @return array<string, mixed>
      */
     private function keys(): array

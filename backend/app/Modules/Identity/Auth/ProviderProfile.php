@@ -8,10 +8,6 @@ use Illuminate\Support\Str;
 use Laravel\Socialite\AbstractUser;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 
-/**
- * O que o login social precisa de um provedor, já com a regra de cada um
- * aplicada: o e-mail só conta como verificado quando o provedor diz que é.
- */
 final readonly class ProviderProfile
 {
     public const PROVIDERS = ['google', 'github'];
@@ -32,9 +28,6 @@ final readonly class ProviderProfile
 
         $verified = match ($provider) {
             'google' => ($raw['email_verified'] ?? $raw['verified_email'] ?? false) === true,
-            // Com o escopo user:email (o padrão do Socialite), o e-mail do
-            // GitHub vem sempre de /user/emails e só quando é o primário e
-            // verificado; o do perfil público é descartado. Nulo = não há.
             'github' => $email !== null,
             default => false,
         };

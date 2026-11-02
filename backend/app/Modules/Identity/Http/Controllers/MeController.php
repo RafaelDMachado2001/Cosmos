@@ -16,15 +16,8 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-/**
- * A conta do próprio leitor, pela sessão do Sanctum (guard `member`).
- */
 class MeController extends Controller
 {
-    /**
-     * Sem sessão, 204 e não 401: todo visitante anônimo do site pergunta, e
-     * um 401 por página encheria o console de erro que não é erro.
-     */
     public function show(Request $request): JsonResponse|Response
     {
         $member = $request->user('sanctum');
@@ -52,10 +45,6 @@ class MeController extends Controller
         return $this->profile($member);
     }
 
-    /**
-     * Tudo o que o site guarda sobre a pessoa (LGPD, art. 18): o perfil, as
-     * contas ligadas e o que cada módulo registrou.
-     */
     public function export(Request $request): JsonResponse
     {
         /** @var Member $member */
@@ -104,11 +93,6 @@ class MeController extends Controller
         return response()->noContent();
     }
 
-    /**
-     * O JsonResource responde 201 quando o modelo acabou de ser criado no
-     * mesmo processo — o primeiro GET depois do login, num worker que atende
-     * as duas requisições. Ler o perfil nunca é criar.
-     */
     private function profile(Member $member): JsonResponse
     {
         return (new MemberResource($member))->response()->setStatusCode(200);

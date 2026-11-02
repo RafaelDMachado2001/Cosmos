@@ -5,17 +5,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * O registro das ações de domínio dos leitores, append-only (módulo Activity).
- *
- * É a história de que a gamificação vai ser uma projeção: pontos por coisas
- * feitas antes de ela existir. Só ações de domínio — nem login nem leitura,
- * que seriam dado pessoal sem uso.
- *
- * O gatilho recusa UPDATE e DELETE no banco, não só no modelo. A exceção é a
- * anonimização (DELETE /api/me): com `cosmos.anonymizing` ligado na
- * transação, um UPDATE pode reescrever o `payload` e nada mais.
- */
 return new class extends Migration
 {
     public function up(): void
@@ -24,8 +13,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('member_id')->constrained()->restrictOnDelete();
             $table->string('verb', 60);
-            // Um apelido estável ('member', 'publication'), nunca o nome da
-            // classe: mover um modelo não pode reescrever a história.
             $table->string('subject_type', 40)->nullable();
             $table->unsignedBigInteger('subject_id')->nullable();
             $table->jsonb('payload')->default('{}');

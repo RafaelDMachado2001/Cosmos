@@ -2,31 +2,7 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Filesystem Disk
-    |--------------------------------------------------------------------------
-    |
-    | Here you may specify the default filesystem disk that should be used
-    | by the framework. The "local" disk, as well as a variety of cloud
-    | based disks are available to your application for file storage.
-    |
-    */
-
     'default' => env('FILESYSTEM_DISK', 'local'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Filesystem Disks
-    |--------------------------------------------------------------------------
-    |
-    | Below you may configure as many filesystem disks as necessary, and you
-    | may even configure multiple disks for the same driver. Examples for
-    | most supported storage drivers are configured here for reference.
-    |
-    | Supported drivers: "local", "ftp", "sftp", "s3"
-    |
-    */
 
     'disks' => [
 
@@ -41,24 +17,16 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            // Raiz-relativa: o Nginx serve /storage/ do mesmo host que o site, e a
-            // URL vai parar no Markdown publicado. Com o APP_URL, a imagem
-            // apontava para o endereço do backend (:8000 em dev), não o do site.
             'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
         ],
 
-        // A mídia do RDM Studio. Em produção, um bucket S3-compatível (o R2 da
-        // Cloudflare) servido por CDN no domínio de MEDIA_URL: o contêiner do
-        // Cloud Run não guarda nada em disco. Em desenvolvimento, sem
-        // credencial nenhuma, é o mesmo diretório que o Nginx serve em /storage/.
         'media' => env('MEDIA_DISK', 'local') === 's3' ? [
             'driver' => 's3',
             'key' => env('MEDIA_S3_KEY'),
             'secret' => env('MEDIA_S3_SECRET'),
-            // O R2 ignora a região, mas o SDK exige uma.
             'region' => env('MEDIA_S3_REGION', 'auto'),
             'bucket' => env('MEDIA_S3_BUCKET'),
             'endpoint' => env('MEDIA_S3_ENDPOINT'),
@@ -89,17 +57,6 @@ return [
         ],
 
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Symbolic Links
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure the symbolic links that will be created when the
-    | `storage:link` Artisan command is executed. The array keys should be
-    | the locations of the links and the values should be their targets.
-    |
-    */
 
     'links' => [
         public_path('storage') => storage_path('app/public'),

@@ -13,14 +13,6 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-/**
- * Acha ou cria o membro de um login social.
- *
- * 1. A identidade (provedor + id do provedor) já existe: é aquele membro.
- * 2. Outro provedor já trouxe o mesmo e-mail: liga a este membro (D5). Só
- *    e-mails verificados chegam ao banco, então os dois lados verificaram.
- * 3. Senão, conta nova, e o evento MemberRegistered.
- */
 final class SignInWithProvider
 {
     public function handle(ProviderProfile $profile, string $locale): Member
@@ -29,8 +21,6 @@ final class SignInWithProvider
             throw new InvalidArgumentException('e-mail não verificado pelo provedor');
         }
 
-        // Dois callbacks ao mesmo tempo (duplo clique, duas abas) disputam o
-        // handle ou a identidade; quem perde tenta de novo e acha o vencedor.
         for ($attempt = 1; ; $attempt++) {
             try {
                 return $this->attempt($profile, $locale);

@@ -8,13 +8,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * A forma enxuta que a constelação consome.
- *
- * Sem o corpo do texto de propósito: são catorze estrelas hoje e centenas
- * depois, e nenhuma delas mostra o texto antes de ser aberta. `published_at` em
- * ISO 8601 porque é o que o `Date.parse` do cliente espera.
- */
 class PublicationResource extends JsonResource
 {
     /** @return array<string, mixed> */
@@ -32,14 +25,6 @@ class PublicationResource extends JsonResource
         ];
     }
 
-    /**
-     * O mais recente entre a publicação e a tradução pedida.
-     *
-     * Editar só o texto não toca `publications.updated_at` — ver "editar só a
-     * tradução também regenera" na fase 9. O `sitemap.xml` do cliente usa isto
-     * como `lastmod`; sem o maior dos dois, uma edição de texto nunca mudaria
-     * a data que o buscador vê.
-     */
     private function updatedAt(): Carbon
     {
         $translationUpdatedAt = Carbon::parse($this->resource->translation_updated_at);

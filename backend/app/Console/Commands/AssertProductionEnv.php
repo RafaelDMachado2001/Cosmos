@@ -6,14 +6,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
-/**
- * Recusa subir o contêiner de produção mal configurado.
- *
- * Roda no entrypoint da imagem de produção (docker/production/entrypoint.sh),
- * antes de o FrankenPHP abrir a porta: uma revisão do Cloud Run que falha aqui
- * nunca passa no health check, e o tráfego fica na revisão anterior. Cada item
- * é algo que, esquecido, funciona "quase" — o pior tipo de erro de deploy.
- */
 class AssertProductionEnv extends Command
 {
     protected $signature = 'env:assert-production';

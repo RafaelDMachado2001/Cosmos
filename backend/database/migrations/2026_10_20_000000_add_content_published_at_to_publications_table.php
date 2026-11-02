@@ -5,13 +5,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Quando o rascunho foi copiado para o ar pela última vez.
- *
- * O autosave só toca o rascunho; sem esta marca o Studio não tinha como dizer
- * que uma publicação no ar tem alterações esperando o "Atualizar publicado".
- * O que já está publicado parte em dia: a marca é o `updated_at` de agora.
- */
 return new class extends Migration
 {
     public function up(): void

@@ -9,15 +9,6 @@ use App\Modules\Content\Models\PublicationTranslation;
 use App\Modules\Content\Support\DraftBlocksCli;
 use Illuminate\Console\Command;
 
-/**
- * Preenche `publication_drafts` a partir do que já está publicado.
- *
- * Roda uma vez, ao introduzir o RDM Studio: sem isto, toda publicação
- * existente abriria o editor em branco, obrigando reescrever o acervo
- * inteiro à mão. Idempotente — `updateOrCreate` por `(publication_id,
- * locale)` — então rodar de novo sobre um rascunho já editado o sobrescreve
- * com o conteúdo publicado atual, não com o que foi migrado da primeira vez.
- */
 class SeedDrafts extends Command
 {
     protected $signature = 'rdm-studio:seed-drafts';

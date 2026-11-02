@@ -6,7 +6,6 @@ namespace App\Modules\Identity\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 
-/** Uma conta de leitor nova, criada pelo primeiro login social. */
 final class MemberRegistered
 {
     use Dispatchable;

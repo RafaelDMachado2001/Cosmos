@@ -9,9 +9,6 @@ use Illuminate\Support\Carbon;
 use LogicException;
 
 /**
- * Uma ação de domínio de um leitor. Só se cria: o modelo recusa editar e
- * apagar, e o gatilho da migração recusa de novo no banco.
- *
  * @property int $id
  * @property int $member_id
  * @property string $verb
