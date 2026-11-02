@@ -57,7 +57,6 @@ class MigrateMediaToBucketTest extends TestCase
 
         $body = $publication->translations()->firstOrFail()->body;
         $this->assertSame(2, substr_count($body, '(https://media.rdmlabs.test/media/a.webp'));
-        // Link de outro host e texto corrido ficam como estavam.
         $this->assertStringContainsString('(https://example.com/storage/media/a.webp)', $body);
         $this->assertStringContainsString('o caminho /storage/media/ citado', $body);
 
@@ -66,7 +65,6 @@ class MigrateMediaToBucketTest extends TestCase
         $this->assertSame('https://example.com/x.png', $blocks[1]['url']);
         $this->assertSame('Texto com /storage/media/a.webp no meio.', $blocks[2]['text']);
 
-        // Idempotente: a segunda volta não acha nada para fazer.
         $this->artisan('media:migrate-to-r2')
             ->expectsOutput('0 arquivo(s) enviado(s), 0 corpo(s) e 0 rascunho(s) reescrito(s).')
             ->assertSuccessful();

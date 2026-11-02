@@ -34,8 +34,6 @@ class FallbackTest extends TestCase
         $response->assertSee('Ainda nao no disco');
         $response->assertSee('Primeiro paragrafo.');
         $response->assertSee('noindex', false);
-        // O caminho de exceção não afirma canonical: uma segunda implementação
-        // de SEO e como o canonical errado nasce.
         $response->assertDontSee('rel="canonical"', false);
     }
 
@@ -84,9 +82,6 @@ class FallbackTest extends TestCase
 
     public function test_a_raiz_do_laravel_nao_responde(): void
     {
-        // A home é o site estático. Pelo Nginx, /index.php chegava aqui e
-        // mostrava a página de boas-vindas do framework com 200: uma URL a
-        // mais para o buscador e um cartão de visita da stack.
         $this->get('/')->assertNotFound();
     }
 }

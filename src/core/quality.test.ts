@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { QUALITY_LEVELS, createQualityGovernor, effectiveLevel } from './quality';
 
-/** Alimenta o governador com `seconds` de quadros de `frameMs` cada. */
 function run(governor: ReturnType<typeof createQualityGovernor>, frameMs: number, seconds: number) {
   const frames = Math.ceil((seconds * 1000) / frameMs);
   for (let i = 0; i < frames; i += 1) governor.sample(frameMs);

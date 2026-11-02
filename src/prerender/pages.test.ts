@@ -54,7 +54,6 @@ describe('prerenderPages', () => {
   it('a lista estática traz resumo, categoria e data em <time>, e o artigo também data em <time>', () => {
     const home = at('/pt')?.body ?? '';
     expect(home).toContain('Comentar o código, não a pessoa.');
-    // O React grava `dateTime`; atributo de HTML não diferencia caixa.
     expect(home).toMatch(/Rotina · <time datetime="2025-09-12T[^"]+">SET 2025<\/time>/i);
     const article = at('/pt/publicacoes/code-review-sem-atrito')?.body ?? '';
     expect(article.match(/<time datetime=/gi)?.length).toBe(PUBLICATIONS.length + 1);
@@ -78,7 +77,6 @@ describe('prerenderPages', () => {
 
   it('declara o idioma do documento', () => {
     expect(at('/pt')?.lang).toBe('pt-BR');
-    // en-GB, como o og:locale (en_GB) e o formato das datas.
     expect(at('/en')?.lang).toBe('en-GB');
   });
 
@@ -133,10 +131,6 @@ describe('prerenderPages', () => {
   });
 
   it('publicação só num idioma não expõe link morto para o outro, nem entra no sitemap do outro', async () => {
-    // O painel permite publicar só numa tradução — é o que o adapter HTTP
-    // real devolve (o join por locale simplesmente omite o slug do idioma
-    // sem tradução). `createStaticSource` não modela isso: todo item seu tem
-    // as duas, daí a fonte feita à mão aqui.
     const soEmPortugues = {
       slug: 'so-em-portugues',
       publishedAt: '2026-01-15T12:00:00.000Z',
@@ -178,7 +172,6 @@ describe('prerenderPages', () => {
     await prerenderPages(spy);
 
     expect(asked.length).toBeGreaterThan(0);
-    // 1000 e o teto que a API aceita (PublicationController, regra de `limit`).
     expect(ARCHIVE_LIMIT).toBe(1000);
     expect(asked).toEqual(asked.map(() => 1000));
   });

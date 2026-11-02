@@ -11,7 +11,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
-/** O CSRF de verdade: o do Laravel se desliga sozinho nos testes. */
 class StrictCsrf extends ValidateCsrfToken
 {
     protected function runningUnitTests(): bool
@@ -30,7 +29,6 @@ class MemberApiTest extends TestCase
     {
         parent::setUp();
         config(['cors.allowed_origins' => [self::SITE]]);
-        // Como o site pede: com Referer de um domínio stateful.
         $this->withHeader('Referer', 'http://localhost/pt/');
     }
 
@@ -85,7 +83,6 @@ class MemberApiTest extends TestCase
             $this->patchJson('/api/me', ['handle' => $handle])->assertJsonValidationErrors('handle');
         }
         $this->patchJson('/api/me', ['locale' => 'fr'])->assertJsonValidationErrors('locale');
-        // O próprio handle não conta como ocupado.
         $this->patchJson('/api/me', ['handle' => 'ana'])->assertOk();
     }
 
@@ -96,7 +93,6 @@ class MemberApiTest extends TestCase
 
         $this->patchJson('/api/me', ['name' => 'Sem token'])->assertStatus(419);
 
-        // O GET entrega o cookie XSRF-TOKEN; o site o devolve no cabeçalho.
         $cookie = collect($this->getJson('/api/me')->headers->getCookies())->firstWhere(fn ($cookie) => $cookie->getName() === 'XSRF-TOKEN');
         $this->assertNotNull($cookie);
         $this->patchJson('/api/me', ['name' => 'Com token'], ['X-XSRF-TOKEN' => (string) $cookie->getValue()])->assertOk();
@@ -116,8 +112,6 @@ class MemberApiTest extends TestCase
             'HTTP_ORIGIN' => 'https://evil.example',
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
         ]);
-        // Com uma origem só, o pacote sempre responde a do site: o navegador
-        // compara com a de quem pediu e bloqueia.
         $this->assertSame(self::SITE, $preflight->headers->get('Access-Control-Allow-Origin'));
     }
 

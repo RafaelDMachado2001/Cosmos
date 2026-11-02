@@ -26,7 +26,6 @@ class MemberPrivacyTest extends TestCase
         $this->withHeader('Referer', 'http://localhost/pt/');
     }
 
-    /** Pelo caminho de verdade: o login cria conta, identidade e atividade. */
     private function signIn(): Member
     {
         Socialite::fake('google', SocialiteUser::fake([
@@ -46,7 +45,6 @@ class MemberPrivacyTest extends TestCase
         $this->deleteJson('/api/me')->assertNoContent();
 
         $row = (array) DB::table('members')->where('id', $member->id)->first();
-        // Os valores exatos, não "ana": o handle aleatório pode conter a sílaba.
         foreach ($row as $column => $value) {
             foreach ([self::EMAIL, 'Ana Souza', 'ana_souza', 'lh3.example'] as $personal) {
                 $this->assertStringNotContainsStringIgnoringCase($personal, (string) $value, "members.$column ainda identifica");
@@ -72,8 +70,6 @@ class MemberPrivacyTest extends TestCase
     {
         $old = $this->signIn();
         $this->deleteJson('/api/me')->assertNoContent();
-        // Cada requisição real nasce com os guards vazios; aqui o app é um só,
-        // e o guard do Sanctum guardaria o membro da requisição anterior.
         Auth::forgetGuards();
 
         $this->assertTrue(Auth::guard('member')->guest());
@@ -84,8 +80,6 @@ class MemberPrivacyTest extends TestCase
 
         $new = Member::sole();
         $this->assertNotSame($old->id, $new->id);
-        // A conta anonimizada ganhou um handle aleatório: o antigo volta a
-        // ficar livre para a dona.
         $this->assertSame('ana_souza', $new->handle);
     }
 

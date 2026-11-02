@@ -3,11 +3,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { ArticleBody } from './ArticleBody';
 
-/*
- * `ArticleBody` é o único lugar que desenha um bloco — este teste prova que
- * os seis tipos saem com a tag semântica esperada, não a marcação do
- * Markdown. `core/blocks.test.ts` já cobre o parsing em si.
- */
 describe('ArticleBody', () => {
   afterEach(() => {
     cleanup();

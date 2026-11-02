@@ -206,8 +206,6 @@ describe('parseBlocks', () => {
     });
 
     it('imagem embutida no meio de um parágrafo sempre sobra como o alt', () => {
-      // A spec trata imagem como bloco, não como marca inline — a sintaxe
-      // `![alt](...)` no meio de um parágrafo nunca vira figura, só o alt.
       const [block] = parseBlocks('Antes ![x](javascript:alert) depois.');
       expect(block).toEqual<Block>({
         type: 'paragraph',
@@ -256,7 +254,6 @@ describe('parseBlocks', () => {
 });
 
 describe('inlineToMarkdown', () => {
-  /** Dá a volta: markdown -> parseBlocks -> children do parágrafo -> markdown. */
   function roundTrip(markdown: string): string {
     const [block] = parseBlocks(markdown);
     if (block?.type !== 'paragraph') throw new Error('esperava um parágrafo');
@@ -353,8 +350,6 @@ describe('tabela', () => {
   });
 
   it('linha sem barra encerra a tabela, como uma linha em branco', () => {
-    // Mais conservador que o GFM, que a leria como mais uma linha: um
-    // parágrafo colado na tabela não some dentro dela.
     expect(parseBlocks(['| a |', '| --- |', '| 1 |', 'texto'].join('\n')).map((block) => block.type)).toEqual([
       'table',
       'paragraph',

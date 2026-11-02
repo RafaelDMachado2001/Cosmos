@@ -101,8 +101,6 @@ class PublicationApiTest extends TestCase
             ['Scheduled', 'Summary', 'Body'],
         );
 
-        // O filtro de status mora na query base do controller, não num
-        // parâmetro: o que a URL traz não pode desligá-lo.
         foreach (['status=draft', 'status[]=draft&status[]=published', 'include_drafts=1', 'preview=1', 'status=scheduled'] as $query) {
             $response = $this->getJson("/api/publications?{$query}");
             $slugs = $response->status() === 200 ? array_column($response->json('data'), 'slug') : [];
@@ -143,8 +141,6 @@ class PublicationApiTest extends TestCase
 
     public function test_busca_em_portugues_com_radical(): void
     {
-        // "índices" no título; a busca por "índice" precisa achar, senão a
-        // pesquisa depende de a pessoa acertar a flexão.
         $slugs = array_column(
             $this->getJson('/api/publications?locale=pt&q='.urlencode('índice'))->json('data'),
             'slug'
@@ -215,7 +211,6 @@ class PublicationApiTest extends TestCase
 
     public function test_limite_igual_ao_acervo_nao_e_truncamento(): void
     {
-        // count === limit não basta: só há truncamento se havia mais linhas.
         $response = $this->getJson('/api/publications?locale=pt&limit=14');
 
         $response->assertJsonPath('meta.count', 14);
@@ -238,8 +233,6 @@ class PublicationApiTest extends TestCase
 
     public function test_a_61a_requisicao_no_mesmo_minuto_recebe_429(): void
     {
-        // O limiter 'api' e por IP, e o cliente de teste usa sempre o mesmo —
-        // é exatamente o que se quer provar aqui.
         for ($i = 0; $i < 60; $i++) {
             $this->getJson('/api/publications?locale=pt')->assertOk();
         }
@@ -279,8 +272,6 @@ class PublicationApiTest extends TestCase
             ->assertOk()
             ->json('data');
 
-        // Dividir em blocos e trabalho de core/blocks.ts, no cliente — o
-        // servidor só guarda e devolve a string. Ver a spec da fase 11.
         $this->assertIsString($data['body']);
         $this->assertNotSame('', trim($data['body']));
         $this->assertStringContainsString("\n\n", $data['body']);
@@ -442,8 +433,6 @@ class PublicationApiTest extends TestCase
         $antes = $this->getJson('/api/publications/editada-depois-de-publicada?locale=pt')
             ->json('data.updated_at');
 
-        // Só a tradução muda — "editar só a tradução também regenera" na fase
-        // 9 — e é exatamente o caso que a publicação, sozinha, não capturaria.
         $this->travel(1)->minute();
         $publication->translations()->where('locale', 'pt')->first()->update(['title' => 'Revisado']);
 
@@ -467,9 +456,6 @@ class PublicationApiTest extends TestCase
         $found = collect($this->getJson('/api/publications')->json('data'))
             ->firstWhere('slug', 'marco-temporal');
 
-        // Meia hora depois da virada do mês em UTC. Qualquer deslocamento de
-        // fuso a joga para fevereiro — e a estrela muda de lugar na linha do
-        // tempo por causa de onde o servidor está.
         $this->assertSame('2026-03-01T00:30:00.000Z', $found['published_at']);
     }
 

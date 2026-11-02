@@ -31,7 +31,6 @@ class ActivityLogTest extends TestCase
     {
         $this->signIn();
         Auth::guard('member')->logout();
-        // Entrar de novo não é ação de domínio: nada novo no registro.
         $this->signIn();
 
         $activity = Activity::sole();
@@ -48,8 +47,6 @@ class ActivityLogTest extends TestCase
         $this->expectException(QueryException::class);
         $this->expectExceptionMessage('append-only');
 
-        // Só o payload, que a anonimização poderia reescrever: sem o
-        // cosmos.anonymizing ligado, nem isso.
         DB::table('activities')->where('id', $activity->id)->update(['payload' => '{}']);
     }
 

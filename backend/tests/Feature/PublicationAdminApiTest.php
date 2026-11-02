@@ -40,14 +40,10 @@ class PublicationAdminApiTest extends TestCase
         return $publication;
     }
 
-    // -- autenticação -------------------------------------------------------
-
     public function test_a_api_exige_autenticacao(): void
     {
         $this->getJson('/admin/api/publications')->assertUnauthorized();
     }
-
-    // -- index / show ---------------------------------------------------------
 
     public function test_lista_publicacoes_de_qualquer_status_com_rascunhos(): void
     {
@@ -75,8 +71,6 @@ class PublicationAdminApiTest extends TestCase
             ->assertJsonPath('data.tags.0', 'postgres')
             ->assertJsonPath('data.references.0.title', 'Fonte');
     }
-
-    // -- store ----------------------------------------------------------------
 
     public function test_cria_publicacao_com_rascunho_vazio_nos_dois_idiomas(): void
     {
@@ -121,8 +115,6 @@ class PublicationAdminApiTest extends TestCase
             'publishedAt' => now()->toIso8601String(),
         ])->assertUnprocessable()->assertJsonValidationErrors('category');
     }
-
-    // -- update (autosave) -----------------------------------------------------
 
     public function test_autosave_grava_blocos_do_rascunho(): void
     {
@@ -245,7 +237,6 @@ class PublicationAdminApiTest extends TestCase
             ->assertJsonPath('data.appearance.nebula', 0.7)
             ->assertJsonPath('data.appearance.motion', false);
 
-        // Sem a chave, a aparência fica como está.
         $this->actingAs($this->admin())->patchJson($url, ['featured' => true])
             ->assertJsonPath('data.appearance.nebula', 0.7);
 
@@ -311,7 +302,6 @@ class PublicationAdminApiTest extends TestCase
             'references' => [['title' => 'Fonte', 'url' => 'javascript:alert(1)']],
         ])->assertUnprocessable()->assertJsonValidationErrors('references.0.url');
 
-        // Parecem raiz-relativos, mas o navegador os lê como outro host.
         foreach (['//evil.example/x', '/\\evil.example/x'] as $url) {
             $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
                 'references' => [['title' => 'Fonte', 'url' => $url]],
@@ -322,8 +312,6 @@ class PublicationAdminApiTest extends TestCase
             'references' => [['title' => 'Fonte', 'url' => '/pt/publicacoes/outra']],
         ])->assertOk();
     }
-
-    // -- publish / unpublish ----------------------------------------------------
 
     public function test_publicar_bloqueado_sem_titulo_pt(): void
     {
@@ -413,7 +401,6 @@ class PublicationAdminApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.pendingChanges', true);
 
-        // A tradução no ar continua a anterior até atualizar.
         $this->assertSame('Primeira versão.', $publication->translations()->where('locale', 'pt')->value('body'));
 
         $this->travel(1)->minutes();
@@ -445,8 +432,6 @@ class PublicationAdminApiTest extends TestCase
             ->assertJsonPath('data.status', Publication::STATUS_DRAFT);
     }
 
-    // -- destroy ----------------------------------------------------------------
-
     public function test_apaga_publicacao_e_rascunhos(): void
     {
         $publication = $this->publicationWithDrafts();
@@ -458,8 +443,6 @@ class PublicationAdminApiTest extends TestCase
         $this->assertNull(Publication::find($publication->id));
         $this->assertSame(0, PublicationDraft::where('publication_id', $publication->id)->count());
     }
-
-    // -- mídia ----------------------------------------------------------------
 
     public function test_upload_redimensiona_e_converte_para_webp(): void
     {
@@ -481,17 +464,11 @@ class PublicationAdminApiTest extends TestCase
 
     public function test_url_da_midia_e_raiz_relativa(): void
     {
-        // Sem Storage::fake, que ignora o 'url' do disco. Com o APP_URL, a
-        // imagem publicada apontava para o host do backend, não o do site — o
-        // Nginx serve /storage/ no mesmo host das páginas.
         $this->assertSame('/storage/media/a.webp', Storage::disk('media')->url('media/a.webp'));
     }
 
     public function test_upload_recusa_imagem_acima_de_16_megapixels(): void
     {
-        // Uma bomba de descompressão: poucos bytes, e o cabeçalho declara
-        // 20000 × 20000. Decodificada, ocuparia 1,6 GB; nem o próprio
-        // UploadedFile::fake()->image() desenharia isso nos 128 MB do PHP.
         $file = UploadedFile::fake()->createWithContent('bomba.png', self::pngHeader(20000, 20000));
 
         $this->actingAs($this->admin())
@@ -502,7 +479,6 @@ class PublicationAdminApiTest extends TestCase
         $this->assertSame(0, Media::count());
     }
 
-    /** Assinatura e IHDR de um PNG: o que o getimagesize lê para dar o tamanho. */
     private static function pngHeader(int $width, int $height): string
     {
         $ihdr = 'IHDR'.pack('NNCCCCC', $width, $height, 8, 6, 0, 0, 0);
@@ -519,8 +495,6 @@ class PublicationAdminApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('file');
     }
-
-    // -- tags -----------------------------------------------------------------
 
     public function test_busca_tags_por_prefixo(): void
     {

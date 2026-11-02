@@ -186,9 +186,6 @@ describe('borda: o export do Worker, com os globais do runtime', () => {
   });
 
   it('chama o fetch global sem trocar o this dele', async () => {
-    // Na Cloudflare, `fetch` chamado com outro `this` lança "Illegal
-    // invocation" (erro 1101 em toda requisição). O Node não reclama, então o
-    // teste imita o runtime.
     const calls: string[] = [];
     vi.stubGlobal('fetch', function (this: unknown, input: Request) {
       if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');

@@ -2,11 +2,6 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-/*
- * Os cabeçalhos que a Vercel põe no site. Nenhum outro teste os vê: o e2e roda
- * contra o Nginx do compose, que tem a configuração dele.
- */
-
 interface HeaderRule {
   readonly source: string;
   readonly headers: readonly { readonly key: string; readonly value: string }[];
@@ -14,7 +9,6 @@ interface HeaderRule {
 
 const config = JSON.parse(readFileSync('vercel.json', 'utf8')) as { headers: HeaderRule[] };
 
-/** O valor de um cabeçalho para um caminho: a última regra que casa vence, como na Vercel. */
 function headerFor(path: string, key: string): string | undefined {
   let value: string | undefined;
   for (const rule of config.headers) {
@@ -27,8 +21,6 @@ function headerFor(path: string, key: string): string | undefined {
 
 describe('vercel.json', () => {
   it('o HTML fica uma hora na borda e é revalidado em segundo plano', () => {
-    // Antes era no-cache: cada visita ia à origem (x-vercel-cache: MISS, TTFB
-    // de 3s). Cada deploy é um cache novo, então publicar não espera a hora.
     for (const path of ['/pt', '/en/publications/code-review-sem-atrito', '/sitemap.xml']) {
       expect(headerFor(path, 'Cache-Control'), path).toBe(
         'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
@@ -44,7 +36,6 @@ describe('vercel.json', () => {
   });
 
   it('o HTML não libera CORS para qualquer origem; o cartão e o RSS sim', () => {
-    // O padrão da Vercel é `*` em todo arquivo estático; o HTML não precisa.
     expect(headerFor('/pt', 'Access-Control-Allow-Origin')).toBe('https://cosmos.rdmlabs.com.br');
     expect(headerFor('/data/publications.pt.json', 'Access-Control-Allow-Origin')).toBe(
       'https://cosmos.rdmlabs.com.br',
@@ -62,7 +53,6 @@ describe('vercel.json', () => {
   });
 
   it('HSTS de dois anos com subdomínios, sem preload', () => {
-    // Preload fica de fora por decisão: sair da lista leva meses.
     expect(headerFor('/pt', 'Strict-Transport-Security')).toBe(
       'max-age=63072000; includeSubDomains',
     );

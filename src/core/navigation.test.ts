@@ -50,8 +50,6 @@ describe('push', () => {
   });
 
   it('um único gesto enorme não transborda do portal direto para o pan', () => {
-    // Atravessar o portal e sair deslizando pela constelação no mesmo gesto
-    // seria brusco: a fase termina exatamente em enter = 1.
     const next = push(AT_START, 5_000_000, BOUNDS);
     expect(next.enter).toBe(1);
     expect(next.pan).toBe(0);
@@ -245,7 +243,6 @@ describe('needsSlide', () => {
   });
 
   it('move quando o rótulo da estrela, e não só ela, encostaria na borda', () => {
-    // O núcleo cabe, mas metade do rótulo de 180px passaria da margem de 24px.
     expect(needsSlide(100, 1280)).toBe(true);
     expect(needsSlide(1180, 1280)).toBe(true);
   });

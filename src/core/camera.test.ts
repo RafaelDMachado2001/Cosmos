@@ -75,7 +75,6 @@ describe('câmera', () => {
   });
 
   it('na entrada, leva o pan à mais recente sem encenar a viagem', () => {
-    // O acervo vai de x≈4700 a 9000 e o pan nasce em 0.
     const bounds = { min: 4700, max: 9000 };
     expect(settle(base({ enter: 0, enterS: 0, velocity: 2 }), bounds, 8200)).toEqual(
       base({ enter: 0, enterS: 0, pan: 8200, panS: 8200, velocity: 0 }),
@@ -83,7 +82,6 @@ describe('câmera', () => {
   });
 
   it('antes da travessia, um pan já dentro dos limites também vai à chegada', () => {
-    // O acervo semente chega antes da API: os limites crescem, a chegada muda.
     const bounds = { min: 0, max: 9000 };
     const antes = base({ enter: 0.5, enterS: 0.5, pan: 3000, panS: 3000 });
     expect(settle(antes, bounds, 8200)).toMatchObject({ pan: 8200, panS: 8200 });

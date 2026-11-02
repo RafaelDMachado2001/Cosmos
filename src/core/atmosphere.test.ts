@@ -61,7 +61,6 @@ describe('generateSky', () => {
       colorOf,
     );
 
-    // A cor pode mudar perto da estrela nova; a posição e a forma, nunca.
     const strip = (list: readonly Nebula[]) =>
       list.map((nebula) => [nebula.px, nebula.y01, nebula.radius, nebula.weight]);
     expect(strip(after.nebulae).slice(0, before.nebulae.length)).toEqual(strip(before.nebulae));
@@ -91,7 +90,6 @@ describe('generateSky', () => {
       expect(galaxy.brightness).toBeGreaterThanOrEqual(0.3);
       expect(galaxy.brightness).toBeLessThanOrEqual(0.55);
     }
-    // Galáxias são raras: no mínimo 2400px de linha do tempo entre elas.
     const galaxyX = sky.galaxies.map((galaxy) => galaxy.px / ATMOSPHERE.galaxyParallax);
     for (let i = 1; i < galaxyX.length; i += 1) {
       expect((galaxyX[i] ?? 0) - (galaxyX[i - 1] ?? 0)).toBeGreaterThan(2400);
@@ -100,7 +98,6 @@ describe('generateSky', () => {
   });
 
   it('tinge cada nebulosa com a categoria da publicação mais próxima', () => {
-    // Uma categoria só: toda nebulosa fica entre o roxo base e aquela cor.
     const sky = generateSky(
       placeStars(ACERVO.map((entry) => ({ ...entry, category: 'projeto' as const }))),
       colorOf,
@@ -138,7 +135,6 @@ describe('cullSky', () => {
 
   it('nunca passa do teto: o custo do shader é constante', () => {
     const out = emptyCull();
-    // Uma tela absurda veria tudo; o teto ainda vale.
     cullSky(sky, 0, 100000, 5, out);
     expect(out.nebulae.length).toBe(5);
     expect(out.galaxies.length).toBeLessThanOrEqual(ATMOSPHERE.maxGalaxies);
@@ -164,8 +160,6 @@ describe('atmosphereIntensity', () => {
 
 describe('anos gigantes', () => {
   it('ficam a 75% da posição do ano e andam a 75% do pan', () => {
-    // Um numeral em x * 0.75 deslocado por -pan * 0.75 cai em tela em
-    // (x - pan) * 0.75: atrás da estrela, mais devagar que ela.
     const x = giantYearX(4000);
     const { x: offset, scale } = yearLayerTransform(1000, 0, 0, 0);
     expect(x + offset).toBe((4000 - 1000) * 0.75);

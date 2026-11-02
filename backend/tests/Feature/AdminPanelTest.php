@@ -24,9 +24,6 @@ class AdminPanelTest extends TestCase
 
     public function test_o_admin_do_allowlist_entra_no_painel_fora_do_local(): void
     {
-        // O Filament só deixa qualquer usuário entrar com APP_ENV=local; aqui é
-        // testing, como em produção. Sem canAccessPanel, o login funcionava e
-        // o /admin respondia 403 (achado na virada).
         $this->actingAs(User::factory()->create(['email' => strtoupper((string) config('admin.email'))]));
 
         $this->get('/admin')->assertOk();
@@ -59,8 +56,6 @@ class AdminPanelTest extends TestCase
 
     public function test_nao_existe_registro_publico(): void
     {
-        // O painel é de um autor só. Uma rota de registro aberta seria um
-        // caminho para qualquer pessoa publicar na constelação.
         $this->get('/admin/register')->assertNotFound();
     }
 
@@ -69,8 +64,6 @@ class AdminPanelTest extends TestCase
         $this->actingAs(User::factory()->create());
         $this->seed(PublicationSeeder::class);
 
-        // A primeira página, na mesma ordem da constelação: do mais novo para o
-        // mais antigo. O acervo semente tem catorze e a página mostra dez.
         $primeiraPagina = Publication::query()
             ->orderByDesc('published_at')
             ->limit(10)
@@ -93,8 +86,6 @@ class AdminPanelTest extends TestCase
             'status' => Publication::STATUS_PUBLISHED,
         ]);
 
-        // "Publicado" com data futura não aparece na API pública ainda — o
-        // painel precisa dizer isso, não só repetir o status do banco.
         Livewire::test(ListPublications::class)
             ->assertTableColumnFormattedStateSet('status', 'Agendado', $agendada);
     }
@@ -121,8 +112,6 @@ class AdminPanelTest extends TestCase
         $publication = Publication::where('slug', 'nova-publicacao')->firstOrFail();
         $this->assertCount(2, $publication->translations);
 
-        // O caminho inteiro: o que o painel grava chega à API pública já
-        // indexado — o `search_vector` é coluna gerada, não gatilho.
         $this->getJson('/api/publications/nova-publicacao?locale=en')
             ->assertOk()
             ->assertJsonPath('data.title', 'Title')
@@ -137,9 +126,6 @@ class AdminPanelTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        // O slug alimenta o FNV-1a que decide a altura da estrela, e ele
-        // precisa render o mesmo inteiro sobre bytes UTF-8 aqui e sobre code
-        // units UTF-16 no navegador.
         Livewire::test(CreatePublication::class)
             ->fillForm([
                 'slug' => 'Ação-Inválida',

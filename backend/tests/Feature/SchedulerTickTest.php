@@ -13,10 +13,6 @@ use Illuminate\Testing\TestResponse;
 use OpenSSLAsymmetricKey;
 use Tests\TestCase;
 
-/**
- * O tick contra um "Google" de mentira: um par RSA gerado aqui, publicado no
- * mesmo formato JWKS que https://www.googleapis.com/oauth2/v3/certs devolve.
- */
 class SchedulerTickTest extends TestCase
 {
     use RefreshDatabase;
@@ -51,7 +47,7 @@ class SchedulerTickTest extends TestCase
         ]);
     }
 
-    /** @param  array<string, mixed>  $overrides */
+    /** @param array<string, mixed> $overrides */
     private function token(array $overrides = []): string
     {
         return JWT::encode([
@@ -123,8 +119,6 @@ class SchedulerTickTest extends TestCase
             'status' => Publication::STATUS_SCHEDULED,
         ]);
 
-        // Pelo Artisan, o tick falhava em produção: o comando do módulo só é
-        // registrado no console, e a suíte roda em console (ver ScheduledPublisher).
         Artisan::spy();
 
         $this->tick($this->token())->assertOk()->assertJsonStructure(['rebuilt']);

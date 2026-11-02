@@ -1,8 +1,6 @@
-# A chave 'version' é obsoleta no Compose v2+; 'name' identifica o projeto.
 name: rdm-labs
 
 services:
-  ### Vite dev server ########################################################
   node:
     build:
       context: .
@@ -11,15 +9,6 @@ services:
         UID: ${DOCKER_UID:-1000}
         GID: ${DOCKER_GID:-1000}
     working_dir: /app
-    # npm ci fica no command, não na imagem: o volume nomeado nasce vazio e
-    # precisa ser populado dentro do container, não copiado do host.
-    #
-    # O carimbo evita repetir o `npm ci` em todo restart: sem ele, um
-    # `.env` com env inválido (ver scripts/check-env.ts) faz o `npm run dev`
-    # falhar na hora, o `restart: unless-stopped` reinicia o container em
-    # segundos, e vários `npm ci` concorrentes no mesmo volume nomeado
-    # corrompem o `node_modules` — foi o que aconteceu de fato ao trocar de
-    # branch com um `.env` de outra fase ainda no disco.
     command: >-
       sh -c "
         cmp -s package-lock.json node_modules/.install-stamp 2>/dev/null ||
@@ -31,51 +20,38 @@ services:
       - .:/app
       - node_modules:/app/node_modules
     ports:
-      # Mesma porta dos dois lados: o cliente do HMR acerta o websocket sozinho.
-      # Só no loopback: o dev server serve o código-fonte e o node_modules, e
-      # tem histórico de path traversal. DEV_BIND=0.0.0.0 abre para a rede
-      # local (testar no celular), conscientemente.
       - "${DEV_BIND:-127.0.0.1}:${VITE_PORT:-5174}:${VITE_PORT:-5174}"
     environment:
       - VITE_PORT=${VITE_PORT:-5174}
       - VITE_SITE_URL=${VITE_SITE_URL:-http://localhost:5174}
-      # Polling só onde inotify não atravessa o bind mount (WSL2 sob /mnt/c).
       - VITE_POLLING=${VITE_POLLING:-0}
     networks:
       - rdm-network
     restart: unless-stopped
 
-  ### Build de produção servido pelo Nginx ###################################
   web:
     build:
       context: .
       dockerfile: docker/web/Dockerfile
       args:
-        # Assado no bundle: trocar de domínio exige rebuild da imagem.
         VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
         UID: ${DOCKER_UID:-1000}
         GID: ${DOCKER_GID:-1000}
     ports:
       - "${WEB_HTTP_PORT:-8080}:80"
     volumes:
-      # Só os assets que o Filament publica. O PHP em si roda no serviço `app`;
-      # daqui o Nginx apenas serve os arquivos estáticos do painel.
       - ./backend/public:/var/www/public:ro
-      # A mídia do RDM Studio, que o Nginx serve em /storage/.
       - ./backend/storage/app/public:/var/www/storage/app/public:ro
       - site:/srv/site
     networks:
       - rdm-network
     restart: unless-stopped
 
-  ### Backend — escrito, mas fora do conjunto padrão #########################
-  ### Sobe com: docker compose --profile backend up
   app:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
       args:
-        # O mesmo do `web`: o job regrava as paginas com este canonical.
         VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
         UID: ${DOCKER_UID:-1000}
         GID: ${DOCKER_GID:-1000}
@@ -88,20 +64,10 @@ services:
       - DB_CONNECTION=pgsql
       - DB_HOST=db
       - DB_PORT=5432
-      # DB_DATABASE fica de fora de propósito: ele vem do backend/.env.
-      #
-      # O `force` do PHPUnit escreve em $_ENV e no putenv, mas não em $_SERVER —
-      # e é $_SERVER que o repositório de ambiente do Laravel consulta primeiro.
-      # Definido aqui, ele vencia o phpunit.xml e a suíte rodava contra o banco
-      # de desenvolvimento, que o RefreshDatabase apagava a cada execução.
       - DB_USERNAME=${DB_USERNAME:-rdm}
       - DB_PASSWORD=${DB_PASSWORD}
       - ADMIN_NAME=${ADMIN_NAME:-RDM Labs}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@rdmlabs.dev}
-      # Isenta o prerender (que chega por `queue`, abaixo) do throttle
-      # público — ver AppServiceProvider e RegenerateSite. Não é credencial
-      # de operador: o mesmo valor em todo deploy já basta, o ponto é
-      # distinguir o próprio job do tráfego público, não um segredo por site.
       - PRERENDER_INTERNAL_TOKEN=${PRERENDER_INTERNAL_TOKEN:-rdm-cosmos-prerender-7f3a9c2e}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -115,13 +81,11 @@ services:
       - rdm-network
     restart: unless-stopped
 
-  ### Worker de fila: roda o prerender fora do ciclo de request ###############
   queue:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
       args:
-        # O mesmo do `web`: o job regrava as paginas com este canonical.
         VITE_SITE_URL: ${VITE_SITE_URL:-http://localhost:8080}
         UID: ${DOCKER_UID:-1000}
         GID: ${DOCKER_GID:-1000}
@@ -138,8 +102,6 @@ services:
       - DB_PORT=5432
       - DB_USERNAME=${DB_USERNAME:-rdm}
       - DB_PASSWORD=${DB_PASSWORD}
-      # O prerender roda em Node: precisa de endereco absoluto, e dentro da
-      # rede do compose a API atende pelo nome do servico.
       - PRERENDER_API_URL=http://web
       - SITE_DIR=/srv/site
       - PRERENDER_INTERNAL_TOKEN=${PRERENDER_INTERNAL_TOKEN:-rdm-cosmos-prerender-7f3a9c2e}
@@ -151,7 +113,6 @@ services:
       - rdm-network
     restart: unless-stopped
 
-  ### Agendador: nota publicação agendada vencendo e manda regenerar ##########
   scheduler:
     build:
       context: .
@@ -163,8 +124,6 @@ services:
     profiles: [backend]
     user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     working_dir: /var/www
-    # schedule:work roda o laço sozinho — sem precisar de cron do sistema no
-    # container, que é o motivo de existir no Laravel desde a versão 8.
     command: php artisan schedule:work
     volumes:
       - ./backend:/var/www
@@ -194,8 +153,6 @@ services:
     volumes:
       - postgres:/var/lib/postgresql/data
     ports:
-      # Só no loopback: o app alcança o banco pela rede do compose, a porta
-      # publicada é para um cliente SQL na própria máquina.
       - "${DEV_BIND:-127.0.0.1}:${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-rdm} -d ${DB_DATABASE:-rdm_labs}"]

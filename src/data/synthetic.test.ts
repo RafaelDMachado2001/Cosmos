@@ -47,8 +47,6 @@ describe('makeSyntheticPublications', () => {
   });
 
   it('respeita o espaçamento mínimo mesmo com centenas de itens', () => {
-    // É este conjunto que exercita de fato o passe de espaçamento e a
-    // virtualização — com as 14 do protótipo nada disso é testado de verdade.
     const stars = placeStars(makeSyntheticPublications({ count: 300 }));
     for (let i = 1; i < stars.length; i += 1) {
       const gap = (stars[i]?.x ?? 0) - (stars[i - 1]?.x ?? 0);

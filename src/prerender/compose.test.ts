@@ -44,7 +44,6 @@ describe('compose', () => {
     expect(html).toContain(`<div id="prerender">${body}</div>`);
     expect(html).toContain(head);
     expect(html).toContain(`content:"${pattern}"`);
-    // O script do bundle aparece uma vez só: nada do template foi colado no texto.
     expect(html.split('/assets/index-abc.js')).toHaveLength(2);
   });
 });

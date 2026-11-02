@@ -6,11 +6,6 @@ import type { PublicationsSource } from './PublicationsSource';
 import { PUBLICATIONS } from './publications';
 import type { PublicationSummary } from '../core/types';
 
-/**
- * Suíte de contrato. Roda hoje contra o adapter estático; quando o adapter
- * HTTP do Laravel existir, roda contra ele sem alteração. É o que garante que
- * trocar a fonte de dados não muda o comportamento da constelação.
- */
 export function describePublicationsSource(name: string, create: () => PublicationsSource): void {
   describe(name, () => {
     const source = create();
@@ -105,11 +100,6 @@ export function describePublicationsSource(name: string, create: () => Publicati
 
 describePublicationsSource('createStaticSource', () => createStaticSource(PUBLICATIONS));
 
-// ---------------------------------------------------------------------------
-// Adapter HTTP
-// ---------------------------------------------------------------------------
-
-/** Registra a requisição e devolve o que o teste mandar. Nada de rede. */
 function stubFetch(reply: { status?: number; body?: unknown } = {}) {
   const calls: string[] = [];
   const impl = (input: string): Promise<Response> => {
@@ -124,7 +114,6 @@ function stubFetch(reply: { status?: number; body?: unknown } = {}) {
   return { calls, impl: impl as unknown as typeof fetch };
 }
 
-/** As mesmas tentativas, sem os segundos de espera entre elas. */
 const NO_WAIT = { retry: { ...DEFAULT_RETRY, sleep: () => Promise.resolve() } };
 
 const SUMMARY_ROW = {
@@ -196,11 +185,9 @@ describe('createHttpSource — a lista', () => {
     await expect(
       createHttpSource('https://x.dev', impl, NO_WAIT).list({ locale: 'pt' }),
     ).rejects.toThrow();
-    // Antes de desistir, duas novas tentativas (fetchWithRetry).
     expect(calls).toHaveLength(3);
   });
 
-  /** Uma API que respondeu, mas declarou ter cortado o acervo. */
   const truncatedFetch = (() =>
     Promise.resolve(
       new Response(JSON.stringify({ data: [], meta: { count: 2, limit: 2, truncated: true } }), {
@@ -321,15 +308,6 @@ describe('createHttpSource — isenção de throttle do prerender', () => {
   });
 });
 
-/**
- * Um servidor de mentira que fala exatamente o que o Laravel vai falar.
- *
- * Serve o acervo semente pelo adapter estático, traduzindo a ida e a volta para
- * a forma da API — query string na entrada, `snake_case` dentro de `data` na
- * saída. É o que permite rodar a suíte de contrato contra o adapter HTTP: se o
- * mapeamento errar em qualquer ponto, a mesma bateria que o estático passa
- * quebra aqui.
- */
 function apiFetch(): typeof fetch {
   const backing = createStaticSource(PUBLICATIONS);
 

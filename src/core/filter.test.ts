@@ -68,8 +68,6 @@ describe('matches', () => {
   });
 
   it('acha "índice" digitando "indice"', () => {
-    // Quem busca em português raramente digita o acento; o protótipo fazia
-    // includes cru e não achava.
     expect(matches(star, { category: 'all', query: 'indice' })).toBe(true);
   });
 

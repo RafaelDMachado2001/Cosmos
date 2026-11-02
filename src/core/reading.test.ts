@@ -36,11 +36,9 @@ describe('readingMinutes', () => {
       `> [!note] ${words(5)}\n> ${words(5)}`,
       `> [!flow]\n> - ${words(10)}\n> - ${words(10)}`,
       `| ${words(10)} |\n| --- |\n| ${words(10)} |`,
-      // 10 linhas de código não vazias = 20 palavras
       ['```ts', ...Array.from({ length: 10 }, () => 'x'), '', '```'].join('\n'),
       '![uma imagem com alt longo](https://example.com/a.png)',
     ].join('\n\n');
-    // 10+100+10+50+10+20+20+20 = 240 -> 2 minutos
     expect(readingMinutes(parseBlocks(markdown))).toBe(2);
   });
 });
