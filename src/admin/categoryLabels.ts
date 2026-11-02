@@ -1,6 +1,5 @@
 import type { Category } from '../core/types';
 
-/** Rótulos em português — o mesmo texto do Filament (`PublicationForm.php`). O RDM Studio é só em PT. */
 export const CATEGORY_LABEL: Record<Category, string> = {
   artigo: 'Artigo técnico',
   projeto: 'Projeto',

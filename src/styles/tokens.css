@@ -1,58 +1,36 @@
-/**
- * Fonte única de verdade do design. Todo valor aqui vem da seção "Design tokens"
- * do README do handoff — não inventar cor, fonte ou espaçamento fora desta lista.
- *
- * A cena WebGL lê estas mesmas variáveis via getComputedStyle, então CSS e shader
- * nunca divergem.
- */
 :root {
-  /* --- Superfícies ------------------------------------------------------- */
-  --color-bg: #05060b; /* fundo global */
-  --color-bg-elev: #0a0b12; /* fundo da vista de leitura */
-  --color-surface: rgba(11, 12, 22, 0.82); /* painéis translúcidos */
-  --color-surface-nav: rgba(14, 15, 28, 0.5); /* pílulas do header */
-  --color-surface-close: rgba(14, 15, 28, 0.6); /* botão de fechar */
+  --color-bg: #05060b;
+  --color-bg-elev: #0a0b12;
+  --color-surface: rgba(11, 12, 22, 0.82);
+  --color-surface-nav: rgba(14, 15, 28, 0.5);
+  --color-surface-close: rgba(14, 15, 28, 0.6);
 
-  /* --- Bordas ------------------------------------------------------------ */
   --color-border: rgba(255, 255, 255, 0.07);
   --color-border-soft: rgba(255, 255, 255, 0.09);
 
-  /* --- Texto -------------------------------------------------------------
-   * Não usar cinza abaixo de --color-text-faint sobre o fundo: a revisão de
-   * acessibilidade reprovou #6E6F8C, #5D6079 e #4C4F68. */
-  --color-text-primary: #f2f1fa; /* títulos */
-  --color-text-title: #f4f3fb; /* título do artigo */
-  --color-text-lede: #cfd2e0; /* lide do artigo */
-  --color-text-reading: #b9bdcf; /* corpo do artigo */
-  --color-text-secondary: #9698b2; /* resumos */
-  --color-text-muted: #8a8ca3; /* metadados (contraste >= 4.5:1) */
-  --color-text-faint: #7c7f99; /* placeholders, datas */
-  --color-text-ui: #c9cbe0; /* rótulos de painel */
-  --color-text-year: #8285a0; /* marcadores de ano */
-  --color-year-giant: rgba(169, 155, 255, 0.045); /* anos gigantes ao fundo */
-  --color-month-active: #b4a8ff; /* meses com publicação */
+  --color-text-primary: #f2f1fa;
+  --color-text-title: #f4f3fb;
+  --color-text-lede: #cfd2e0;
+  --color-text-reading: #b9bdcf;
+  --color-text-secondary: #9698b2;
+  --color-text-muted: #8a8ca3;
+  --color-text-faint: #7c7f99;
+  --color-text-ui: #c9cbe0;
+  --color-text-year: #8285a0;
+  --color-year-giant: rgba(169, 155, 255, 0.045);
+  --color-month-active: #b4a8ff;
   --color-month-filet: rgba(169, 155, 255, 0.3);
   --color-month-filet-january: rgba(169, 155, 255, 0.45);
-  --color-focus: #e8e9f2; /* anel de foco */
+  --color-focus: #e8e9f2;
 
-  /* --- Marcas ------------------------------------------------------------
-   * A cor primária de cada produto RDM: a lua do logo (`BrandMark`, os
-   * favicons). O Cosmos é o próprio roxo dominante; o Studio pinta o acento
-   * do painel com o dele (`src/admin/admin.css`). */
   --color-brand-cosmos: #8c6bff;
   --color-brand-studio: #ff8a4c;
 
-  /* --- Categorias --------------------------------------------------------
-   * Sinal de navegação e classificação apenas: o roxo é que domina. */
   --color-cat-artigo: #707cff;
   --color-cat-projeto: #ff8a3d;
   --color-cat-estudo: #34d399;
   --color-cat-rotina: #f43f6e;
 
-  /* Paleta de cada categoria na tela de leitura (`CategoryTheme`): n1 é o
-   * mesmo tom mais fundo, n2 e n3 os vizinhos, warm o contraponto quente.
-   * Só a nebulosa e os acentos da leitura as usam; a constelação fica na
-   * cor base acima. */
   --color-cat-artigo-n1: #4f6bff;
   --color-cat-artigo-n2: #8b5cf6;
   --color-cat-artigo-n3: #38bdf8;
@@ -70,64 +48,49 @@
   --color-cat-rotina-n3: #fb7185;
   --color-cat-rotina-warm: #ff9a5a;
 
-  /* --- Tipografia -------------------------------------------------------- */
   --font-sans: 'Roboto', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Todo texto em mono é maiúsculo; o tracking varia por papel. */
   --tracking-kicker: 0.34em;
   --tracking-year: 0.28em;
   --tracking-hint: 0.22em;
   --tracking-meta: 0.22em;
   --tracking-nav: 0.14em;
 
-  /*
-   * O piso do texto da interface: rótulos em mono, datas, contadores, dicas.
-   * Nada abaixo disto, e 12px no celular (fim do arquivo).
-   */
   --text-min: 11px;
 
-  /* --- Raios ------------------------------------------------------------- */
   --radius-menu: 7px;
   --radius-pill: 10px;
   --radius-panel: 12px;
   --radius-hover: 14px;
   --radius-round: 999px;
 
-  /* --- Desfoques --------------------------------------------------------- */
   --blur-header: 14px;
   --blur-cats: 18px;
   --blur-hover: 20px;
 
-  /* --- Sombras ----------------------------------------------------------- */
   --shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.55);
 
-  /* --- Movimento ---------------------------------------------------------
-   * Os coeficientes de interpolação por frame NÃO moram aqui: são lógica,
-   * e vivem em src/core/motion.ts. Aqui só o que o CSS consome. */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --dur-star: 420ms; /* hover das estrelas */
-  --dur-header: 600ms; /* entrada/saída do header */
-  --dur-filter: 700ms; /* estrelas apagando no filtro */
+  --dur-star: 420ms;
+  --dur-header: 600ms;
+  --dur-filter: 700ms;
   --dur-ui: 400ms;
 
-  /* --- Geometria --------------------------------------------------------- */
-  /* Duas vezes maiores desde a fase 10, com rótulo sempre visível. */
-  --star-hit: 88px; /* alvo de clique */
+  --star-hit: 88px;
   --star-core: 30px;
   --star-core-featured: 44px;
   --star-core-hover-growth: 10px;
   --star-ring: 58px;
   --star-ring-featured: 78px;
-  --star-label-width: 180px; /* TIMELINE.minGapPx (200) depende desta largura */
-  --star-label-gap: 22px; /* da borda do núcleo ao rótulo */
-  --hover-panel-offset: 58px; /* da estrela ao cartão */
+  --star-label-width: 180px;
+  --star-label-gap: 22px;
+  --hover-panel-offset: 58px;
   --hover-panel-width: 330px;
   --cats-panel-width: 260px;
   --close-size: 46px;
-  --measure: 70ch; /* medida de leitura do artigo */
+  --measure: 70ch;
 
-  /* --- Camadas ----------------------------------------------------------- */
   --z-canvas: 0;
   --z-vignette: 1;
   --z-cosmos: 10;
@@ -137,7 +100,6 @@
   --z-cats: 45;
   --z-reader: 60;
 
-  /* --- Vinheta ------------------------------------------------------------ */
   --vignette: radial-gradient(
     130% 100% at 50% 48%,
     rgba(28, 20, 64, 0.25) 0%,
@@ -146,16 +108,12 @@
   );
 }
 
-/* --- Acento -----------------------------------------------------------------
- * Num bloco à parte porque o RDM Studio o redefine com a cor dele
- * (`src/admin/admin.css`): o que dentro do painel mostra o site — a prévia do
- * artigo — declara `data-brand="cosmos"` e volta a estes valores. */
 :root,
 [data-brand='cosmos'] {
-  --color-accent: #8c6bff; /* roxo dominante */
-  --color-accent-soft: #a99bff; /* links, chamadas */
+  --color-accent: #8c6bff;
+  --color-accent-soft: #a99bff;
   --color-accent-hover: #d8d2ff;
-  --color-accent-ink: #f2f1fa; /* texto sobre o acento cheio */
+  --color-accent-ink: #f2f1fa;
   --color-accent-line: rgba(124, 92, 255, 0.3);
   --color-accent-line-strong: rgba(124, 92, 255, 0.8);
   --color-accent-wash: rgba(124, 92, 255, 0.1);

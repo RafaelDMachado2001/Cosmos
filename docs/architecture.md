@@ -441,6 +441,97 @@ test-runner directives).
 - **Dates are assembled from `Intl` parts, in UTC**: `pt-BR` yields
   "set. de 2025", and a post's date must not depend on the reader's time zone.
 
+### The frame loop
+
+- **One `requestAnimationFrame` for the whole app** writes both the DOM
+  transforms and the shader uniforms. A second loop would drift out of phase,
+  and the smoothing is the most sensitive part of the design. The scene class
+  has no loop of its own.
+- **A thrown exception never kills the loop.** One error anywhere in a frame
+  used to cancel the next frame and freeze `enter`, `pan` and the phase for
+  good; it happened on headless Chromium without a GPU in CI. A lost WebGL
+  context drops the scene once and hands over to the CSS fallback.
+- **Accessibility attributes that follow the pan are written by the loop**,
+  only when their integer value changes: the ruler is a `slider`, and its
+  `aria-valuetext` announces the year, not a percentage.
+- **Once the reader view has settled, its overlay has no transform.** A
+  transform, or `will-change: transform`, makes it the containing block for
+  the `position: fixed` elements inside, which then scroll with the text.
+- **The core's framing returns `null` when the measurement is unusable.** On
+  first mount the window can report 0 by 0, and any arithmetic there writes a
+  NaN into the scene permanently. Framing is re-measured on window resize, on
+  the root fixed container (whose `documentElement` has zero height), on the
+  mobile address bar, on load and when fonts arrive.
+- **The 3D scene loads when the browser goes idle**, with a 1.5s ceiling.
+  Downloading and parsing Three (~460 KB) during mount competed with the first
+  input on phones; the CSS fallback covers the wait.
+
+### Interface and accessibility
+
+- **The constellation is `inert` on the entry screen**, and every element the
+  camera hides gets `inert` too. Invisible is not enough: Tab walked through
+  anchors nobody could see, and focusing a hidden button scrolled the stage.
+- **The stage and the constellation use `overflow: clip`, not `hidden`.** A
+  `hidden` container still scrolls when focus lands outside it, and the
+  scroll added to the pan.
+- **Only one `<h1>` exists at a time.** With an article open, the hero title
+  becomes a paragraph, and the prerendered shell leaves the DOM after mount.
+- **The reader view traps focus**: the constellation stays mounted behind it,
+  with focusable stars, and Tab would leave the article for invisible links.
+  On close, focus returns to the star it came from.
+- **Touch opens a star in two taps.** The first shows the hover panel; touch
+  `enter`/`leave` events are ignored, since they fire around every tap and
+  would open and close the panel before the click decides.
+- **The hover panel is `aria-hidden` and ignores the pointer.** The star's
+  label already carries the title, category and date, and capturing the click
+  on the panel would block the article from opening.
+- **Dragging a star never drags its URL**: the native link drag is cancelled
+  so the gesture moves the timeline.
+- **Switching language rewrites the URL in place.** It is the same article in
+  both languages, so it is not a navigation and pushes no history entry.
+- **A response that arrives after a newer request is discarded**, as is a
+  build snapshot that arrives after the API.
+
+### Prerender
+
+- **Composition uses replacement functions, never strings**: `String.replace`
+  reads `$&` in a replacement string as a pattern, and an article containing
+  it pasted the template's `<script>` into its own text.
+- **The template's `<title>` and description are removed before the route's
+  are inserted**: with two `<title>` tags the first one wins.
+- **Writes are atomic** (temporary file plus `rename`), with a random suffix,
+  not the PID: the two writers run in separate containers and can both be
+  PID 1.
+- **An untouched copy of the template lives next to the bundle.** The root
+  page is written over `index.html`, so a second run would otherwise read a
+  template whose slot is already filled.
+- **Pruning happens after everything is written**, by difference, and removes
+  the whole slug directory: an empty directory makes Nginx fall through to the
+  app instead of returning 404.
+- **Open Graph cards are drawn before the pages that cite them**, only when the
+  hashed file is missing, and orphaned cards are removed. They are rendered by
+  satori and resvg compiled to wasm: the native binary is per platform, and
+  the same prerender runs on Alpine and on the development image.
+- **The static pages' CSS is inlined**: `ArticlePage` and `HomePage` are not
+  in the client bundle, so their CSS does not exist in `dist`, and the page
+  without JavaScript should not wait for another request.
+- **The 404 page is in the default language**: a path that is no route does
+  not say a language, and the static file cannot read `Accept-Language`.
+
+### Styles
+
+- **Gray text never goes below `--color-text-faint`** on the background: the
+  accessibility review rejected `#6E6F8C`, `#5D6079` and `#4C4F68`.
+- **Code highlighting uses the system's purples and whites, never category
+  colours**, which are navigation signals.
+- **The scroll-hint animation ends on its resting frame**: under reduced
+  motion the global rule collapses animations to their final frame, and a
+  final frame with the wheel hidden would leave the mouse icon empty for good.
+- **The Studio has its own small reset**, because the site's reset fixes
+  `overflow: hidden` on `html` and `body`. Its accent is the Studio's orange
+  with dark text (light text measured 2:1); the article preview switches back
+  to the Cosmos purple.
+
 ## Quality attributes
 
 - **Performance:**

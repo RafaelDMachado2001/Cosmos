@@ -9,7 +9,6 @@ import {
   shouldOfferResume,
 } from '../core/readingProgress';
 
-/** `localStorage` lança em modo privado em alguns navegadores. */
 function readSaved(slug: string): number | null {
   try {
     return parseSavedProgress(window.localStorage.getItem(progressKey(slug)));
@@ -22,28 +21,16 @@ function save(slug: string, progress: number): void {
   try {
     window.localStorage.setItem(progressKey(slug), progress.toFixed(3));
   } catch {
-    // Sem armazenamento, só não há "continuar" na próxima visita.
   }
 }
 
 const SAVE_EVERY_MS = 600;
 
 export interface ReadingProgressTargets {
-  /** Recebe `transform: scaleX(p)`. */
   readonly bar: RefObject<HTMLElement>;
-  /** Recebe o `43%` como texto. */
   readonly label: RefObject<HTMLElement>;
 }
 
-/**
- * O progresso de leitura da rolagem de `scroller`, escrito direto no DOM.
- *
- * Mudar por rolagem é mudar por quadro, e nada que muda por quadro passa pelo
- * React (regra do repositório): a barra e o número são escritos por
- * referência, num `requestAnimationFrame` por evento de rolagem. O React só
- * guarda o que é discreto — a fração salva da visita anterior, para oferecer
- * "continuar de onde parou".
- */
 export function useReadingProgress(
   scroller: RefObject<HTMLElement>,
   slug: string,
@@ -76,7 +63,6 @@ export function useReadingProgress(
 
     const onScroll = (): void => {
       if (frame === 0) frame = requestAnimationFrame(paint);
-      // Rolou por conta própria: a oferta de continuar deixa de fazer sentido.
       if (element.scrollTop > 0) setResumeAt(null);
     };
 
@@ -85,7 +71,6 @@ export function useReadingProgress(
     return () => {
       element.removeEventListener('scroll', onScroll);
       if (frame !== 0) cancelAnimationFrame(frame);
-      // Ao fechar no topo de um artigo já lido, não apaga o que se leu.
       if (latest > 0) save(slug, latest);
     };
   }, [scroller, slug, targets.bar, targets.label]);

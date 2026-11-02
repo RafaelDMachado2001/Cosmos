@@ -28,9 +28,6 @@
   border-color: var(--color-accent-line);
 }
 
-/* O anel de foco vai para a pílula inteira: dentro dela ele apertaria o texto
-   contra a borda. A semântica de :focus-visible é preservada — a pílula não
-   acende ao clique do ponteiro, só à navegação por teclado. */
 .field:has(.input:focus-visible) {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
@@ -60,7 +57,6 @@
   outline: none;
 }
 
-/* O X nativo do type=search traz o desenho do sistema para dentro da pílula. */
 .input::-webkit-search-cancel-button {
   appearance: none;
 }

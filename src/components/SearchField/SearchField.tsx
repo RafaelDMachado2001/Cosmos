@@ -7,16 +7,6 @@ export interface SearchFieldProps {
   readonly onChange: (value: string) => void;
 }
 
-/**
- * A busca do header.
- *
- * Um `input` comum, controlado: o texto é estado discreto — muda por tecla, não
- * por quadro — e o que ele produz é um conjunto de slugs apagados, não um
- * remonte da constelação.
- *
- * Existe desde o hero, invisível e fora do Tab, pelo mesmo motivo da navegação:
- * montá-lo na travessia daria um salto de layout no header.
- */
 export function SearchField({ visible, value, onChange }: SearchFieldProps) {
   const { t } = useLocale();
 

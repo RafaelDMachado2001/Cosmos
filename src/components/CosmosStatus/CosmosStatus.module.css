@@ -1,4 +1,3 @@
-/* Centralizado e sem interação, exceto pela ação de repetir. */
 .status {
   position: absolute;
   inset: 0;
@@ -17,8 +16,6 @@
   pointer-events: auto;
 }
 
-/* O mesmo filete do eixo da constelação, no mesmo 58% da altura: quando as
-   estrelas chegam elas pousam sobre uma linha que já estava lá. */
 .axis {
   position: absolute;
   right: 0;

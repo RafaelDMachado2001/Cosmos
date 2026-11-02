@@ -10,7 +10,6 @@ export interface TimeRulerProps {
   readonly onPointerDown: (event: React.PointerEvent) => void;
 }
 
-/** Régua temporal do rodapé: passado à esquerda, presente à direita. */
 export const TimeRuler = forwardRef<HTMLDivElement, TimeRulerProps>(function TimeRuler(
   { railRef, markerRef, onPointerDown },
   ref,
@@ -29,13 +28,6 @@ export const TimeRuler = forwardRef<HTMLDivElement, TimeRulerProps>(function Tim
         aria-label={t.ruler.label}
         aria-valuemin={0}
         aria-valuemax={100}
-        /*
-         * `aria-valuenow` e `aria-valuetext` são escritos pelo laço de quadro,
-         * pelo `railRef` — o pan muda a cada quadro e não passa pelo React. Um
-         * `slider` sem `valuenow` é ARIA inválida, e a porcentagem sozinha não
-         * diz nada sobre um acervo temporal: o `valuetext` anuncia o ano, que é
-         * o que os marcadores mostram a quem vê.
-         */
         aria-valuenow={0}
         onPointerDown={onPointerDown}
       >

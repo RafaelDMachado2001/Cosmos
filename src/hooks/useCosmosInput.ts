@@ -13,7 +13,6 @@ import {
 import type { PanBounds } from '../core/geometry';
 import { suppressMouseSelection } from '../utils/selection';
 
-/** O que a entrada escreve no estado contínuo do motor. */
 export interface InputState {
   enter: number;
   pan: number;
@@ -30,7 +29,6 @@ export interface InputState {
 export interface CosmosInputOptions {
   readonly state: MutableRefObject<InputState>;
   readonly boundsRef: MutableRefObject<PanBounds>;
-  /** Verdadeiro enquanto a vista de leitura está em cena. */
   readonly locked: () => boolean;
   readonly goHome: () => void;
   readonly cosmos: RefObject<HTMLElement>;
@@ -42,12 +40,6 @@ export interface CosmosInput {
   onRailPointerDown: (event: React.PointerEvent) => void;
 }
 
-/**
- * Roda, teclado, ponteiro e toque, traduzidos em alvos de `enter` e `pan`.
- *
- * Só escreve alvos e velocidade; quem os suaviza e leva à tela é o laço do
- * motor. Tudo lido aqui vem de refs, porque os ouvintes vivem fora do React.
- */
 export function useCosmosInput({
   state,
   boundsRef,
@@ -66,14 +58,6 @@ export function useCosmosInput({
   );
 
   useEffect(() => {
-    /*
-     * Com a vista de leitura em cena a constelação não recebe mais nada.
-     *
-     * Vale já durante a abertura, quando a câmera ainda viaja: rolar ali
-     * deslocaria o pan que o fechamento promete devolver. E é o que devolve a
-     * roda ao artigo — sem esta saída antecipada o `preventDefault` abaixo
-     * impediria o texto de rolar.
-     */
     const onWheel = (event: WheelEvent): void => {
       if (locked()) return;
       event.preventDefault();
@@ -120,8 +104,6 @@ export function useCosmosInput({
         boundsRef.current.max,
         Math.max(boundsRef.current.min, state.current.pan + dx * INPUT.dragGain),
       );
-      // O arraste é direto: suavizar aqui faria a constelação escorregar
-      // atrás do dedo.
       state.current.panS = state.current.pan;
     };
 
@@ -132,7 +114,6 @@ export function useCosmosInput({
       state.current.velocity =
         dragging === 'scrub' ? 0 : state.current.velocity * INERTIA.releaseBoost;
       if (cosmos.current) cosmos.current.style.cursor = 'grab';
-      // Zera depois do ciclo de clique, para o clique saber que houve arraste.
       window.setTimeout(() => {
         state.current.dragMoved = 0;
       }, 60);

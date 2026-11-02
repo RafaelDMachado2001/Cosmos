@@ -1,8 +1,3 @@
-/* O laço de quadro escreve opacity e transform a cada quadro; os valores aqui
-   são só o ponto de partida, para que a vista nunca pisque montada e opaca.
-
-   O overlay é o contêiner de rolagem (em toda largura): o painel da
-   esquerda fica preso a ele, e o progresso de leitura é a rolagem dele. */
 .overlay {
   position: absolute;
   inset: 0;
@@ -16,31 +11,17 @@
   background: var(--color-bg-elev);
   opacity: 0;
   transform: scale(1.06);
-  /* Só opacity: `will-change: transform`, como o próprio transform, faria do
-     overlay o contêiner dos `position: fixed` de dentro (ver useCosmosEngine). */
   will-change: opacity;
-  /* Reverte a nave do palco (Shell.module.css): ler texto com um cursor que
-     não é de texto atrapalha mais do que ambienta. */
   cursor: auto;
 
-  /* Escala da leitura, lida por ArticleBody. 16px fixos no corpo: a escala
-     fluida até 22px parecia zoom numa tela grande. Sem medida por
-     parágrafo: quem limita é `.inner`, a coluna inteira, para imagem,
-     tabela e código alinharem com o texto. */
   --reading-size: 16px;
   --reading-leading: 1.8;
   --reading-h2: 22px;
   --reading-measure: none;
-  /* O respiro lateral da coluna: o mesmo dos dois lados, medido até a
-     borda da tela — o X fica por cima, não reserva espaço. */
   --reading-gutter: clamp(32px, 5vw, 96px);
-  /* A coluna ocupa a área do artigo até 1180px. Estreitá-la a 68ch deixava
-     metade da tela vazia num monitor largo e o texto espremido no meio. */
   --reading-column: 1180px;
 }
 
-/* --- Painel da esquerda --------------------------------------------------
- * Preso durante a rolagem: é a âncora de onde o leitor está. */
 .aside {
   position: sticky;
   top: 0;
@@ -56,7 +37,6 @@
     #07080e;
 }
 
-/* Tudo no painel fica acima da nebulosa. */
 .aside > :not(:first-child) {
   position: relative;
 }
@@ -81,11 +61,6 @@
   color: var(--color-text-primary);
 }
 
-/* --- O planeta -------------------------------------------------------------
- * Camadas na cor da categoria, empilhadas e centradas. Ao passar o mouse
- * pelo painel ele se inclina na direção do ponteiro (--tilt-x/--tilt-y,
- * escritos direto no estilo) e, sobre ele, acende: halo maior, anel mais
- * rápido, brilho que percorre a superfície. */
 .orb {
   --tilt-x: 0;
   --tilt-y: 0;
@@ -159,7 +134,6 @@
   animation: rdmSpin 26s linear infinite;
 }
 
-/* Um reflexo que só aparece sob o mouse e cruza a superfície. */
 .glint {
   width: 46%;
   background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
@@ -235,7 +209,6 @@
   letter-spacing: 0.2em;
 }
 
-/* --- Sumário --------------------------------------------------------------- */
 .toc {
   min-height: 0;
   margin-top: 4px;
@@ -264,7 +237,6 @@
   padding-left: 14px;
 }
 
-/* O traço cresce de 4px para 14px no item ativo. */
 .tocLink {
   display: flex;
   align-items: baseline;
@@ -301,7 +273,6 @@
   box-shadow: 0 0 6px color-mix(in oklch, var(--cat) 70%, transparent);
 }
 
-/* --- Progresso ------------------------------------------------------------- */
 .progress {
   display: grid;
   gap: 8px;
@@ -358,22 +329,12 @@
   border-color: var(--cat);
 }
 
-/* --- Coluna do artigo -----------------------------------------------------
- * A célula inteira da grade é o fundo (estrelas, nebulosa, X); o texto fica
- * em `.inner`, centrado e com o mesmo respiro dos dois lados. */
 .article {
   position: relative;
   min-width: 0;
   min-height: 100vh;
 }
 
-/* Presas à tela enquanto o texto rola: uma faixa da altura da viewport que
-   não ocupa espaço (margem negativa do mesmo tamanho).
-
-   Sob a coluna de texto o campo quase some: estrela cintilando atrás de uma
-   linha compete com a leitura. A máscara usa a mesma medida de `.inner` —
-   a coluna, ou a largura menos o respiro quando a tela é mais estreita — e
-   deixa as estrelas nas margens. */
 .starfield {
   position: sticky;
   top: 0;
@@ -404,8 +365,6 @@
   margin-bottom: 8px;
 }
 
-/* A nebulosa só atrás do cabeçalho, de borda a borda da coluna, e some
-   antes do texto. */
 .headerNebula {
   inset: 0 0 auto;
   height: 640px;
@@ -413,7 +372,6 @@
 }
 
 .close {
-  /* Preso à tela: fechar nunca exige voltar ao topo. */
   position: fixed;
   top: 24px;
   right: 28px;
@@ -441,7 +399,6 @@
   color: #ffffff;
 }
 
-
 .dot {
   flex: none;
   width: 7px;
@@ -451,7 +408,6 @@
   box-shadow: 0 0 10px 2px color-mix(in srgb, var(--cat) 60%, transparent);
 }
 
-
 .title {
   margin: 0 0 26px;
   color: var(--color-text-title);
@@ -459,7 +415,6 @@
   font-weight: 300;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  /* Sem balance nem medida: o título usa a largura toda da coluna. */
   text-wrap: pretty;
 }
 
@@ -473,8 +428,6 @@
   text-wrap: pretty;
 }
 
-/* Puxadas para perto do subtítulo, de que são o rodapé; o filete mantém a
-   distância de sempre do que vem acima dele. */
 .tags {
   margin: -20px 0 40px;
 }
@@ -501,7 +454,6 @@
   font-size: var(--reading-size);
 }
 
-
 .back {
   border: 1px solid color-mix(in oklch, var(--cat) 40%, transparent);
   border-radius: var(--radius-round);
@@ -520,10 +472,6 @@
   color: #ffffff;
 }
 
-/* --- Mobile --------------------------------------------------------------
- * Uma coluna: o planeta vira faixa de abertura e rola com a página, o
- * sumário sai (o texto inteiro está a um polegar) e o progresso fica numa
- * linha fina presa ao topo. */
 @media (max-width: 779px) {
   .overlay {
     display: block;

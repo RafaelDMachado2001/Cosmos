@@ -1,12 +1,3 @@
-/**
- * O núcleo 3D: portal de entrada da experiência.
- *
- * Classe framework-agnóstica. **Não possui rAF próprio** — quem chama
- * `render()` é o orquestrador de quadro único, que no mesmo quadro também
- * escreve os transforms do DOM da constelação. Dois relógios separados sairiam
- * de fase, e o handoff chama a suavização de ponto mais sensível do projeto.
- */
-
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -59,13 +50,10 @@ import { COPY_FRAGMENT_SHADER, COPY_VERTEX_SHADER } from './shaders/copy';
 import { DUST_FRAGMENT_SHADER, DUST_VERTEX_SHADER } from './shaders/dust';
 import { INNER_FRAGMENT_SHADER, INNER_VERTEX_SHADER } from './shaders/inner';
 
-/** Abaixo disto a atmosfera não é desenhada: a passada inteira é pulada. */
 const ATMOSPHERE_VISIBLE_ABOVE = 0.001;
 
-/** Teto de pixel ratio, conforme o handoff. */
 const MAX_PIXEL_RATIO = 1.75;
 
-/** Abaixo desta largura a malha e a poeira são reduzidas. */
 const NARROW_WIDTH = 780;
 
 const MESH_DETAIL = { wide: 7, narrow: 5 } as const;
@@ -109,7 +97,6 @@ export class CoreScene {
   private height = 0;
   private pixelRatio = 1;
   private readonly quality = createQualityGovernor();
-  /** Só existe enquanto o céu é desenhado em resolução reduzida. */
   private target: WebGLRenderTarget | null = null;
   private readonly copy: { scene: Scene; mesh: Mesh; uniforms: { tMap: { value: unknown } } };
   private enter = 0;
@@ -134,8 +121,6 @@ export class CoreScene {
     const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
     this.pixelRatio = pixelRatio;
     this.renderer.setPixelRatio(pixelRatio);
-    // O fundo e o núcleo dividem o renderer: limpa-se uma vez, desenha-se o
-    // céu e por cima a cena.
     this.renderer.autoClear = false;
     this.renderer.setClearColor(0x000000, 0);
 
@@ -166,8 +151,6 @@ export class CoreScene {
       }),
     );
 
-    // Luz por dentro, não mais uma esfera escura: divide o pulso com a borda,
-    // e a energia que a percorre acende o centro junto.
     this.innerUniforms = { uO: { value: 1 }, uP: this.uniforms.uPulse };
     this.innerMesh = new Mesh(
       new IcosahedronGeometry(0.8, 4),
@@ -193,7 +176,6 @@ export class CoreScene {
     this.copy = CoreScene.createCopy();
   }
 
-  /** Amplia o céu desenhado em meia resolução, sem tocar no alfa pré-multiplicado. */
   private static createCopy(): CoreScene['copy'] {
     const uniforms = { tMap: { value: null as unknown } };
     const mesh = new Mesh(
@@ -255,7 +237,6 @@ export class CoreScene {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      // Achatada em y: a nuvem lê como uma faixa, não como uma bola.
       positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta) * 0.6;
       positions[i * 3 + 2] = radius * Math.cos(phi);
       sizes[i] = 0.02 + Math.random() * 0.05;
@@ -278,33 +259,23 @@ export class CoreScene {
     );
   }
 
-  // -- Entradas -------------------------------------------------------------
-
-  /** `null` significa "medida ainda não confiável": a cena mantém a anterior. */
   setFraming(framing: Framing | null): void {
     if (framing) this.framing = framing;
   }
 
-  /** Progresso da travessia, já suavizado pelo orquestrador. */
   setEnter(enter: number): void {
     this.enter = enter;
   }
 
-  /** Ponteiro normalizado em -1..1, já suavizado. */
   setPointer(x: number, y: number): void {
     this.pointerX = x;
     this.pointerY = y;
   }
 
-  /** O céu do acervo atual. Mesma referência, nada a fazer. */
   setSky(sky: Sky): void {
     this.sky = sky;
   }
 
-  /**
-   * Pan suavizado e intensidade da atmosfera (já multiplicada pela revelação
-   * e pelo recuo da abertura de artigo). Em zero a passada é pulada.
-   */
   setAtmosphere(pan: number, intensity: number): void {
     this.pan = pan;
     this.atmosphere = intensity;
@@ -322,8 +293,6 @@ export class CoreScene {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
-
-  // -- Quadro ---------------------------------------------------------------
 
   render(deltaSeconds: number): void {
     if (this.disposed || !this.framing) return;
@@ -362,7 +331,6 @@ export class CoreScene {
     this.renderer.render(this.scene, this.camera);
   }
 
-  /** O céu, antes do núcleo, só dentro do cosmos. */
   private renderAtmosphere(deltaSeconds: number): void {
     if (this.atmosphere <= ATMOSPHERE_VISIBLE_ABOVE) return;
 
@@ -375,8 +343,6 @@ export class CoreScene {
     const maxNebulae = narrow ? ATMOSPHERE.maxNebulae.narrow : ATMOSPHERE.maxNebulae.wide;
     cullSky(this.sky, this.pan, this.width, maxNebulae, this.cull);
 
-    // O custo medido é o do quadro inteiro, mas só conta enquanto o céu é
-    // desenhado: na entrada ele nem existe, e o núcleo pesa outra coisa.
     this.quality.sample(deltaSeconds * 1000);
     const level = QUALITY_LEVELS[effectiveLevel(this.quality.level, this.width)];
     const scale = level?.scale ?? 1;
@@ -425,11 +391,6 @@ export class CoreScene {
     return this.target;
   }
 
-  /**
-   * O pulso dispara em intervalos aleatórios e decai continuamente, modulado
-   * por uma senoide rápida: é o que faz a energia se ler percorrendo a
-   * superfície em vez de piscar.
-   */
   private advancePulse(deltaSeconds: number): void {
     if (this.pulseNextAt === 0) this.pulseNextAt = nextPulseAt(this.shaderTime);
     if (this.shaderTime > this.pulseNextAt) {
@@ -440,8 +401,6 @@ export class CoreScene {
     this.uniforms.uPulse.value =
       this.pulse * this.pulse * (0.55 + 0.45 * Math.sin(this.shaderTime * 5.5));
   }
-
-  // -- Ciclo de vida --------------------------------------------------------
 
   dispose(): void {
     this.disposed = true;
@@ -458,12 +417,10 @@ export class CoreScene {
     this.target?.dispose();
     (this.background.mesh.material as ShaderMaterial).dispose();
 
-    // Sem forceContextLoss: o canvas pertence ao React, que vai desmontá-lo.
     this.renderer.dispose();
   }
 }
 
-/** Alias, não interface: o ShaderMaterial exige a assinatura de índice implícita. */
 type BackgroundUniforms = {
   uRes: { value: Vector2 };
   uDpr: { value: number };

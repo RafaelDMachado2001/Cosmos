@@ -1,11 +1,3 @@
-/**
- * Poeira cósmica. Deliberadamente discreta: o handoff lista "excesso de
- * partículas" entre as coisas a evitar.
- *
- * O tamanho do ponto cai com a distância e o alfa some ao longo da
- * profundidade, para a nuvem não virar um chuvisco uniforme.
- */
-
 export const DUST_VERTEX_SHADER = /* glsl */ `
 attribute float aSize;
 uniform float uPR;

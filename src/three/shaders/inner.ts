@@ -1,11 +1,3 @@
-/**
- * O brilho dentro do núcleo: "fresnel invertido", mais forte no centro.
- *
- * Substitui a esfera opaca `#0a0714` que parecia um furo. Aditivo, com o
- * gradiente do handoff de atmosfera (`rgb(0.16,0.09,0.42)` → `rgb(0.70,0.58,1.0)`)
- * e intensidade `0.40 + 0.28·pulso`, acompanhando a energia da borda.
- */
-
 export const INNER_VERTEX_SHADER = /* glsl */ `
 varying vec3 vN;
 varying vec3 vV;

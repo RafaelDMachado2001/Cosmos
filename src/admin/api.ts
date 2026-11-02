@@ -1,9 +1,3 @@
-/**
- * O cliente HTTP do RDM Studio, contra `/admin/api/*` (`PublicationAdminController`
- * e companhia, no backend). Sempre mesma origem, sempre a mesma sessão do
- * Filament — só precisa do token CSRF que o Blade grava num `<meta>`.
- */
-
 import type { Appearance } from '../core/appearance';
 import type { DraftBlock } from '../core/draftBlocks';
 import type { Category, Locale } from '../core/types';
@@ -34,10 +28,8 @@ export interface AdminPublication {
   readonly publishedAt: string;
   readonly featured: boolean;
   readonly indexable: boolean;
-  /** Nula herda da categoria. */
   readonly appearance: Appearance | null;
   readonly status: PublicationStatus;
-  /** No ar, com rascunho editado depois da última publicação. */
   readonly pendingChanges: boolean;
   readonly tags: readonly string[];
   readonly references: readonly AdminReference[];
@@ -73,7 +65,6 @@ export interface PublicationPatch {
   readonly drafts?: Partial<Record<Locale, DraftPatch>>;
 }
 
-/** O que `assertJsonValidationErrors`/o 422 do Laravel devolve. */
 export class ValidationError extends Error {
   constructor(public readonly fields: Readonly<Record<string, readonly string[]>>) {
     super(Object.values(fields).flat()[0] ?? 'Dados inválidos.');
@@ -81,7 +72,6 @@ export class ValidationError extends Error {
   }
 }
 
-/** O 413 do Nginx ou do PHP: o corpo nem chega ao Laravel, então não há 422. */
 export class PayloadTooLargeError extends Error {
   constructor(path: string) {
     super(`/admin/api${path} recusou o corpo: grande demais`);

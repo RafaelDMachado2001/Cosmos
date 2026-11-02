@@ -2,24 +2,17 @@
   position: absolute;
   inset: 0;
   z-index: var(--z-cosmos);
-  /*
-   * `clip`, como o palco: com `hidden`, focar uma estrela fora da tela rolava
-   * este contêiner por baixo do pan, e a estrela, o rótulo e o cartão iam
-   * parar fora da tela — a câmera e a rolagem somavam o mesmo deslocamento.
-   */
   overflow: hidden;
   overflow: clip;
   opacity: 0;
   pointer-events: none;
   cursor: grab;
   touch-action: none;
-  /* Arrastar nunca seleciona: anos, rótulos, painel. Ver suppressMouseSelection. */
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
 
-/* Anos gigantes: textura atrás da constelação, nunca mais fortes que ela. */
 .giantYears {
   position: absolute;
   inset: 0;
@@ -40,8 +33,6 @@
   white-space: nowrap;
 }
 
-/* Movido só por transform, nunca por left/top: é o que mantém a animação
-   fora do caminho do layout. */
 .layer {
   position: absolute;
   inset: 0;
@@ -51,7 +42,6 @@
 .axis {
   position: absolute;
   height: 1px;
-  /* Mais suave desde a fase 10: os marcadores mensais é que desenham o eixo. */
   background: linear-gradient(
     90deg,
     transparent,
@@ -67,8 +57,6 @@
   background: linear-gradient(90deg, rgba(124, 92, 255, 0.3), rgba(124, 92, 255, 0.06));
 }
 
-/* Um marcador por mês, pendurado no eixo. Janeiro carrega o ano; os meses
-   com publicação acendem, os vazios ficam no cinza mais fraco permitido. */
 .month {
   position: absolute;
   margin-top: -1px;

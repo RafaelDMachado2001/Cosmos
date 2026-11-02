@@ -112,8 +112,6 @@
   margin: 0;
 }
 
-/* Proporções de src/prerender/og.tsx (1200×630): estrela em 80% × 43%, 15% da
-   largura; aura em 70%; título até 63% da largura. */
 .cardPreview {
   overflow: hidden;
   border-radius: var(--radius-pill);
@@ -181,7 +179,6 @@
   color: var(--color-text-muted);
 }
 
-/* 30px num cartão de 1200, como `src/prerender/og.tsx` desenha. */
 .cardMark {
   width: 2.5cqw;
   height: 2.5cqw;
@@ -303,7 +300,6 @@
   cursor: default;
 }
 
-/* --- Aparência ------------------------------------------------------------ */
 .rangeField {
   display: grid;
   gap: 6px;

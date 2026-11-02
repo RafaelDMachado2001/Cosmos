@@ -1,4 +1,3 @@
-/** Detecção isolada de propósito: não importa three, então não entra no bundle inicial. */
 export function isWebGLAvailable(): boolean {
   try {
     const canvas = document.createElement('canvas');

@@ -11,16 +11,9 @@ export interface CoreCanvasProps {
   readonly headerRef: RefObject<HTMLElement>;
   readonly textBlockRef: RefObject<HTMLElement>;
   readonly reducedMotion: boolean;
-  /** Onde registrar a cena para o orquestrador de quadro encontrá-la. */
   readonly sceneRef: MutableRefObject<CoreScene | null>;
 }
 
-/**
- * Ponte entre o React e a cena: monta o canvas, cria a cena e a registra.
- *
- * Não roda laço próprio nem escuta o ponteiro — quem faz as duas coisas é o
- * useCosmosEngine, no mesmo quadro em que move a constelação.
- */
 export default function CoreCanvas({
   rootRef,
   headerRef,
@@ -38,7 +31,6 @@ export default function CoreCanvas({
     try {
       scene = new CoreScene({ canvas, reducedMotion });
     } catch {
-      // Contexto WebGL recusado: o gradiente do Backdrop assume o lugar.
       return;
     }
     sceneRef.current = scene;
@@ -48,7 +40,6 @@ export default function CoreCanvas({
       sceneRef.current = null;
       scene.dispose();
     };
-    // reducedMotion não recria a cena; é propagado no efeito abaixo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sceneRef]);
 

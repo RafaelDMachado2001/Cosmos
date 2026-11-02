@@ -1,16 +1,3 @@
-/**
- * Shader do núcleo. Portado praticamente literalmente do protótipo — ele é a
- * especificação visual exata, não uma sugestão.
- *
- * Vertex: simplex noise 3D em três oitavas (pesos 0.30/0.13/0.05, frequências
- * 1.05/2.6/5.2, animadas em eixos diferentes) deslocando a malha ao longo da
- * normal. A superfície incha na direção do ponteiro.
- *
- * Fragment: base roxa escura, sobre ela um degradê angular girando a
- * 0.045 rad/s percorrendo roxo, verde, laranja e vermelho, aplicado no fresnel
- * e nos veios internos. `uPulse` faz a energia percorrer a superfície.
- */
-
 export const CORE_VERTEX_SHADER = /* glsl */ `
 uniform float uTime; uniform float uAmp; uniform vec2 uMouse;
 varying vec3 vNormal; varying vec3 vView; varying float vN;

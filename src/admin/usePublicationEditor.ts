@@ -42,20 +42,12 @@ function draftsFrom(publication: AdminPublication): DraftsByLocale {
 
 const AUTOSAVE_DELAY_MS = 400;
 
-/** O prefixo que `AdminApp.create()` usa para o slug provisório de uma publicação nova. */
 export const PLACEHOLDER_SLUG_PREFIX = 'rascunho-';
 
 function isPlaceholderSlug(slug: string): boolean {
   return slug.startsWith(PLACEHOLDER_SLUG_PREFIX);
 }
 
-/**
- * Todo o estado editável de uma publicação, com autosave debounced.
- *
- * Um clone local por seleção (ver o `key={publication.id}` em `AdminApp`,
- * que remonta este hook a cada troca) — edita-se a cópia, nunca a prop
- * direto, e o efeito abaixo é quem decide quando mandar para o servidor.
- */
 export function usePublicationEditor(
   publication: AdminPublication,
   onUpdated: (updated: AdminPublication) => void,
@@ -71,30 +63,15 @@ export function usePublicationEditor(
   const [references, setReferences] = useState<readonly AdminReference[]>(publication.references);
   const [drafts, setDrafts] = useState<DraftsByLocale>(() => draftsFrom(publication));
   const [status, setStatus] = useState<SaveStatus>('idle');
-  /**
-   * `false` só é possível vindo de `AdminApp`'s create flow (slug-placeholder
-   * ainda não editado à mão) — ver `isNewSlug`. Uma vez editado o slug à
-   * mão, ou numa publicação já existente, o automático nunca mais escreve
-   * em cima.
-   */
   const [slugTouched, setSlugTouched] = useState(!isPlaceholderSlug(publication.slug));
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /**
-   * O salvamento que o timer ainda vai disparar, e o que já está no ar.
-   * Publicar copia o rascunho *do servidor*; sem esperar estes dois, quem
-   * clicava em publicar até 400ms depois de editar via no ar a versão anterior.
-   */
   const pendingSave = useRef<(() => Promise<boolean>) | null>(null);
   const inFlightSave = useRef<Promise<boolean> | null>(null);
-  // Primeira renderização depois de selecionar: não autosalva o que acabou
-  // de chegar do servidor, só o que a pessoa edita a partir daqui.
   const skipNext = useRef(true);
 
   function setCurrentDraft(patch: Partial<DraftFields>): void {
     setDrafts((prev) => ({ ...prev, [locale]: { ...prev[locale], ...patch } }));
-    // O slug automático só segue o título em português — é o que decide a
-    // posição da estrela, e trocar de aba não deveria reescrevê-lo.
     if (locale === 'pt' && patch.title !== undefined && !slugTouched) {
       setSlug(slugify(patch.title));
     }
@@ -167,12 +144,11 @@ export function usePublicationEditor(
     return () => {
       if (timer.current !== null) clearTimeout(timer.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- publication.id/onUpdated são estáveis por seleção; o efeito reage ao conteúdo editado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, category, publishedAt, featured, indexable, appearance, tags, references, drafts]);
 
   const currentDraft = useMemo(() => drafts[locale], [drafts, locale]);
 
-  /** Manda já o que o timer ainda ia mandar, e espera o que estiver no ar. */
   async function flushSave(): Promise<void> {
     if (timer.current !== null) {
       clearTimeout(timer.current);
@@ -184,15 +160,10 @@ export function usePublicationEditor(
     if (!ok) throw new Error('O rascunho não foi salvo; publicar agora levaria a versão anterior.');
   }
 
-  /**
-   * O Ctrl+S: o mesmo salvamento do autosave, sem esperar o timer. Botão não
-   * tem — o autosave e o publicar já descarregam o que falta.
-   */
   async function saveNow(): Promise<void> {
     await flushSave();
   }
 
-  // Ctrl+S / Cmd+S salva em vez de abrir o "salvar página" do navegador.
   const saveNowRef = useRef(saveNow);
   saveNowRef.current = saveNow;
   useEffect(() => {
@@ -200,7 +171,6 @@ export function usePublicationEditor(
       if (event.key.toLowerCase() !== 's' || !(event.ctrlKey || event.metaKey)) return;
       event.preventDefault();
       saveNowRef.current().catch(() => {
-        // O status já virou `error`; o atalho não tem onde mais avisar.
       });
     }
     window.addEventListener('keydown', onKeyDown);

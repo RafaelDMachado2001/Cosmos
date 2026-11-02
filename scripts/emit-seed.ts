@@ -20,13 +20,6 @@ const rows = PUBLICATIONS.map((publication) => ({
 writeFileSync('backend/database/seeders/publications.json', `${JSON.stringify(rows, null, 2)}\n`);
 console.log(`${String(rows.length)} publicações emitidas`);
 
-/**
- * O dicionário de full-text do Postgres para cada idioma.
- *
- * Mora aqui e não em `core/types.ts` porque só o banco o usa. O `Record` é o que
- * impede um idioma novo de chegar ao backend sem dicionário: o typecheck quebra
- * antes.
- */
 const DICTIONARIES = { pt: 'portuguese', en: 'english' } satisfies Record<Locale, string>;
 
 const list = (items: readonly string[]): string => items.map((item) => `'${item}'`).join(', ');

@@ -14,7 +14,6 @@
   letter-spacing: var(--tracking-hint);
   text-transform: uppercase;
 
-  /* Fora da tela até receber foco: presente para o teclado, invisível ao mouse. */
   transform: translateY(-200%);
   transition: transform var(--dur-ui) var(--ease);
 }

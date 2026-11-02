@@ -12,19 +12,11 @@ import { SITE } from '../site';
 import { useHeadMeta } from './useHeadMeta';
 import type { ArticleState } from './usePublications';
 
-/**
- * Mantém o `<head>` em dia com o que está em cena: o artigo aberto, ou a home.
- *
- * O artigo só conta enquanto a URL é a dele — inclusive durante o fechamento a
- * vista ainda está no DOM, mas a URL já voltou a ser a da constelação. O
- * cabeçalho acompanha a URL, não o que resta na tela.
- */
 export function usePageHead(
   reader: ReaderState,
   article: ArticleState,
   locale: Locale,
   t: Dictionary,
-  /** O acervo carregado: o `Blog` do JSON-LD da home lista as publicações. */
   posts: readonly PublicationSummary[],
 ): void {
   const metaArticle = useMemo<MetaArticle | null>(() => {
@@ -47,9 +39,6 @@ export function usePageHead(
     };
   }, [reader.phase, reader.slug, article, t]);
 
-  // Os idiomas que o detalhe declara, os mesmos que o prerender usa: o
-  // Googlebot indexa o DOM renderizado, e um hreflang para a tradução que não
-  // existe apontava para um 404.
   const metaLocales = article.status === 'ready' ? article.detail.locales : LOCALES;
 
   const pageMeta = useMemo(

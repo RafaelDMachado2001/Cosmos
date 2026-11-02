@@ -11,12 +11,6 @@ interface State {
   readonly failed: boolean;
 }
 
-/**
- * Quando o React quebra, quem estava lendo continua lendo.
- *
- * A casca pre-renderizada já tem o artigo inteiro no HTML. Este limite esconde
- * o `#root` e deixa a casca no lugar, em vez de trocar texto por tela preta.
- */
 export class ErrorBoundary extends Component<Props, State> {
   override state: State = { failed: false };
 

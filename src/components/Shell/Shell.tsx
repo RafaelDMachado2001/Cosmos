@@ -43,13 +43,6 @@ import { StarIndex } from '../StarIndex/StarIndex';
 import { TimeRuler } from '../TimeRuler/TimeRuler';
 import styles from './Shell.module.css';
 
-/**
- * A experiência inteira: a entrada, a constelação e a vista de leitura.
- *
- * Dona do estado discreto — hover, fase da leitura, filtro, 404 — e da
- * conciliação desse estado com o histórico do navegador. O que muda a cada
- * quadro fica no motor (`useCosmosEngine`), fora do React.
- */
 export function Shell({ route }: { route: Route }) {
   const reducedMotion = usePrefersReducedMotion();
   const { locale, t } = useLocale();
@@ -76,26 +69,12 @@ export function Shell({ route }: { route: Route }) {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [notFound, setNotFound] = useState(route.kind === 'notfound');
 
-  /** Quem tinha o foco quando o artigo abriu — para devolvê-lo ao fechar. */
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
-  /**
-   * Se a entrada de histórico do artigo aberto é nossa.
-   *
-   * Só é quando foi um clique numa estrela que a empilhou. Numa chegada direta
-   * pela URL a entrada é de quem veio antes — de outro site, ou de nenhum — e
-   * fechar não pode voltar para lá. Ver `closeTarget`.
-   */
   const ownsEntryRef = useRef(false);
 
-  /** O slug que a URL trouxe na carga, à espera de o acervo chegar. */
   const pendingSlugRef = useRef(route.kind === 'article' ? route.slug : null);
 
-  /**
-   * A fonte é criada uma vez: ela ordena o acervo e indexa por slug no
-   * construtor, e recriá-la a cada render refaria esse trabalho e disparava o
-   * efeito de carregamento em laço.
-   */
   const source = useMemo(() => createSource(), []);
   const snapshot = useMemo(() => createSnapshot(), []);
   const collection = usePublications(source, locale, snapshot);
@@ -151,13 +130,6 @@ export function Shell({ route }: { route: Route }) {
     slideTo,
   );
 
-  /**
-   * O lado do cartão é decidido uma vez, quando o ponteiro chega.
-   *
-   * O pan vive fora do React e muda a cada quadro; reavaliar o lado a cada um
-   * deles custaria um segundo laço para reposicionar um cartão que, na prática,
-   * some assim que a constelação se move sob o ponteiro.
-   */
   const onHover = useCallback(
     (slug: string | null, via: HoverVia = 'pointer') => {
       const star = slug === null ? undefined : starBySlug.get(slug);
@@ -174,14 +146,6 @@ export function Shell({ route }: { route: Route }) {
     [starBySlug, engine, viewport.width],
   );
 
-  /**
-   * O Tab percorre o acervo inteiro, e quase todo ele está fora da tela.
-   *
-   * Sem levar a câmera junto, o anel de foco ficava do lado de fora. A guarda
-   * do `needsSlide` é o que impede o efeito contrário: arrastar a constelação a
-   * cada passo entre duas estrelas vizinhas, e desfazer o recuo que o
-   * fechamento da vista de leitura acabou de prometer devolver.
-   */
   const onFocusStar = useCallback(
     (star: PlacedStar) => {
       if (!needsSlide(star.x - engine.panRef.current, viewport.width)) return;
@@ -209,18 +173,12 @@ export function Shell({ route }: { route: Route }) {
   const onActivate = useCallback(
     (star: PlacedStar) => {
       if (engine.didDrag()) return;
-      // A câmera só se move se o estado for aceitar a abertura: deslocá-la
-      // antes e ver `open` recusar deixaria o pan longe do que o fechamento
-      // promete devolver.
       if (reader.phase !== 'closed') return;
       returnFocusRef.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      // O cartão de hover cobriria a estrela durante o avanço da câmera.
       setHovered(null);
       const originPan = engine.openStar(star);
       setReader((current) => openReaderState(current, star.slug, originPan));
-      // A URL passa a ser a do artigo, e o voltar do navegador fecha a vista —
-      // é a mesma entrada de histórico que o "×" desfaz.
       window.history.pushState(null, '', articlePath(locale, star.slug));
       ownsEntryRef.current = true;
       setNotFound(false);
@@ -228,26 +186,12 @@ export function Shell({ route }: { route: Route }) {
     [engine, reader.phase, locale],
   );
 
-  /**
-   * Fecha a vista sem tocar no histórico.
-   *
-   * É o que o `popstate` chama: ali a URL já mudou, e empurrar outra entrada em
-   * resposta faria o botão de voltar precisar de dois toques para sair.
-   */
   const applyClose = useCallback(() => {
     if (reader.phase === 'closed' || reader.phase === 'closing') return;
     engine.closeReader(reader.originPan);
     setReader(closeReaderState);
   }, [engine, reader]);
 
-  /**
-   * Fechar por gesto: o "×", o botão do fim do artigo, Esc.
-   *
-   * A vista fecha aqui e agora, antes de mexer no histórico. Delegar o
-   * fechamento ao `popstate` que o `back()` dispara amarraria a interface a um
-   * evento que chega num próximo quadro — e que não chega de jeito nenhum se a
-   * entrada anterior for a mesma URL.
-   */
   const closeReader = useCallback(() => {
     if (reader.phase === 'closed' || reader.phase === 'closing') return;
     const target = closeTarget(ownsEntryRef.current, locale);
@@ -260,13 +204,6 @@ export function Shell({ route }: { route: Route }) {
     ownsEntryRef.current = false;
   }, [applyClose, locale, reader.phase]);
 
-  /**
-   * O terceiro tempo da abertura: montar o texto.
-   *
-   * A espera é o avanço da câmera, não um evento de usuário. Fechar antes do
-   * fim limpa o timer aqui e `mounted` ainda recusa qualquer fase que não seja
-   * `opening` — a vista não remonta sozinha depois de fechada.
-   */
   useEffect(() => {
     if (reader.phase !== 'opening') return;
     const delay = reducedMotion ? OPEN_DELAY_MS.reduced : OPEN_DELAY_MS.normal;
@@ -278,7 +215,6 @@ export function Shell({ route }: { route: Route }) {
     };
   }, [reader.phase, reducedMotion]);
 
-  // Esc fecha também durante a abertura, quando a vista ainda nem está no DOM.
   useEffect(() => {
     if (reader.phase === 'closed') return;
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -292,7 +228,6 @@ export function Shell({ route }: { route: Route }) {
     };
   }, [reader.phase, closeReader]);
 
-  // Fechado o artigo, o foco volta à estrela de onde ele saiu.
   useEffect(() => {
     if (reader.phase !== 'closed') return;
     const target = returnFocusRef.current;
@@ -300,14 +235,6 @@ export function Shell({ route }: { route: Route }) {
     target?.focus();
   }, [reader.phase]);
 
-  /**
-   * A chegada direta: `/pt/publicacoes/{slug}` aberto do zero.
-   *
-   * Só dá para fazer isto depois de o acervo chegar — antes dele não há
-   * estrela para enquadrar nem como saber se o slug existe. Daí a espera pelo
-   * `ready`: é ele que separa "ainda não carregou" de "não existe", e é a
-   * diferença entre a tela de espera e o 404.
-   */
   const { jumpTo } = engine;
 
   useEffect(() => {
@@ -324,21 +251,11 @@ export function Shell({ route }: { route: Route }) {
     setReader((current) => landed(current, slug));
   }, [collection.state.status, stars, jumpTo]);
 
-  // Um endereço que não é rota nenhuma também começa do outro lado do portal:
-  // o 404 é uma tela da constelação, não do hero.
   useEffect(() => {
     if (route.kind !== 'notfound') return;
     jumpTo(null);
   }, [route.kind, jumpTo]);
 
-  /**
-   * Voltar e avançar do navegador.
-   *
-   * A URL já é a verdade quando este evento chega; o trabalho aqui é só
-   * reconciliar a vista com ela. Avançar de volta para um artigo o reabre sem a
-   * viagem de câmera — repeti-la seria encenar uma origem que, nesse caminho,
-   * não existe.
-   */
   useEffect(() => {
     const onPopState = (): void => {
       const next = parseRoute(window.location.pathname);
@@ -357,7 +274,6 @@ export function Shell({ route }: { route: Route }) {
       }
 
       setNotFound(false);
-      // Há entrada anterior: foi de lá que este passo do histórico veio.
       ownsEntryRef.current = true;
       jumpTo(star);
       setReader((current) => landed(current, next.slug));
@@ -369,13 +285,6 @@ export function Shell({ route }: { route: Route }) {
     };
   }, [stars, jumpTo, applyClose]);
 
-  /**
-   * Trocar de idioma traduz a URL no lugar.
-   *
-   * É a mesma publicação nos dois idiomas — é o que o par de `hreflang` diz — e
-   * portanto não é uma navegação: empilhar entrada aqui encheria o histórico de
-   * voltas que só alternam a língua da mesma página.
-   */
   const lastLocaleRef = useRef(locale);
 
   useEffect(() => {
@@ -389,16 +298,8 @@ export function Shell({ route }: { route: Route }) {
     );
   }, [locale, reader]);
 
-  /**
-   * O corpo do artigo vem da fonte, não do acervo já carregado: a lista é
-   * enxuta de propósito, e o texto completo será uma segunda chamada quando o
-   * backend existir. A busca começa junto com o avanço da câmera, então os
-   * 760ms de viagem são folga de sobra para a resposta.
-   */
   const article = useArticle(source, reader.slug, locale);
 
-  // Sem texto não há o que montar, e a câmera ficaria avançada sobre uma tela
-  // vazia. Não acontece com o adapter estático; acontecerá com o HTTP.
   useEffect(() => {
     if (article.status !== 'missing') return;
     if (reader.phase === 'closed' || reader.phase === 'closing') return;
@@ -427,19 +328,11 @@ export function Shell({ route }: { route: Route }) {
 
   usePageHead(reader, article, locale, t, summaries);
 
-  /**
-   * Se a travessia partiu de um botão do hero com o foco nele.
-   *
-   * No cosmos o hero fica `inert`, e o foco de quem entrou pelo teclado caía no
-   * `body` — o próximo Tab recomeçava do topo da página. Ele vai para a régua,
-   * que é por onde a linha do tempo se percorre sem mouse.
-   */
   const focusRailOnCrossRef = useRef(false);
 
   const enterCosmos = useCallback(
     (skip: boolean) => {
       focusRailOnCrossRef.current = heroBlockRef.current?.contains(document.activeElement) ?? false;
-      // O atalho pula a esfera: atravessa sem animar, como a chegada pela URL.
       if (skip) engine.jumpTo(null);
       else engine.goCosmos();
     },
@@ -452,8 +345,6 @@ export function Shell({ route }: { route: Route }) {
     railRef.current?.focus({ preventScroll: true });
   }, [engine.phase]);
 
-  // Voltar ao início recolhe o painel: reaparecer sozinho na próxima travessia
-  // seria um filtro que o leitor não pediu de novo.
   const goHome = useCallback(() => {
     setCategoriesOpen(false);
     setNotFound(false);
@@ -461,15 +352,6 @@ export function Shell({ route }: { route: Route }) {
     engine.goHome();
   }, [engine, locale]);
 
-  /**
-   * "Nenhuma estrela" tem causas diferentes e telas diferentes: os dados não
-   * chegaram, falharam, a busca não achou nada, ou o endereço não existe. Ver
-   * `src/core/collection.ts`.
-   *
-   * O 404 vem primeiro porque não é sobre o acervo: com um endereço inválido, a
-   * constelação atrás pode estar perfeitamente cheia, e dizer "nenhuma estrela
-   * encontrada" mandaria a pessoa ajustar uma busca que ela não fez.
-   */
   const statusKind = useMemo<CosmosStatusKind | null>(() => {
     if (notFound) return 'notfound';
     if (collection.state.status === 'loading') return 'loading';
@@ -487,8 +369,6 @@ export function Shell({ route }: { route: Route }) {
     window.history.replaceState(null, '', homePath(locale));
   }, [notFound, collection, locale]);
 
-  // Esc fecha o painel de categorias. Com o artigo aberto quem responde ao Esc
-  // é ele, e o painel está atrás do overlay de qualquer modo.
   useEffect(() => {
     if (!categoriesOpen || reader.phase !== 'closed') return;
     const onKeyDown = (event: KeyboardEvent): void => {

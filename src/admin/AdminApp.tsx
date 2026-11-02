@@ -9,7 +9,6 @@ import { api } from './api';
 import type { AdminPublication } from './api';
 import { searchForSelected } from './selection';
 
-/** A publicação selecionada: busca a lista uma vez e edita localmente a partir daí. */
 function EditorPane({
   publication,
   onUpdated,
@@ -31,7 +30,6 @@ function EditorPane({
 export function AdminApp({
   initialSelectedId = null,
 }: {
-  /** Vem de `?publication=` (ver `selection.ts`): o link do Filament abre direto nela. */
   readonly initialSelectedId?: number | null;
 } = {}): React.JSX.Element {
   const [publications, setPublications] = useState<readonly AdminPublication[] | null>(null);
@@ -47,7 +45,6 @@ export function AdminApp({
 
   useEffect(() => reload(), [reload]);
 
-  // Um id do endereço que não está no acervo (apagado, link velho) vira estado vazio.
   useEffect(() => {
     if (
       publications !== null &&
@@ -58,7 +55,6 @@ export function AdminApp({
     }
   }, [publications, selectedId]);
 
-  // O endereço acompanha a seleção: recarregar volta para a mesma publicação.
   useEffect(() => {
     const search = searchForSelected(window.location.search, selectedId);
     if (search !== window.location.search) {

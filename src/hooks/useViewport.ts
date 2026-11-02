@@ -7,13 +7,6 @@ export interface MeasuredViewport {
   readonly headerPx: number;
 }
 
-/**
- * Dimensões da janela e altura real do header.
- *
- * Diferente de `useCoreFraming`, aqui a medida VIRA estado: a banda vertical
- * das estrelas muda o layout, então o React precisa re-renderizar. Muda em
- * resize, não por quadro.
- */
 export function useViewport(headerRef: RefObject<HTMLElement>): MeasuredViewport {
   const [viewport, setViewport] = useState<MeasuredViewport>(() => ({
     width: typeof window === 'undefined' ? 1280 : window.innerWidth,
