@@ -6,6 +6,7 @@ namespace App\Modules\Community\Actions;
 
 use App\Modules\Community\Events\CommentPosted;
 use App\Modules\Community\Models\Comment;
+use App\Modules\Community\Support\CommentBody;
 use Illuminate\Support\Facades\DB;
 
 final class PostComment
@@ -17,7 +18,7 @@ final class PostComment
                 'publication_id' => $publicationId,
                 'member_id' => $memberId,
                 'locale' => $locale,
-                'body' => trim(str_replace(["\r\n", "\r"], "\n", $body)),
+                'body' => CommentBody::normalize($body),
                 'status' => Comment::STATUS_PUBLISHED,
             ]);
 

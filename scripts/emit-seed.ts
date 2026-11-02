@@ -1,5 +1,6 @@
 import { writeFileSync } from 'node:fs';
 
+import { COMMENT_MAX_LENGTH } from '../src/core/comments';
 import { CATEGORIES, LOCALES } from '../src/core/types';
 import type { Locale } from '../src/core/types';
 import { PUBLICATIONS } from '../src/data/publications';
@@ -39,3 +40,16 @@ ${LOCALES.map((locale) => `        '${locale}' => '${DICTIONARIES[locale]}',`).j
 
 writeFileSync('backend/config/publications.php', config);
 console.log('vocabulário emitido em backend/config/publications.php');
+
+writeFileSync(
+  'backend/config/community.php',
+  `<?php
+
+declare(strict_types=1);
+
+return [
+    'comment_max_length' => ${String(COMMENT_MAX_LENGTH)},
+];
+`,
+);
+console.log('limites emitidos em backend/config/community.php');

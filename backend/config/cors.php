@@ -4,7 +4,7 @@ return [
 
     'paths' => ['api/me', 'api/me/*', 'api/sanctum/csrf-cookie', 'auth/logout'],
 
-    'allowed_methods' => ['GET', 'PATCH', 'POST', 'DELETE'],
+    'allowed_methods' => ['GET', 'PATCH', 'POST', 'PUT', 'DELETE'],
 
     'allowed_origins' => array_filter([(string) env('SITE_URL')]),
 
