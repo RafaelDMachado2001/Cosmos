@@ -243,7 +243,7 @@ divided into modules with explicit boundaries:
 | Content | Publications, drafts, media, the studio | Built |
 | Identity | Member accounts, social login, profiles, data export and deletion | Built (API) |
 | Activity | The append-only log of members' domain actions | Built |
-| Community | Comments, the reaction, moderation | In progress: domain and data |
+| Community | Comments, the reaction, moderation | In progress: domain and API built |
 | Gamification | Points, achievements, leaderboards | Planned |
 
 Modules talk through domain events, such as `MemberRegistered` or
@@ -569,6 +569,16 @@ test-runner directives).
   `frame-ancestors` as CSP, since Filament and Livewire need inline scripts;
   the one-button Google sign-in is exactly what clickjacking targets. Nothing
   served by the backend is indexable.
+- **Public reads live under `/api/publications`, member writes under
+  `/api/me`.** The edge caches the first prefix for 60 seconds without
+  cookies, so any answer that depends on who asks (did I react?) must live
+  under the second, which is also the only credentialed CORS path. The comment
+  list and the reaction count are the same for everyone; a member sees their
+  own comment or reaction from the write's response, not from a fresh read.
+- **Community limits come from TypeScript.** The 2000-character ceiling is
+  `COMMENT_MAX_LENGTH` in `core/comments.ts`, emitted into
+  `config/community.php`. Both sides normalize line breaks and trim before
+  counting, and both count code points, as `mb_strlen` does.
 
 ### Backend: identity
 
