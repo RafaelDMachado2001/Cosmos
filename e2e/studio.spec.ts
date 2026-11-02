@@ -1,29 +1,13 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Locator } from '@playwright/test';
 
-/**
- * O RDM Studio de ponta a ponta: escrever, publicar, ver no site público com a
- * mesma formatação, despublicar e ver a página sumir.
- *
- * Precisa da stack inteira (API, fila, job de regeração) e de uma sessão do
- * admin — o login é só por Google. `E2E_ADMIN_COOKIE` é o JSON que
- * `php artisan e2e:admin-session` imprime; sem ele (o job `e2e` do CI, que só
- * sobe o `web` com o acervo semente), o teste é pulado. Roda no job
- * `integração`.
- */
 const cookie = process.env.E2E_ADMIN_COOKIE;
 
 test.skip(cookie === undefined, 'sem E2E_ADMIN_COOKIE: precisa da stack com backend');
 
-// O job de regeração roda o prerender inteiro; no CI leva dezenas de segundos.
 test.setTimeout(300_000);
 const JOB_TIMEOUT = 180_000;
 
-/**
- * O artigo do HTML que o job gravou, lido sem JavaScript — como um crawler o
- * recebe. Com JavaScript a casca sai do DOM assim que o React monta (um H1 por
- * página), e `#prerender` deixa de existir.
- */
 async function staticArticle(browser: Browser, url: string): Promise<{ article: Locator; close: () => Promise<void> }> {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
@@ -46,8 +30,6 @@ test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', 
   const title = `E2E Studio ${String(Date.now())}`;
   await page.getByPlaceholder('Título', { exact: true }).fill(title);
 
-  // Os dois casos que mais quebravam: um parágrafo que parece lista numerada e
-  // um bloco de código, que agora sai com highlighting.
   await page.getByRole('button', { name: '+ Parágrafo' }).click();
   await page.getByRole('textbox', { name: 'Parágrafo', exact: true }).fill('1984. Foi o ano em que **tudo** mudou.');
   await page.getByRole('button', { name: '+ Código' }).click();
@@ -57,7 +39,6 @@ test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', 
   const slug = await page.getByLabel('Slug').inputValue();
   expect(slug).toMatch(/^e2e-studio-\d+$/);
 
-  // Sem esperar o autosave: publicar descarrega o salvamento pendente antes.
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByRole('button', { name: 'Despublicar' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Atualizar publicado' })).toBeVisible();
@@ -68,16 +49,12 @@ test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', 
       async () => {
         const response = await request.get(url);
         const body = await response.text();
-        // Sem noindex: é o arquivo que o job gravou, não a casca do @app.
         return response.status() === 200 && body.includes(title) && !body.includes('noindex');
       },
       { timeout: JOB_TIMEOUT, intervals: [2_000, 5_000] },
     )
     .toBe(true);
 
-  // As duas leituras do mesmo corpo: o HTML que o job gravou (o que um
-  // crawler e quem está sem JavaScript recebem) e a vista de leitura que a
-  // Shell abre por cima dele. Os dois passam por ArticleBody.
   const shell = await staticArticle(browser, new URL(url, baseURL).href);
   await page.goto(url);
   for (const article of [shell.article, page.getByRole('dialog').locator('article')]) {
@@ -91,7 +68,6 @@ test('publicar mostra no site o que o editor mostrava; despublicar tira do ar', 
   await shell.close();
 
   await page.goto('/admin/studio');
-  // Só a lista mostra o título enquanto nada está selecionado.
   await page.getByText(title).click();
   await page.getByRole('button', { name: 'Despublicar' }).click();
   await expect(page.getByRole('button', { name: 'Publicar' })).toBeVisible();

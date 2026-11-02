@@ -26,7 +26,6 @@ describe('cartão de Open Graph', () => {
   it('sai como PNG de 1200x630', async () => {
     const png = await ogPng(CARD);
     expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    // IHDR: largura e altura em big-endian logo depois do cabeçalho do chunk.
     expect(png.readUInt32BE(16)).toBe(1200);
     expect(png.readUInt32BE(20)).toBe(630);
   });

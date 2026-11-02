@@ -16,8 +16,6 @@ terraform {
     }
   }
 
-  # State remoto num bucket GCS com versionamento (criado à mão uma vez, ver
-  # README). O nome vem de `terraform init -backend-config=state.gcs.tfbackend`.
   backend "gcs" {
     prefix = "cosmos"
   }
@@ -28,5 +26,4 @@ provider "google" {
   region  = var.region
 }
 
-# Token da Cloudflare em CLOUDFLARE_API_TOKEN, nunca no código.
 provider "cloudflare" {}

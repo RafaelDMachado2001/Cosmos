@@ -27,7 +27,6 @@ class HostBoundaryTest extends TestCase
 
         $cookie = collect($response->headers->getCookies())->firstWhere(fn ($cookie) => $cookie->getName() === 'rdm_admin');
         $this->assertNotNull($cookie, 'sem o cookie rdm_admin');
-        // Sem Domain: o navegador só o devolve para este host, nunca ao do site.
         $this->assertNull($cookie->getDomain());
     }
 
@@ -71,7 +70,6 @@ class HostBoundaryTest extends TestCase
         config(['hosts.edge_secret' => 's3gredo']);
         $edge = ['X-Edge-Secret' => 's3gredo', 'X-Forwarded-Host' => self::ADMIN, 'X-Forwarded-Proto' => 'https'];
 
-        // A requisição chega no host do run.app, como o Worker a entrega.
         $response = $this->get('http://cosmos-api-xyz.a.run.app/admin/login', $edge)->assertOk();
         $this->assertNotNull(collect($response->headers->getCookies())->firstWhere(fn ($cookie) => $cookie->getName() === 'rdm_admin'));
 

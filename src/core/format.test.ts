@@ -8,7 +8,6 @@ const JAN_2026 = Date.parse('2026-01-20T12:00:00.000Z');
 describe('monthYearLabel', () => {
   it('abrevia o mês e o ano, em caixa alta', () => {
     expect(monthYearLabel(SET_2025, 'pt')).toBe('SET 2025');
-    // "Sept" é a abreviação do en-GB, que é o locale escolhido para datas.
     expect(monthYearLabel(SET_2025, 'en')).toBe('SEPT 2025');
   });
 
@@ -23,7 +22,6 @@ describe('monthYearLabel', () => {
   });
 
   it('lê a data em UTC, não no fuso de quem roda', () => {
-    // 1º de março em UTC; 28 de fevereiro em qualquer fuso a oeste de Greenwich.
     const virada = Date.parse('2025-03-01T00:30:00.000Z');
     expect(monthYearLabel(virada, 'pt')).toBe('MAR 2025');
   });

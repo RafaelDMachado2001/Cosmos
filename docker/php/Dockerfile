@@ -1,45 +1,23 @@
 # syntax=docker/dockerfile:1
 
-# O runner do prerender. Mesma origem do build do `web`: um segundo caminho de
-# compilação divergiria do primeiro no primeiro ajuste.
 FROM node:22-alpine AS runner
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 
-# A origem do canonical, do hreflang e do sitemap fica assada no bundle do
-# prerender. Sem o mesmo valor do `web`, a primeira publicação regravaria todas
-# as páginas apontando para o padrão de desenvolvimento.
 ARG VITE_SITE_URL=http://localhost:8080
 ENV VITE_SITE_URL=${VITE_SITE_URL}
 
-# O molde que o job usa sai deste build, mas as páginas que ele grava são
-# servidas com os assets do build do `web`. Os nomes com hash só coincidem se as
-# entradas coincidirem: qualquer ARG que o estagio de build do `web` tenha
-# precisa estar aqui com o mesmo valor. O prerender recusa um molde cujos assets
-# o destino não tem (src/prerender/assets.ts).
 ARG VITE_API_URL=/
 ENV VITE_API_URL=${VITE_API_URL}
 
 RUN npm run build
 
-# Patch fixo: 8.3.36 corrige o PHP2Shell (CVE-2026-109618/109619, RCE sem
-# autenticação). Tag flutuante deixava o build preso no cache de uma versão vulnerável.
 FROM php:8.3.36-fpm-alpine
 
-# Bibliotecas de execução e o que o Composer usa para resolver pacotes.
-# `libwebp`/`libpng`/`libjpeg-turbo` ficam em tempo de execução: é o que o GD
-# lê para redimensionar e gravar o WebP que o RDM Studio grava em `media`
-# (fase do RDM Studio, upload de imagem — a origem pode chegar em qualquer
-# formato comum, inclusive JPEG de câmera).
 RUN apk add --no-cache libpq icu-libs libzip libwebp libpng libjpeg-turbo git unzip
 
-# Extensões compiladas.
-#
-# `libpq-dev` e não `postgresql-dev`: o segundo arrasta o llvm — cerca de 1GB,
-# para o JIT do servidor Postgres — e daqui só interessam os headers do cliente.
-# `intl` é o que Laravel e Filament pedem para formatação e collation.
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS libpq-dev icu-dev libzip-dev libwebp-dev libpng-dev libjpeg-turbo-dev \
  && docker-php-ext-configure gd --with-webp --with-jpeg \
  && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip bcmath opcache gd exif \
@@ -47,24 +25,16 @@ RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS libpq-dev icu-dev libz
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Node no container do backend é o preço de não ter um quarto serviço. Fica
-# registrado na spec como o primeiro candidato a mudar se o deploy apertar.
 RUN apk add --no-cache nodejs
 
 COPY --from=runner /app/dist-ssr /srv/render/dist-ssr
 COPY --from=runner /app/node_modules /srv/render/node_modules
 
-# O container escreve em ./backend por bind mount: sem o mesmo UID do host,
-# tudo o que o Composer e o Artisan geram sai pertencendo ao root.
 ARG UID=1000
 ARG GID=1000
 RUN addgroup -g "${GID}" app 2>/dev/null || true \
  && adduser -u "${UID}" -G "$(getent group "${GID}" | cut -d: -f1)" -s /bin/sh -D app 2>/dev/null || true
 
-# O COPY --from=runner acima grava como root. O prerender reescreve
-# dist-ssr/template.html a cada execução (Tarefa 2) e roda como o mesmo
-# usuário sem privilégio do `app`/`queue` — sem isso ele morre com EACCES
-# antes de sequer falar com a API.
 RUN chown -R app:app /srv/render/dist-ssr
 
 COPY docker/php/php.ini "$PHP_INI_DIR/conf.d/zz-rdm.ini"

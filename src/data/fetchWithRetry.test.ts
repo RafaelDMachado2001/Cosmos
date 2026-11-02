@@ -7,7 +7,6 @@ function reply(status: number): Response {
   return { ok: status >= 200 && status < 300, status } as Response;
 }
 
-/** Responde em sequência, um item por chamada; `Error` vira rejeição. */
 function scripted(steps: readonly (number | Error)[]) {
   let calls = 0;
   const impl = (): Promise<Response> => {
@@ -75,7 +74,6 @@ describe('fetchWithRetry', () => {
     const impl = ((_url: string, init: RequestInit) => {
       calls += 1;
       if (calls > 1) return Promise.resolve(reply(200));
-      // A primeira nunca responde: só o prazo a encerra.
       return new Promise((_resolve, reject) => {
         init.signal?.addEventListener('abort', () => {
           reject(new DOMException('aborted', 'AbortError'));

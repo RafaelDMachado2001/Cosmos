@@ -613,6 +613,44 @@ test-runner directives).
   the admin panel included, can skip indexing. The dictionary comes from the
   row's own locale.
 
+### Infrastructure and tooling
+
+- **Nginx resolves the PHP upstream per request**, through a variable. With
+  `fastcgi_pass app:9000` it would resolve at load time and refuse to start
+  whenever the backend profile is down, which is the frontend-only daily case.
+- **Nginx has no fallback to `/index.html`**, and article routes try
+  `$uri/index.html`, never `$uri/` (which answers 301 with a trailing slash and
+  fights the canonical). Without the backend, an article that is not on disk
+  gets the static 404, not a 502.
+- **Security headers are an `include` in each location that serves a file**:
+  Nginx only inherits `add_header` when a location declares none, and almost
+  every location sets its own `Cache-Control`. PHP locations are left out,
+  since a second CSP without Filament's inline scripts would break the panel.
+  HSTS belongs to whoever terminates TLS.
+- **The prerender runner and the `web` image must share every build `ARG`**:
+  the job composes pages from one build's template and serves them with the
+  other build's assets, and the hashed names only match if the inputs match.
+- **Images run as the host's UID** where they write to bind mounts or to the
+  shared site volume, so generated files and the first publication do not hit
+  `EACCES`. The site volume is seeded from the image once per version.
+- **The node service stamps its install** with the lock file, so a crashing
+  dev server under `restart: unless-stopped` does not start concurrent
+  `npm ci` runs that corrupt the shared `node_modules` volume.
+- **The backend test database is never set by Compose**: PHPUnit's `force`
+  writes `$_ENV`, but Laravel reads `$_SERVER` first, so a Compose value won
+  and the suite once wiped the development database.
+- **The edge Worker is also the first bot filter.** Paths no host serves die
+  in a 404 at the edge, it serves `robots.txt`, and it caches the public
+  reading API for 60 seconds, requested without cookie, Origin or Referer so
+  Sanctum opens no session and no response carries `Set-Cookie`. The Vercel
+  build sends an internal token and always reads from the origin.
+- **CI minutes are budgeted.** Text-only changes run nothing; the expensive
+  jobs (e2e, production image, integration, infra) run only on pull requests,
+  and `main` reruns only the cheap ones the deploy waits for.
+- **Generated files carry no header.** `config/publications.php` and the
+  seed JSON come from `npm run emit:seed`; editing them by hand is caught by
+  `vocabulary.test.ts`, not by a comment.
+
 ### Backend: database
 
 - **The Postgres session speaks UTC.** `published_at` is `timestamptz`, and a

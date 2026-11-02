@@ -47,15 +47,12 @@ describe('PER_FRAME_K', () => {
 
 describe('lambdaFor', () => {
   it('num quadro de 60fps reproduz exatamente o passo do coeficiente original', () => {
-    // É isto que preserva a sensação do protótipo depois de trocar o lerp por
-    // quadro pela suavização exponencial.
     for (const k of [0.05, 0.055, 0.062, 0.085, 0.16, 0.3]) {
       expect(damp(0, 1, lambdaFor(k), 1 / REFERENCE_FPS)).toBeCloseTo(k, 12);
     }
   });
 
   it('faz o resultado deixar de depender do framerate', () => {
-    // O lerp cru do protótipo caminha mais a 144Hz que a 60Hz no mesmo tempo.
     const lambda = lambdaFor(0.055);
     const seconds = 1;
 
@@ -154,9 +151,6 @@ describe('pulso de energia do núcleo', () => {
 
 describe('arraste contra clique', () => {
   it('trata o jitter de um clique parado como clique, não como arraste', () => {
-    // O defeito que este teste tranca: `dragMoved > 0`. Um mouse real quase
-    // nunca solta no mesmo pixel em que pressionou, então 1px de tremor
-    // engolia a abertura da publicação.
     expect(isDrag(0)).toBe(false);
     expect(isDrag(1)).toBe(false);
     expect(isDrag(5.9)).toBe(false);

@@ -175,7 +175,6 @@ describe('homeMeta', () => {
   });
 });
 
-/** O nó do grafo com este `@type`. */
 function node(graph: JsonLd, type: string): Record<string, unknown> {
   const found = graph['@graph'].find((entry) => entry['@type'] === type);
   if (!found) throw new Error(`sem ${type} no grafo`);
@@ -224,7 +223,6 @@ describe('articleJsonLd', () => {
       url: 'https://portfolio.rdmlabs.dev',
       sameAs: ['https://github.com/fulano', 'https://www.linkedin.com/in/fulano'],
     });
-    // Sem os dados, só o nome — nada de chave vazia no grafo.
     expect(node(articleJsonLd(SITE, 'pt', ARTICLE), 'BlogPosting').author).toEqual({
       '@type': 'Person',
       name: 'Rafael Dorneles Machado',

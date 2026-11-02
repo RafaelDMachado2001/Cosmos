@@ -32,7 +32,6 @@ const view = (width: number, height: number): Viewport => ({
   rulerPx: RULER_PX,
 });
 
-/** Datas espaçadas: sem empates, para xAtTime não ficar ambíguo. */
 function spaced(count: number, everyDays = 40): PublicationInput[] {
   return Array.from({ length: count }, (_, i) => ({
     slug: `pub-${i}`,
@@ -43,20 +42,15 @@ function spaced(count: number, everyDays = 40): PublicationInput[] {
 
 describe('resolveBand', () => {
   it('nunca invade o header nem a régua, de 360 a 2000px de altura', () => {
-    // As duas colisões reais do protótipo: a faixa fixa de 30–80% cobria a
-    // régua em telas baixas.
     for (let height = 360; height <= 2000; height += 20) {
       const band = resolveBand(view(1280, height));
       expect(band.topPx).toBeGreaterThanOrEqual(HEADER_PX + 24);
-      // E o rótulo sob a estrela mais baixa também cabe acima da régua.
       expect(band.bottomPx + CAPTION_BELOW_PX).toBeLessThanOrEqual(height - RULER_PX - 24);
       expect(band.bottomPx).toBeGreaterThanOrEqual(band.topPx);
     }
   });
 
   it('limita a dispersão em torno do eixo nas telas altas', () => {
-    // Sem o limite, uma tela de 2000px espalharia as estrelas por 1800px e a
-    // constelação deixaria de se ler como uma faixa.
     const band = resolveBand(view(1280, 2000));
     expect(band.bottomPx - band.topPx).toBeLessThanOrEqual(2000 * 0.5 + 1);
   });
@@ -111,8 +105,6 @@ describe('connectors', () => {
   });
 
   it('calcula ângulo em pixels reais, não em pontos percentuais', () => {
-    // O protótipo aproximava 1% da altura como 6px, o que só vale num viewport
-    // de 600px. Em duas alturas diferentes os ângulos têm de divergir.
     const stars = placeStars(spaced(8));
     const baixa = connectors(stars, resolveBand(view(1280, 600)));
     const alta = connectors(stars, resolveBand(view(1280, 1600)));
@@ -179,7 +171,6 @@ describe('yearMarkers', () => {
   });
 
   it('posiciona o marcador no espaço já empurrado', () => {
-    // Com dateX puro o rótulo se descolaria das estrelas em região comprimida.
     const stars = placeStars(makeDataset(makeRandom(53), { count: 200, spanDays: 200 }));
     for (const marker of yearMarkers(stars)) {
       expect(marker.x).toBeCloseTo(xAtTime(stars, Date.UTC(marker.year, 0, 1)), 9);
@@ -207,7 +198,6 @@ describe('monthMarkers', () => {
   });
 
   it('usa UTC: o mês de uma publicação não muda com o fuso de quem lê', () => {
-    // 23h do dia 31 em UTC-3 já é dia 1 em UTC; o que vale é o UTC.
     const stars = placeStars([
       { slug: 'virada', publishedAt: '2024-04-01T02:00:00.000Z', category: 'artigo' },
     ]);
@@ -234,14 +224,11 @@ describe('occludedMonths', () => {
   const axis = 500;
 
   it('esconde o mês sob uma estrela assentada no eixo, e só os vizinhos dela', () => {
-    // A faixa reduzida ao eixo: as duas estrelas pendem o rótulo sobre ele.
     const hidden = occludedMonths(months, stars, { topPx: axis, bottomPx: axis }, axis);
 
     expect(hidden.has('2024-03')).toBe(true);
     expect(hidden.has('2025-02')).toBe(true);
-    // O miolo do ano, longe das duas, continua com rótulo.
     expect(hidden.has('2024-08')).toBe(false);
-    // Nenhum mês escondido está a mais de um rótulo de distância de uma estrela.
     for (const marker of months.filter((m) => hidden.has(m.key))) {
       expect(Math.min(...stars.map((s) => Math.abs(s.x - marker.x)))).toBeLessThan(90 + 80 + 16);
     }
@@ -249,7 +236,6 @@ describe('occludedMonths', () => {
 
   it('estrelas longe do eixo, acima ou abaixo, não escondem nada', () => {
     expect(occludedMonths(months, stars, { topPx: 100, bottomPx: 100 }, axis).size).toBe(0);
-    // Abaixo: o núcleo começa depois do rótulo de mês e da folga.
     expect(occludedMonths(months, stars, { topPx: axis + 80, bottomPx: axis + 80 }, axis).size).toBe(0);
   });
 });
@@ -346,8 +332,6 @@ describe('panBounds e panForStar', () => {
   });
 
   it('começa na primeira estrela mesmo longe da época', () => {
-    // Acervo que começa dois anos depois da época: o pan inicial é a
-    // primeira estrela, não o trecho vazio de 2024 e 2025.
     const stars = placeStars([
       { slug: 'a', publishedAt: '2026-10-10T12:00:00.000Z', category: 'artigo' },
       { slug: 'b', publishedAt: '2026-10-19T12:00:00.000Z', category: 'projeto' },

@@ -20,7 +20,6 @@ function summary(slug: string): PublicationSummary {
 const FROM_SNAPSHOT = [summary('do-build')];
 const FROM_API = [summary('do-build'), summary('publicada-depois')];
 
-/** Uma promessa que o teste resolve ou rejeita quando quiser. */
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason: unknown) => void;
@@ -35,11 +34,6 @@ function sourceFrom(list: () => Promise<readonly PublicationSummary[]>): Publica
   return { list, get: () => Promise.resolve(null) };
 }
 
-/*
- * Fonte e snapshot são criados fora do callback do renderHook em todos os
- * testes: objetos novos a cada render mudariam as dependências do efeito e o
- * carregamento recomeçaria sem fim — no Shell, os dois vêm de `useMemo`.
- */
 const slugs = (items: readonly PublicationSummary[]) => items.map((item) => item.slug);
 
 describe('usePublications', () => {

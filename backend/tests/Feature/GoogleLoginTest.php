@@ -54,8 +54,6 @@ class GoogleLoginTest extends TestCase
 
     public function test_callback_recusa_email_nao_verificado_mesmo_no_allowlist(): void
     {
-        // Um e-mail não verificado no provedor não prova que a pessoa é dona
-        // dele — aceitar aqui seria confiar numa declaração, não numa conta.
         Socialite::fake('google', $this->fakeGoogleUser((string) config('admin.email'), verified: false));
 
         $this->get(route('auth.google.callback'))->assertForbidden();

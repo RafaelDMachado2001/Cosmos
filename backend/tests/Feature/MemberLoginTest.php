@@ -68,7 +68,6 @@ class MemberLoginTest extends TestCase
 
         $this->login('google', $this->google());
         Auth::guard('member')->logout();
-        // O nome mudou no Google e o e-mail também: a ligação é pelo id.
         $this->login('google', $this->google(['name' => 'Ana S.', 'email' => 'nova@example.com']));
 
         $this->assertSame(1, Member::count());
@@ -87,7 +86,6 @@ class MemberLoginTest extends TestCase
 
     public function test_github_sem_email_primario_verificado_e_recusado(): void
     {
-        // O Socialite devolve nulo quando /user/emails não tem primário verificado.
         $this->login('github', SocialiteUser::fake(['id' => 77, 'email' => null]))
             ->assertRedirect(self::SITE.'/pt/publicacoes/primeira?login=unverified');
 

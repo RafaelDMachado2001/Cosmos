@@ -1,7 +1,5 @@
 name: CI
 
-# Repositório privado: 2.000 min/mês no plano Free, e cada job é cobrado
-# arredondado para cima. Mudança só de texto não roda nada.
 on:
   pull_request:
     paths-ignore: ['**.md', 'docs/**']
@@ -25,9 +23,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run check:env
-      # typecheck, lint e a suite inteira, incluindo a Shell em jsdom.
       - run: npm run check
-      # O postbuild roda o prerender; sem VITE_API_URL, contra o acervo semente.
       - run: npm run build
 
   backend:
@@ -35,12 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        # A versão do Neon em produção. O compose local segue no 16 até
-        # alguém migrar o volume (pg_dump + restore): o diretório de dados
-        # de uma versão não abre na outra.
         image: postgres:18-alpine
         env:
-          # Termina em _test: tests/TestCase.php recusa qualquer outro banco.
           POSTGRES_DB: rdm_labs_test
           POSTGRES_USER: rdm
           POSTGRES_PASSWORD: ci-test
@@ -57,9 +49,6 @@ jobs:
       DB_DATABASE: rdm_labs_test
       DB_USERNAME: rdm
       DB_PASSWORD: ci-test
-      # DraftBlocksCli chama "node dist-ssr/draft-blocks-cli.js" com este cwd;
-      # em produção é /srv/render (ver docker/php/Dockerfile), aqui é a raiz
-      # do checkout, onde o passo "Node (dist-ssr do RDM Studio)" abaixo builda.
       RENDER_DIR: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
@@ -69,37 +58,26 @@ jobs:
           cache: npm
       - name: Node (dist-ssr do RDM Studio)
         working-directory: .
-        # Só o bundle de SSR, sem rodar o prerender (postbuild) — os testes do
-        # backend só precisam de dist-ssr/draft-blocks-cli.js existir.
         run: |
           npm ci --no-audit --no-fund
           npx vite build --config vite.prerender.config.ts
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          # gd e exif: o que spatie/image pede para o upload de mídia do RDM
-          # Studio (redimensionar e gravar WebP).
           extensions: pdo_pgsql, intl, zip, gd, exif
           coverage: none
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env && php artisan key:generate
       - run: ./vendor/bin/pint --test
-      # Nivel 8, sem baseline.
       - run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
-      # Fronteiras entre os módulos (deptrac.yaml).
       - run: ./vendor/bin/deptrac analyse --no-progress
       - run: php artisan test
-      # De novo como em produção: o pooler do Neon pede prepared statements
-      # emulados (config/database.php), e eles mudam como os parâmetros viajam.
       - run: php artisan test
         env:
           DB_EMULATE_PREPARES: 'true'
 
   e2e:
     name: e2e
-    # Só na PR. O push na main repete o merge que a PR já testou e só existe
-    # para o Deploy esperar. Lá ficam frontend e backend, os baratos, que ainda
-    # pegam uma main que andou depois do último teste da PR.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -109,9 +87,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      # O build servido pelo Nginx de verdade: 404 com status real e página sem
-      # JavaScript só existem lá. VITE_API_URL vazia faz a constelação ler o
-      # acervo semente; o caminho com a API é do job de integração.
       - run: docker compose build --build-arg VITE_API_URL= web
       - run: docker compose up -d web
       - name: Esperar o Nginx
@@ -135,13 +110,11 @@ jobs:
 
   infra:
     name: infra
-    # Só na PR, como o e2e.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: infra
-    # Sem credencial nenhuma: formato e schema dos provedores, não um plan.
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -153,12 +126,8 @@ jobs:
 
   producao:
     name: imagem de produção
-    # Só na PR, como o e2e.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # A imagem que vai para o Cloud Run, contra um Postgres de verdade: sobe só
-    # com a configuração de produção completa, e responde em cada host o que
-    # é dele.
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f docker/production/Dockerfile -t rdm-production .
@@ -204,9 +173,7 @@ jobs:
         run: |
           docker run -d --name app --network prod -p 8080:8080 --env-file prod.env rdm-production
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/up && break; sleep 2; done
-          # Como o Worker entrega: o host original em X-Forwarded-Host, com o segredo.
           code() { curl -s -o /dev/null -w '%{http_code}' -H "X-Forwarded-Host: $1" -H 'X-Edge-Secret: ci-edge' "http://localhost:8080$2"; }
-          # Sem o segredo, nem a API responde.
           [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/publications)" = 404 ]
           [ "$(code api.rdmlabs.test /api/publications)" = 200 ]
           [ "$(code admin.rdmlabs.test /admin/login)" = 200 ]
@@ -219,11 +186,8 @@ jobs:
 
   integracao:
     name: integração
-    # Só na PR, como o e2e.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # O job que prova a fase: publicar faz a URL responder 200 com o texto, sem
-    # rebuild de imagem; apagar a devolve a 404.
     env:
       SLUG: ci-publicacao-viva
       TITLE: Publicacao viva no CI
@@ -231,7 +195,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Ambiente com valores de teste
         run: |
-          # Valores de teste gerados aqui: nenhum segredo real entra no CI.
           echo "DOCKER_UID=$(id -u)" >> "$GITHUB_ENV"
           echo "DOCKER_GID=$(id -g)" >> "$GITHUB_ENV"
           cp .env.example .env
@@ -243,8 +206,6 @@ jobs:
           node-version: 22
           cache: npm
       - name: RDM Studio (bundle do painel)
-        # `web` serve backend/public/ por bind mount (docker-compose.yml) — sem
-        # este build, /admin/studio sobe mas admin.js/admin.css dão 404.
         run: |
           npm ci --no-audit --no-fund
           npm run build:admin
@@ -252,26 +213,17 @@ jobs:
       - run: docker compose --profile backend up -d db
       - run: docker compose --profile backend run --rm --no-deps app composer install --no-interaction --prefer-dist --no-progress
       - run: docker compose --profile backend run --rm --no-deps app php artisan key:generate --force
-      # Migra antes de subir `queue`: o worker consulta a tabela `cache` (o
-      # sinal de restart do Laravel) assim que sobe, e sem isto a migration
-      # ainda não tinha rodado — "relation cache does not exist" na primeira
-      # verificação, e o worker repete a mesma falha depois de cada job.
       - run: docker compose --profile backend run --rm --no-deps app php artisan migrate --seed --force
       - run: docker compose --profile backend up -d db app queue web
       - name: RDM Studio responde (casca exige login; os assets, não)
         run: |
-          # Espera pelo PHP, não pelo Nginx: o admin.js é estático e responde antes
-          # de o PHP-FPM aceitar conexão, e o /admin/studio dava 502 na corrida.
           for _ in $(seq 1 30); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/studio)" = 302 ] && break; sleep 2; done
           status_js="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/rdm-studio/admin.js)"
           status_studio="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/admin/studio)"
           [ "$status_js" = 200 ] && [ "$status_studio" = 302 ]
-          # O Livewire põe um hash no prefixo; o Nginx precisa encaminhá-lo ao PHP.
           livewire="$(curl -fs http://localhost:8080/admin/login | grep -o 'livewire-[0-9a-f]*/livewire[^"]*\.js[^"]*' | head -1)"
           [ -n "$livewire" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080/$livewire")" = 200 ]
       - name: Publicar
-        # O mesmo observer que o salvar do Filament dispara; o formulario em si
-        # e coberto por AdminPanelTest na suite do backend.
         run: |
           docker compose --profile backend exec -T app php artisan tinker --execute="
           \$p = App\Modules\Content\Models\Publication::create(['slug' => '$SLUG', 'category' => 'artigo', 'published_at' => now(), 'featured' => false, 'status' => App\Modules\Content\Models\Publication::STATUS_PUBLISHED]);
@@ -283,7 +235,6 @@ jobs:
           url="http://localhost:8080/pt/publicacoes/$SLUG"
           for _ in $(seq 1 60); do
             body="$(curl -fs "$url" || true)"
-            # Sem noindex: é o arquivo que o job gravou, não a casca do @app.
             if echo "$body" | grep -q "$TITLE" && ! echo "$body" | grep -q noindex; then
               echo "publicado: $url"
               exit 0
@@ -308,8 +259,6 @@ jobs:
           exit 1
       - run: npx playwright install --with-deps chromium
       - name: RDM Studio de ponta a ponta (publicar -> ver -> despublicar; todos os blocos e imagem)
-        # O login do painel é só por Google; e2e:admin-session grava a sessão
-        # do admin direto no banco e imprime o cookie (recusa fora de local/testing).
         run: |
           export E2E_ADMIN_COOKIE="$(docker compose --profile backend exec -T app php artisan e2e:admin-session)"
           npx playwright test e2e/studio.spec.ts e2e/studio-content.spec.ts

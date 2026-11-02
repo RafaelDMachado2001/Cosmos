@@ -1,11 +1,8 @@
-# --- Mídia -------------------------------------------------------------------
 
 resource "cloudflare_r2_bucket" "media" {
   account_id = var.cloudflare_account_id
   name       = "rdm-labs-media"
 }
-
-# --- Borda: admin. e api. até o Cloud Run --------------------------------------
 
 resource "random_password" "edge" {
   length  = 48
@@ -29,8 +26,6 @@ resource "cloudflare_workers_script" "edge" {
   }
 }
 
-# Registros só para a Cloudflare reivindicar o tráfego: quem responde é o
-# Worker, então o destino é o endereço de descarte (100::), sempre com proxy.
 resource "cloudflare_record" "edge" {
   for_each = toset(["admin", "api"])
 

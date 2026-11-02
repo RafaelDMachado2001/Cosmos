@@ -44,7 +44,6 @@ class SiteRebuildTest extends TestCase
         $this->vercel();
         Http::fake([self::HOOK => Http::response(['job' => ['id' => 'x']], 201)]);
 
-        // O defer roda quando a aplicação termina o request; no teste, na hora.
         $this->withoutDefer();
         Publication::create([
             'slug' => 'nova',
@@ -66,13 +65,11 @@ class SiteRebuildTest extends TestCase
         SiteRebuild::request();
         $this->assertTrue(SiteRebuild::flush());
 
-        // Edições dentro do intervalo: ficam pendentes, sem novo disparo.
         SiteRebuild::request();
         SiteRebuild::request();
         $this->assertFalse(SiteRebuild::flush());
         Http::assertSentCount(1);
 
-        // O tick, passado o intervalo, leva a pendência num build só.
         $this->travel(61)->seconds();
         $this->assertTrue(SiteRebuild::flush());
         $this->assertFalse(SiteRebuild::flush());
@@ -96,7 +93,6 @@ class SiteRebuildTest extends TestCase
         SiteRebuild::request();
         $this->assertFalse(SiteRebuild::flush());
 
-        // Falha não conta como disparo: a próxima tentativa não espera o intervalo.
         $this->assertTrue(SiteRebuild::flush());
     }
 }

@@ -20,9 +20,6 @@ describe('configuração do prerender', () => {
   });
 
   it('separa template de destino, que é o que impede o job de se envenenar', () => {
-    // O prerender grava a home composta por cima de <DIST>/index.html. Se o
-    // template viesse de lá, a segunda publicação leria um arquivo cujo SLOT já
-    // foi preenchido e morreria.
     expect(templateDir({ DIST: '/srv/site', TEMPLATE_DIR: '/srv/render/dist-ssr' })).toBe(
       '/srv/render/dist-ssr',
     );

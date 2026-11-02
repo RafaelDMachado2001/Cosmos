@@ -1,30 +1,19 @@
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
-/** As estrelas da constelação, não as âncoras do StarIndex: só elas tem o rótulo longo. */
 function stars(page: Page): Locator {
   return page.locator('a[aria-label*=" — "]');
 }
 
 async function enterCosmos(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: 'Role para atravessar' }).click();
-  // A mais recente: é nela que a constelação abre, no centro da tela. As mais
-  // antigas ficam fora do enquadramento, e o palco não rola para alcançá-las.
   const star = stars(page).last();
-  // Clicável só depois da travessia: antes disso a constelação e `inert`.
   await expect(star).toBeVisible();
-  // O padrão de 5s do Playwright é menor que o próprio orçamento de quadro
-  // que essa transição amortecida pode levar no Chromium headless sem GPU
-  // do GitHub Actions — o teste falhava aqui mesmo com a transição correta,
-  // só mais lenta do que o limite padrão da asserção aguenta.
   await expect(page.locator('[inert] a[aria-label*=" — "]')).toHaveCount(0, { timeout: 30_000 });
   return star;
 }
 
 test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async ({ page }) => {
-  // O único teste que atravessa entrar + abrir + fechar: três transições
-  // amortecidas em sequência. O timeout padrão de 30s e justo o bastante no
-  // hardware do GitHub Actions para sobrar tempo zero de folga.
   test.setTimeout(60_000);
 
   await page.goto('/pt');
@@ -36,9 +25,6 @@ test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async (
 
   await page.goBack();
   await expect(page).toHaveURL(/\/pt$/);
-  // Mesmo motivo do inert acima: o fechamento também e uma transição
-  // amortecida, e o mesmo hardware lento já fez essa asserção estourar o
-  // padrão de 5s em pelo menos uma execução real do CI.
   await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30_000 });
 });
 
@@ -86,7 +72,6 @@ test('o contato de segurança é servido, apesar da regra que esconde arquivos c
   expect(response.status()).toBe(200);
   expect(response.headers()['content-type']).toContain('text/plain');
   expect(await response.text()).toMatch(/^Contact: https:\/\//m);
-  // O resto do que começa com ponto continua 404.
   expect((await request.get('/.vite/manifest.json')).status()).toBe(404);
 });
 
@@ -108,8 +93,6 @@ test('a CSP do Nginx não bloqueia nada do próprio site', async ({ page }) => {
   const response = await page.goto('/pt');
   expect(response?.headers()['content-security-policy']).toContain("script-src 'self'");
 
-  // A travessia monta o WebGL, as fontes e a constelação; abrir uma estrela,
-  // a vista de leitura com o corpo do artigo.
   const star = await enterCosmos(page);
   await star.click();
   await expect(page.getByRole('dialog')).toBeVisible();

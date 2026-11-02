@@ -120,13 +120,6 @@ describe('draftBlocksToMarkdown', () => {
   });
 });
 
-/**
- * O que o autor vê no editor tem de ser o que o leitor vê: cada bloco, depois
- * de virar Markdown e ser lido de volta por `parseBlocks` (o mesmo caminho da
- * página pública), continua sendo um bloco só, do mesmo tipo e com o mesmo
- * conteúdo. Cada caso aqui quebrava antes: o texto do autor era lido como
- * sintaxe de outro bloco.
- */
 describe('fidelidade: rascunho -> Markdown -> leitura', () => {
   const read = (blocks: readonly DraftBlock[]): readonly Block[] =>
     parseBlocks(draftBlocksToMarkdown(blocks));

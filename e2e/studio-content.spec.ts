@@ -1,15 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Locator, Page } from '@playwright/test';
 
-/**
- * Um texto com todos os tipos de bloco, nas duas línguas, com uma imagem
- * enviada pelo upload do painel: do Markdown importado no editor até a página
- * que o job grava e a vista de leitura que a Shell abre por cima dela.
- *
- * O `studio.spec.ts` prova o ciclo publicar/despublicar com dois blocos; este
- * prova que nenhum tipo se perde no caminho rascunho -> Markdown -> página.
- * Mesmas condições: stack inteira e `E2E_ADMIN_COOKIE`.
- */
 const cookie = process.env.E2E_ADMIN_COOKIE;
 
 test.skip(cookie === undefined, 'sem E2E_ADMIN_COOKIE: precisa da stack com backend');
@@ -17,11 +8,6 @@ test.skip(cookie === undefined, 'sem E2E_ADMIN_COOKIE: precisa da stack com back
 test.setTimeout(300_000);
 const JOB_TIMEOUT = 180_000;
 
-/**
- * O artigo do HTML que o job gravou, lido sem JavaScript — como um crawler o
- * recebe. Com JavaScript a casca sai do DOM assim que o React monta (um H1 por
- * página), e `#prerender` deixa de existir.
- */
 async function staticArticle(browser: Browser, url: string): Promise<{ article: Locator; close: () => Promise<void> }> {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
@@ -29,7 +15,6 @@ async function staticArticle(browser: Browser, url: string): Promise<{ article: 
   return { article: page.locator('#prerender article'), close: () => context.close() };
 }
 
-/** Um PNG de 2x2, para o upload não depender de arquivo no repositório. */
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGOoifkPRAwQCgAxhgddSzQ72AAAAABJRU5ErkJggg==',
   'base64',
@@ -122,7 +107,6 @@ test('todos os blocos e uma imagem enviada chegam ao site nas duas línguas', as
   await page.getByPlaceholder(/^Subtítulo/).fill('Resumo da prova');
   await importMarkdown(page, BODY.pt);
 
-  // A imagem entra depois do código, o último bloco importado.
   await page.getByRole('textbox', { name: 'Código', exact: true }).focus();
   await page.getByRole('button', { name: '+ Imagem' }).click();
   await page.getByPlaceholder('Texto alternativo').fill('Um quadrado de teste');

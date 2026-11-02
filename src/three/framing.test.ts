@@ -31,8 +31,6 @@ describe('visibleHeight', () => {
 });
 
 describe('computeFraming — guardas de medida inválida', () => {
-  // Os dois bugs sérios do protótipo nasceram aqui: window.innerWidth/Height
-  // podem ser 0 no primeiro mount, e o NaN resultante fica permanente.
   it('recusa largura zero', () => {
     expect(computeFraming({ ...DESKTOP, viewportWidth: 0 })).toBeNull();
   });
@@ -86,14 +84,11 @@ describe('computeFraming — resultado', () => {
   });
 
   it('garante a banda mínima quando o texto invade o header', () => {
-    // Bloco de texto colado no header: a banda seria negativa.
     const framing = computeFraming({ ...DESKTOP, textBlockTopPx: 80 });
     expect((framing?.bandBottomPx ?? 0) - (framing?.bandTopPx ?? 0)).toBe(MIN_BAND_PX);
   });
 
   it('limita o raio pela largura em telas estreitas', () => {
-    // Numa tela alta e estreita quem manda é a largura, senão o núcleo
-    // transborda lateralmente.
     const estreita = computeFraming({
       viewportWidth: 380,
       viewportHeight: 1400,
@@ -110,7 +105,6 @@ describe('computeFraming — resultado', () => {
   });
 
   it('posiciona o núcleo acima do centro quando a banda está acima', () => {
-    // baseY positivo significa acima do centro, no sistema do Three.
     const framing = computeFraming(DESKTOP);
     expect(framing?.baseY).toBeGreaterThan(0);
   });
@@ -120,8 +114,6 @@ describe('computeFraming — resultado', () => {
       viewportWidth: 1440,
       viewportHeight: 1000,
       headerHeightPx: 0,
-      // banda vai de 14 a 986+14=1000, centro em 507... para centrar em 500
-      // o bloco precisa estar em 1010: 14 + (1010-24-14)/2 = 500.
       textBlockTopPx: 1010,
     });
     expect(framing?.baseY ?? 1).toBeCloseTo(0, 6);

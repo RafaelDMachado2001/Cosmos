@@ -8,12 +8,6 @@ use App\Modules\Content\Models\Publication;
 use App\Modules\Content\Models\PublicationTranslation;
 use Tests\TestCase;
 
-/**
- * O vocabulário vem de config/publications.php, que é gerado do frontend.
- *
- * Os testes trocam o config em tempo de execução: se algum ponto ainda lesse
- * uma cópia escrita à mão, a troca não chegaria nele.
- */
 class VocabularyTest extends TestCase
 {
     public function test_idiomas_e_categorias_saem_do_config(): void

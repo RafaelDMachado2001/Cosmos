@@ -128,7 +128,6 @@ describe('AdminApp', () => {
     const title = await screen.findByDisplayValue('Code review sem atrito');
 
     await user.type(title, ' agora');
-    // Sem esperar os 400ms do autosave.
     await user.click(screen.getByRole('button', { name: 'Publicar' }));
 
     await waitFor(() => expect(api.publish).toHaveBeenCalledTimes(1));

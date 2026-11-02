@@ -8,7 +8,6 @@ import { fileURLToPath } from 'node:url';
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default tseslint.config(
-  // backend/ é PHP: o que há de JavaScript ali é asset publicado pelo Filament.
   { ignores: ['dist', 'dist-ssr', 'node_modules', 'backend'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
@@ -34,7 +33,6 @@ export default tseslint.config(
     },
   },
   {
-    // O prerender e as configs rodam no Node, não no browser.
     files: ['vite.config.ts', 'vite.prerender.config.ts', 'eslint.config.js', 'scripts/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.node },
   },

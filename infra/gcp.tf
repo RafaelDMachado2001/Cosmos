@@ -14,7 +14,6 @@ locals {
     "sts.googleapis.com",
   ]
 
-  # O que não é segredo vai em texto, igual ao backend/.env.production.example.
   plain_env = {
     APP_NAME                  = "RDM Labs"
     APP_URL                   = "https://${local.admin_host}"
@@ -40,9 +39,6 @@ locals {
     SITE_URL                  = "https://${var.site_host}"
   }
 
-  # Segredos: o Terraform cria o recipiente, nunca o valor — quem grava a
-  # versão é `gcloud secrets versions add` (README). Assim nenhum deles passa
-  # pelo state. A exceção é EDGE_SHARED_SECRET, gerado aqui (borda).
   external_secrets = {
     APP_KEY                  = "app-key"
     DB_URL                   = "database-url"
@@ -63,17 +59,11 @@ resource "google_project_service" "enabled" {
   disable_on_destroy = false
 }
 
-# --- Imagens -----------------------------------------------------------------
-
 resource "google_artifact_registry_repository" "images" {
   repository_id = "cosmos"
   format        = "DOCKER"
   location      = var.region
 
-  # Só as três últimas: cada merge na main empurra uma, e 0,5 GB é o que o
-  # Artifact Registry dá de graça. Três ainda cobrem um rollback. A política
-  # KEEP sozinha não apaga nada: ela só abre exceção numa DELETE. Sem a
-  # segunda, toda imagem empurrada ficava para sempre.
   cleanup_policies {
     id     = "manter-tres"
     action = "KEEP"
@@ -94,8 +84,6 @@ resource "google_artifact_registry_repository" "images" {
   depends_on = [google_project_service.enabled]
 }
 
-# --- Contas de serviço -------------------------------------------------------
-
 resource "google_service_account" "runtime" {
   account_id   = "cosmos-api"
   display_name = "Cosmos: o contêiner da API e do painel"
@@ -105,8 +93,6 @@ resource "google_service_account" "scheduler" {
   account_id   = "cosmos-scheduler"
   display_name = "Cosmos: assina o tick do Cloud Scheduler"
 }
-
-# --- Segredos ----------------------------------------------------------------
 
 resource "google_secret_manager_secret" "external" {
   for_each  = local.external_secrets
@@ -141,8 +127,6 @@ resource "google_secret_manager_secret_iam_member" "runtime" {
   member    = "serviceAccount:${google_service_account.runtime.email}"
 }
 
-# --- Cloud Run ---------------------------------------------------------------
-
 locals {
   secret_env = merge(
     { for name, id in local.external_secrets : name => google_secret_manager_secret.external[name].secret_id },
@@ -160,7 +144,6 @@ resource "google_cloud_run_v2_service" "api" {
     service_account                  = google_service_account.runtime.email
     max_instance_request_concurrency = 40
 
-    # Zero quando ninguém usa; o teto protege o Neon e a conta.
     scaling {
       min_instance_count = 0
       max_instance_count = 3
@@ -203,8 +186,6 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
-      # O entrypoint roda env:assert-production antes de abrir a porta: uma
-      # revisão mal configurada nunca passa daqui e o tráfego fica na anterior.
       startup_probe {
         http_get {
           path = "/up"
@@ -217,17 +198,12 @@ resource "google_cloud_run_v2_service" "api" {
   }
 
   lifecycle {
-    # Quem troca a imagem e nomeia a revisão (cosmos-api-<sha>) é o pipeline
-    # (.github/workflows/deploy.yml). O `scaling` do serviço é o padrão que a
-    # API devolve preenchido; o que vale é o do template. Sem isto, todo plan
-    # mostrava mudança, e um plan limpo deixava de querer dizer alguma coisa.
     ignore_changes = [template[0].containers[0].image, template[0].revision, scaling, client, client_version]
   }
 
   depends_on = [google_secret_manager_secret_iam_member.runtime]
 }
 
-# A Cloudflare chama sem credencial do Google; quem barra é o VerifyEdge.
 resource "google_cloud_run_v2_service_iam_member" "public" {
   name     = google_cloud_run_v2_service.api.name
   location = var.region
@@ -235,7 +211,6 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
   member   = "allUsers"
 }
 
-# As migrações, antes de cada revisão nova (deploy.yml).
 resource "google_cloud_run_v2_job" "migrate" {
   name                = "cosmos-migrate"
   location            = var.region
@@ -284,21 +259,12 @@ resource "google_cloud_run_v2_job" "migrate" {
   depends_on = [google_secret_manager_secret_iam_member.runtime]
 }
 
-# --- Agendador ---------------------------------------------------------------
-
-# A cada 15 minutos, não a cada minuto: todo tick acorda o Neon, que só
-# suspende depois de 5 minutos parado. De minuto em minuto o banco nunca
-# dormiria e estouraria as horas de computação do plano gratuito. O preço:
-# uma publicação agendada sai em até 15 minutos, e o último rebuild de uma
-# rajada de edições também (o salvar comum dispara na hora).
 resource "google_cloud_scheduler_job" "tick" {
   name      = "cosmos-tick"
   region    = var.region
   schedule  = "*/15 * * * *"
   time_zone = "America/Sao_Paulo"
 
-  # Pela borda, como qualquer requisição: o Worker repassa, o Laravel valida
-  # o token OIDC (VerifyGoogleOidc) contra esta audiência e esta conta.
   http_target {
     uri         = local.tick_url
     http_method = "POST"

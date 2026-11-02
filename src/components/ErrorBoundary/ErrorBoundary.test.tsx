@@ -19,7 +19,6 @@ describe('ErrorBoundary', () => {
       '<div id="prerender" hidden><h1>Texto ja no HTML</h1></div><div id="root"></div>';
     shell = document.getElementById('prerender') as HTMLElement;
     root = document.getElementById('root') as HTMLElement;
-    // O React registra o erro capturado; aqui ele e esperado.
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
@@ -55,7 +54,6 @@ describe('ErrorBoundary', () => {
 
     expect(document.getElementById('prerender')).toBe(shell);
     expect(shell.hidden).toBe(false);
-    // De volta no mesmo lugar: antes do #root, como o HTML a gravou.
     expect(shell.nextElementSibling).toBe(root);
   });
 

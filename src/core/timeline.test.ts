@@ -5,11 +5,6 @@ import { TIMELINE, layoutHealth, placeStars, suggestGapPxPerDay } from './timeli
 import { makeDataset, makeNewer, makeRandom } from './testing';
 import type { PublicationInput } from './types';
 
-/**
- * Vetores fixados. Este é o contrato com a futura implementação em PHP: o
- * mesmo slug precisa produzir o mesmo inteiro dos dois lados, senão as estrelas
- * mudam de altura quando o backend assumir o posicionamento.
- */
 const VECTORS: ReadonlyArray<readonly [string, number]> = [
   ['', 2166136261],
   ['pg-idx', 608837166],
@@ -39,8 +34,6 @@ describe('fnv1a32', () => {
   });
 
   it('opera sobre bytes UTF-8, não sobre code units UTF-16', () => {
-    // 'ç' é um code unit em UTF-16 e dois bytes em UTF-8. O protótipo usava
-    // charCodeAt; o PHP percorre bytes. Fixar UTF-8 é o que mantém a paridade.
     expect(fnv1a32('ç')).toBe(412999503);
     expect(fnv1a32('índice')).toBe(781077258);
   });
@@ -75,7 +68,6 @@ describe('hash01', () => {
   });
 
   it('quantiza em 10.000 passos, como o protótipo', () => {
-    // A forma `% 10000` é mantida porque é a mais barata de reproduzir em PHP.
     expect(hash01('llm')).toBeCloseTo(0.2104, 10);
     expect(hash01('rdm')).toBeCloseTo(0.793, 10);
   });
@@ -119,7 +111,6 @@ describe('placeStars', () => {
   });
 
   it('não empurra ninguém quando as datas são esparsas', () => {
-    // Com gap 4.6 px/dia e o minGap atual (200), 45 dias já bastam para nunca colidir.
     const items = Array.from({ length: 40 }, (_, i) =>
       at(`sparse-${i}`, new Date(Date.UTC(2024, 0, 1 + i * 45)).toISOString().slice(0, 10)),
     );
@@ -145,7 +136,6 @@ describe('placeStars', () => {
   });
 
   it('publicar um item novo não move nenhum existente', () => {
-    // A garantia dura do handoff. Property test: 200 conjuntos aleatórios.
     const random = makeRandom(99);
     for (let round = 0; round < 200; round += 1) {
       const items = makeDataset(random, {
@@ -186,7 +176,6 @@ describe('placeStars', () => {
       expect(byslug.get(star.slug)?.x ?? 0).toBeGreaterThanOrEqual(star.x);
     }
 
-    // A perturbação morre no primeiro ponto de reset depois da inserção.
     const insertedIndex = after.findIndex((s) => s.slug === 'retroativa');
     const reset = after.findIndex((s, i) => i > insertedIndex && s.pushPx === 0);
     if (reset !== -1) {
@@ -198,11 +187,6 @@ describe('placeStars', () => {
   });
 
   it('o recorte por janela só bate quando o corte cai num ponto de reset', () => {
-    // Documenta a restrição que a paginação por `before=` precisa respeitar.
-    // O recorte sai da ordem POSICIONADA, não da ordem de entrada: com muitas
-    // datas repetidas as duas divergem, e o teste ficaria intermitente.
-    // Conjunto folgado de propósito: num acervo denso não existe reset, e
-    // aí a paginação por janela simplesmente não é recortável.
     const items = makeDataset(makeRandom(67), { count: 60, spanDays: 4000 });
     const all = placeStars(items);
     const asInput = (star: (typeof all)[number]): PublicationInput => ({
@@ -227,8 +211,6 @@ describe('placeStars', () => {
 
 describe('layoutHealth', () => {
   it('acusa quando o gap fixado ficou apertado demais', () => {
-    // É este teste que transforma "retunar o gap" num commit explícito em vez
-    // de algo que acontece sozinho sob o cursor do leitor.
     const denso = placeStars(makeDataset(makeRandom(13), { count: 400, spanDays: 90 }));
     const health = layoutHealth(denso);
     expect(health.pushedRatio).toBeGreaterThan(0.05);
@@ -236,9 +218,6 @@ describe('layoutHealth', () => {
   });
 
   it('reporta zero empurrão e largura coerente num conjunto folgado', () => {
-    // Espaçamento garantido, não sorteado: 20 datas aleatórias em 900 dias
-    // colidem por aniversário e o conjunto deixaria de ser folgado. 45 dias
-    // passam dos 200px de minGapPx na escala de 4.6 px/dia.
     const folgado = placeStars(
       Array.from({ length: 20 }, (_, i) => ({
         slug: `folgado-${i}`,
@@ -272,8 +251,6 @@ describe('suggestGapPxPerDay', () => {
   });
 
   it('é apenas consultiva: placeStars ignora o tamanho do conjunto', () => {
-    // Este é o teste que impede alguém de religar a adaptividade no runtime.
-    // Se placeStars passar a derivar o gap do conjunto, ele quebra na hora.
     const data = '2025-05-05T00:00:00.000Z';
     const alvo: PublicationInput = { slug: 'alvo', publishedAt: data, category: 'artigo' };
 

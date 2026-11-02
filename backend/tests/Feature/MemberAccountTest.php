@@ -21,8 +21,6 @@ class MemberAccountTest extends TestCase
     {
         parent::setUp();
 
-        // Entrar por um guard numa requisição e bater no outro na seguinte,
-        // com a mesma sessão: é o caminho real, não o actingAs em memória.
         Route::middleware('web')->group(function (): void {
             Route::post('/_t/login/{guard}/{id}', function (string $guard, int $id) {
                 Auth::guard($guard)->loginUsingId($id);
@@ -36,7 +34,6 @@ class MemberAccountTest extends TestCase
 
     public function test_sessao_de_admin_nao_autentica_como_membro(): void
     {
-        // Mesmo id nas duas tabelas: só a chave da sessão separa os dois.
         $admin = User::factory()->create();
         Member::factory()->create(['id' => $admin->id]);
 

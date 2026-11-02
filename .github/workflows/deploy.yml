@@ -1,11 +1,5 @@
 name: Deploy
 
-# Depois que o CI passa na main: a imagem de produção vai para o Artifact
-# Registry, as migrações rodam num job do Cloud Run e só então o serviço troca
-# de revisão. Se a migração falha, a revisão anterior continua servindo.
-#
-# O site estático não passa por aqui: a Vercel publica da main sozinha, e o
-# backend publica antes por ser quem o build dela lê.
 on:
   workflow_run:
     workflows: [CI]
@@ -19,13 +13,11 @@ concurrency:
 jobs:
   deploy:
     name: produção
-    # Só CI verde de push na main, e só depois de a infra existir (infra/README).
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
       vars.GCP_PROJECT_ID != ''
     runs-on: ubuntu-latest
-    # Aprovação manual configurável em Settings → Environments → production.
     environment: production
     permissions:
       contents: read
@@ -39,7 +31,6 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      # Sem chave JSON: o token OIDC do workflow vira credencial curta do Google.
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}

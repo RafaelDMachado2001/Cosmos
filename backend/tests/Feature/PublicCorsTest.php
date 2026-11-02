@@ -7,10 +7,6 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/**
- * Sem o cabeçalho, o navegador esconde o status e mostra só "Failed to
- * fetch": o site não distingue um 404 de uma queda de rede.
- */
 class PublicCorsTest extends TestCase
 {
     use RefreshDatabase;

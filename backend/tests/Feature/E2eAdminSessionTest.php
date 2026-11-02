@@ -21,7 +21,6 @@ class E2eAdminSessionTest extends TestCase
         /** @var array{name: string, value: string} $cookie */
         $cookie = json_decode(trim(Artisan::output()), true, flags: JSON_THROW_ON_ERROR);
 
-        // Sem criptografar de novo: o valor já sai como EncryptCookies o espera.
         $this->withUnencryptedCookie($cookie['name'], $cookie['value'])
             ->get('/admin/studio')
             ->assertOk()

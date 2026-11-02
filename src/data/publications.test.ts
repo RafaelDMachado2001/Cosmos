@@ -15,9 +15,6 @@ describe('PUBLICATIONS', () => {
   });
 
   it('usa apenas slugs ASCII', () => {
-    // Garante que o FNV-1a sobre bytes UTF-8 e sobre code units UTF-16 dão o
-    // mesmo resultado nos dados reais — é o que protege a paridade com o PHP
-    // mesmo se alguém portar o algoritmo pela forma errada.
     for (const publication of PUBLICATIONS) {
       // eslint-disable-next-line no-control-regex
       expect(publication.slug).toMatch(/^[\x00-\x7F]+$/);
@@ -54,8 +51,6 @@ describe('PUBLICATIONS', () => {
         expect(content.title.trim()).not.toBe('');
         expect(content.summary.trim()).not.toBe('');
         expect(content.body.trim().length).toBeGreaterThan(0);
-        // Exercita os seis tipos de bloco que a spec da fase 11 exige no
-        // acervo semente — ver DEMO_BODY em publications.ts.
         expect(parseBlocks(content.body).map((block) => block.type)).toEqual([
           'paragraph',
           'heading',
@@ -88,8 +83,6 @@ describe('PUBLICATIONS', () => {
 
 describe('saúde do layout com o acervo real', () => {
   it('não empurra nenhuma estrela com o gap fixado', () => {
-    // Quando este teste falhar, é hora de subir TIMELINE.gapPxPerDay — num
-    // commit explícito, não sozinho em tempo de execução.
     const health = layoutHealth(placeStars(PUBLICATIONS));
     expect(health.pushedRatio).toBe(0);
   });

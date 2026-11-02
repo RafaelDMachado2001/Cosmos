@@ -26,7 +26,6 @@ import type { PublicationInput } from './types';
 
 const ORIGIN_PAN = 1840;
 
-/** Catorze publicações em dias consecutivos, como o acervo semente. */
 const ITEMS: readonly PublicationInput[] = Array.from({ length: 14 }, (_, i) => ({
   slug: `pub-${i}`,
   publishedAt: new Date(Date.UTC(2025, 0, 1 + i)).toISOString(),
@@ -61,7 +60,6 @@ describe('máquina de estados do leitor', () => {
     expect(state.phase).toBe('closing');
     expect(state.slug).toBe('nebulosa');
     expect(state.originPan).toBe(ORIGIN_PAN);
-    // Continua no DOM: desmontar aqui cortaria o fade pela metade.
     expect(isMounted(state)).toBe(true);
   });
 
@@ -73,15 +71,10 @@ describe('máquina de estados do leitor', () => {
   });
 
   it('fechar durante a abertura interrompe sem nunca montar a vista', () => {
-    // Nada foi ao DOM nesses 760ms, então não há fade de saída a esperar: a
-    // câmera simplesmente recua e o leitor volta ao repouso no mesmo passo.
     expect(close(open(CLOSED, 'nebulosa', ORIGIN_PAN))).toEqual(CLOSED);
   });
 
   it('abrir com a vista já aberta não troca o pan de origem', () => {
-    // A constelação está coberta pelo overlay: não há de onde clicar outra
-    // estrela. Se acontecer, perder a origem faria a câmera voltar ao lugar
-    // errado no fechamento.
     const opened = mounted(open(CLOSED, 'nebulosa', ORIGIN_PAN));
     const state = open(opened, 'quasar', 99);
 
@@ -139,7 +132,6 @@ describe('hoverSide', () => {
   });
 
   it('fora do encaixe, um dos lados sempre guarda 24px da borda', () => {
-    // Recuo + largura do cartão: o que ele ocupa a partir da estrela.
     const reach = 58 + 330;
     for (let width = HOVER_DOCK_BELOW_PX; width <= 2560; width += 37) {
       for (let x = 0; x <= width; x += 11) {
@@ -192,7 +184,6 @@ describe('geometria do avanço da câmera', () => {
   });
 
   it('com a câmera avançada a estrela chega à coluna', () => {
-    // A estrela está em 720 e precisa terminar em 180: empurra 540.
     expect(zoomPush(720, 1440, 1)).toBe(540);
   });
 

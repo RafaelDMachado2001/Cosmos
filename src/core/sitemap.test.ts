@@ -73,11 +73,9 @@ describe('sitemapXml', () => {
     expect(soPt).toContain('<loc>https://rdmlabs.dev/pt/publicacoes/so-em-portugues</loc>');
     expect(soPt).not.toContain('publications/so-em-portugues');
     expect(soPt).not.toContain('hreflang="en" href="https://rdmlabs.dev/en/publications/so-em-portugues"');
-    // x-default cai no único idioma que existe, não no padrão ausente.
     expect(soPt).toContain(
       '<xhtml:link rel="alternate" hreflang="x-default" href="https://rdmlabs.dev/pt/publicacoes/so-em-portugues"/>',
     );
-    // As duas raízes (pt/en) mais a única url do artigo — não duas.
     expect(soPt.match(/<url>/g)?.length).toBe(3);
   });
 
@@ -114,7 +112,6 @@ describe('sitemapXml', () => {
       { slug: 'nao-indexavel', publishedAt: '2026-03-01T00:00:00.000Z', locales: LOCALES, indexable: false },
     ]);
     expect(comUmaNaoIndexavel).not.toContain('nao-indexavel');
-    // Só as duas raízes mais as duas publicações indexáveis — a terceira não conta.
     expect(comUmaNaoIndexavel.match(/<url>/g)?.length).toBe(PUBLICATIONS.length * 2 + 2);
   });
 
