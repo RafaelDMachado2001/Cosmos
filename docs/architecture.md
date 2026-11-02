@@ -243,7 +243,7 @@ divided into modules with explicit boundaries:
 | Content | Publications, drafts, media, the studio | Built |
 | Identity | Member accounts, social login, profiles, data export and deletion | Built (API) |
 | Activity | The append-only log of members' domain actions | Built |
-| Community | Comments, the reaction, moderation | In progress: domain and API built |
+| Community | Comments, the reaction, moderation | Built (API and moderation) |
 | Gamification | Points, achievements, leaderboards | Planned |
 
 Modules talk through domain events, such as `MemberRegistered` or
@@ -608,6 +608,22 @@ test-runner directives).
   `e2e:member-session` write a session straight into the driver and print the
   encrypted cookie; there is no test login route, and the commands refuse to
   run outside `local` and `testing`.
+
+### Backend: community
+
+- **Comments go live at once; the author of the site moderates afterwards.**
+  Sign-in already requires a provider-verified e-mail, which filters most
+  spam, and pre-moderation would leave every comment invisible until the
+  panel is opened. Hiding is reversible; a comment its author deleted is not.
+- **Comments are flat, per language and plain text.** No replies, no
+  editing, no Markdown: React escapes the text and line breaks are kept.
+- **One reaction, not a rating.** A personal blog collects few votes, and an
+  average of three says little; "useful" is one per person per publication.
+- **Deleting an account removes reactions and empties comment bodies**,
+  keeping the rows so activities still point at them.
+- **Moderation reads authors and articles through the contracts**, batched
+  once per rendered page (a `WeakMap` keyed by the page's records), so a
+  page of 25 comments costs one query per contract, not one per row.
 
 ### Backend: publishing
 
