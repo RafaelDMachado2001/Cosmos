@@ -3,7 +3,8 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { validateDraftBlock } from '../core/draftValidation';
 import type { DraftBlock } from '../core/draftBlocks';
 import styles from './BlockEditor.module.css';
-import { PayloadTooLargeError, ValidationError, api } from './api';
+import { PayloadTooLargeError, ValidationError } from '../data/http';
+import { api } from './api';
 import { TableFields } from './TableFields';
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;

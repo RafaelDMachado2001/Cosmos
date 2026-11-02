@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Content\Models;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -78,5 +80,13 @@ class Publication extends Model
     public function references(): HasMany
     {
         return $this->hasMany(PublicationReference::class)->orderBy('position');
+    }
+
+    /** @param Builder<self> $query */
+    #[Scope]
+    protected function live(Builder $query): void
+    {
+        $query->where($query->qualifyColumn('status'), self::STATUS_PUBLISHED)
+            ->where($query->qualifyColumn('published_at'), '<=', now());
     }
 }

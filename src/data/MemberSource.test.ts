@@ -1,9 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { MemberValidationError, createMemberSource } from './MemberSource';
+import { ValidationError } from './http';
+import { createMemberSource } from './MemberSource';
 
 const profile = {
-  data: { id: 1, name: 'Ana', handle: 'ana', avatarUrl: null, email: 'a@x.com', locale: 'pt', providers: ['google'] },
+  data: {
+    id: 1,
+    name: 'Ana',
+    handle: 'ana',
+    avatarUrl: null,
+    email: 'a@x.com',
+    locale: 'pt',
+    providers: ['google'],
+  },
 };
 
 function respond(status: number, body?: unknown): Response {
@@ -26,13 +35,21 @@ describe('createMemberSource', () => {
   });
 
   it('com sessão, me() é o perfil', async () => {
-    const source = createMemberSource('https://api.example', () => Promise.resolve(respond(200, profile)), () => '');
+    const source = createMemberSource(
+      'https://api.example',
+      () => Promise.resolve(respond(200, profile)),
+      () => '',
+    );
 
     await expect(source.me()).resolves.toMatchObject({ handle: 'ana', providers: ['google'] });
   });
 
   it('erro da API é erro, não anônimo', async () => {
-    const source = createMemberSource('https://api.example', () => Promise.resolve(respond(500)), () => '');
+    const source = createMemberSource(
+      'https://api.example',
+      () => Promise.resolve(respond(500)),
+      () => '',
+    );
 
     await expect(source.me()).rejects.toThrow('500');
   });
@@ -46,7 +63,11 @@ describe('createMemberSource', () => {
     expect(fetchImpl).toHaveBeenCalledWith('https://api.example/api/me', {
       method: 'PATCH',
       credentials: 'include',
-      headers: { Accept: 'application/json', 'X-XSRF-TOKEN': 'abc=', 'Content-Type': 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        'X-XSRF-TOKEN': 'abc=',
+        'Content-Type': 'application/json',
+      },
       body: '{"name":"Ana S."}',
     });
   });
@@ -57,7 +78,11 @@ describe('createMemberSource', () => {
       if (url.endsWith('/api/sanctum/csrf-cookie')) cookie = 'XSRF-TOKEN=novo';
       return Promise.resolve(respond(204));
     });
-    const source = createMemberSource('https://api.example', fetchImpl as unknown as typeof fetch, () => cookie);
+    const source = createMemberSource(
+      'https://api.example',
+      fetchImpl as unknown as typeof fetch,
+      () => cookie,
+    );
 
     await source.logout();
 
@@ -75,8 +100,8 @@ describe('createMemberSource', () => {
     );
 
     const error = await source.update({ handle: 'bruno' }).catch((caught: unknown) => caught);
-    expect(error).toBeInstanceOf(MemberValidationError);
-    expect((error as MemberValidationError).fields).toEqual({ handle: ['ocupado'] });
+    expect(error).toBeInstanceOf(ValidationError);
+    expect((error as ValidationError).fields).toEqual({ handle: ['ocupado'] });
   });
 
   it('remove apaga a conta com DELETE', async () => {
@@ -85,7 +110,10 @@ describe('createMemberSource', () => {
 
     await source.remove();
 
-    expect(fetchImpl.mock.calls[0]?.[1]).toMatchObject({ method: 'DELETE', credentials: 'include' });
+    expect(fetchImpl.mock.calls[0]?.[1]).toMatchObject({
+      method: 'DELETE',
+      credentials: 'include',
+    });
     expect(source.exportUrl).toBe('https://api.example/api/me/export');
   });
 });

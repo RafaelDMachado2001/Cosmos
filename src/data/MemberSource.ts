@@ -1,17 +1,12 @@
 import { parseMember, xsrfToken } from '../core/session';
 import type { Member } from '../core/session';
 import type { Locale } from '../core/types';
+import { createJsonClient } from './http';
 
 export interface MemberPatch {
   readonly name?: string;
   readonly handle?: string;
   readonly locale?: Locale;
-}
-
-export class MemberValidationError extends Error {
-  constructor(readonly fields: Readonly<Record<string, readonly string[]>>) {
-    super('dados recusados pela API');
-  }
 }
 
 export interface MemberSource {
@@ -20,6 +15,12 @@ export interface MemberSource {
   logout(): Promise<void>;
   remove(): Promise<void>;
   readonly exportUrl: string;
+}
+
+async function memberFrom(response: Response): Promise<Member> {
+  const member = parseMember(await response.json());
+  if (member === null) throw new Error('/api/me devolveu um perfil fora do formato');
+  return member;
 }
 
 export function createMemberSource(
@@ -39,52 +40,29 @@ export function createMemberSource(
     return fresh;
   }
 
-  async function send(method: string, path: string, body?: unknown): Promise<Response> {
-    const response = await fetchImpl(`${root}${path}`, {
-      method,
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json',
-        'X-XSRF-TOKEN': await token(),
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-
-    if (response.status === 422) {
-      const payload = (await response.json()) as { errors?: Record<string, string[]> };
-      throw new MemberValidationError(payload.errors ?? {});
-    }
-    if (!response.ok) throw new Error(`${method} ${path} respondeu ${String(response.status)}`);
-    return response;
-  }
+  const client = createJsonClient({
+    baseUrl: root,
+    credentials: 'include',
+    csrfHeaders: async () => ({ 'X-XSRF-TOKEN': await token() }),
+    fetchImpl,
+  });
 
   return {
     async me() {
-      const response = await fetchImpl(`${root}/api/me`, {
-        credentials: 'include',
-        headers: { Accept: 'application/json' },
-      });
-      if (response.status === 204) return null;
-      if (!response.ok) throw new Error(`/api/me respondeu ${String(response.status)}`);
-
-      const member = parseMember(await response.json());
-      if (member === null) throw new Error('/api/me devolveu um perfil fora do formato');
-      return member;
+      const response = await client.get('/api/me');
+      return response.status === 204 ? null : memberFrom(response);
     },
 
     async update(patch) {
-      const member = parseMember(await (await send('PATCH', '/api/me', patch)).json());
-      if (member === null) throw new Error('/api/me devolveu um perfil fora do formato');
-      return member;
+      return memberFrom(await client.send('PATCH', '/api/me', patch));
     },
 
     async logout() {
-      await send('POST', '/auth/logout');
+      await client.send('POST', '/auth/logout');
     },
 
     async remove() {
-      await send('DELETE', '/api/me');
+      await client.send('DELETE', '/api/me');
     },
 
     exportUrl: `${root}/api/me/export`,

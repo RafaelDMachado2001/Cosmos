@@ -23,10 +23,7 @@ final class ScheduledPublisher
             $publication->update(['status' => Publication::STATUS_PUBLISHED]);
         }
 
-        $eligible = Publication::query()
-            ->where('status', Publication::STATUS_PUBLISHED)
-            ->where('published_at', '<=', now())
-            ->count();
+        $eligible = Publication::query()->live()->count();
 
         $previous = (int) Cache::get(self::CACHE_KEY, $eligible);
         Cache::forever(self::CACHE_KEY, $eligible);

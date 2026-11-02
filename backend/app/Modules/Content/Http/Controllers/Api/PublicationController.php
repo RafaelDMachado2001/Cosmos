@@ -101,8 +101,7 @@ class PublicationController extends Controller
                 $join->on('translation.publication_id', '=', 'publications.id')
                     ->where('translation.locale', '=', $locale);
             })
-            ->where('publications.status', Publication::STATUS_PUBLISHED)
-            ->where('publications.published_at', '<=', now());
+            ->live();
     }
 
     /**
