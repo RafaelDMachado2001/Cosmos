@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Activity;
 
 use App\Modules\Activity\Listeners\AnonymizeActivities;
+use App\Modules\Activity\Listeners\RecordCommunityActivity;
 use App\Modules\Activity\Listeners\RecordMemberRegistered;
 use App\Modules\Activity\PersonalData\ActivityPersonalData;
 use App\Modules\Identity\Contracts\PersonalDataSource;
@@ -19,6 +20,7 @@ class ActivityServiceProvider extends ServiceProvider
     {
         Event::listen(MemberRegistered::class, RecordMemberRegistered::class);
         Event::listen(MemberDeleted::class, AnonymizeActivities::class);
+        Event::subscribe(RecordCommunityActivity::class);
 
         $this->app->tag(ActivityPersonalData::class, PersonalDataSource::TAG);
     }

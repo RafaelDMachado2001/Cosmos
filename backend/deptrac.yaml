@@ -22,6 +22,14 @@ deptrac:
       collectors:
         - type: directory
           value: app/Modules/Identity/(Events|Contracts)/.*
+    - name: Community
+      collectors:
+        - type: directory
+          value: app/Modules/Community/(?!Events/).*
+    - name: CommunityContract
+      collectors:
+        - type: directory
+          value: app/Modules/Community/Events/.*
     - name: Activity
       collectors:
         - type: directory
@@ -36,6 +44,13 @@ deptrac:
       - Platform
       - IdentityContract
     IdentityContract: ~
+    Community:
+      - Platform
+      - IdentityContract
+      - ContentContract
+      - CommunityContract
+    CommunityContract: ~
     Activity:
       - Platform
       - IdentityContract
+      - CommunityContract

@@ -243,7 +243,7 @@ divided into modules with explicit boundaries:
 | Content | Publications, drafts, media, the studio | Built |
 | Identity | Member accounts, social login, profiles, data export and deletion | Built (API) |
 | Activity | The append-only log of members' domain actions | Built |
-| Community | Comments, shares, moderation | Planned |
+| Community | Comments, the reaction, moderation | In progress: domain and data |
 | Gamification | Points, achievements, leaderboards | Planned |
 
 Modules talk through domain events, such as `MemberRegistered` or
