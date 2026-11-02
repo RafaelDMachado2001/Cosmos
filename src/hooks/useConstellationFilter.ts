@@ -11,18 +11,10 @@ export interface ConstellationFilter {
   readonly setQuery: (query: string) => void;
   readonly category: Category | 'all';
   readonly setCategory: (category: Category | 'all') => void;
-  /** As estrelas que o critério atual apaga. */
   readonly dimmed: ReadonlySet<string>;
   readonly counts: ReturnType<typeof countByCategory>;
 }
 
-/**
- * Busca e filtro por categoria sobre a constelação.
- *
- * O rótulo da categoria e a data formatada entram na projeção buscável porque o
- * handoff manda buscar por eles, e só esta camada os conhece traduzidos — o
- * adapter guarda o slug da categoria e um ISO, que ninguém digita.
- */
 export function useConstellationFilter(
   summaries: readonly PublicationSummary[],
   stars: readonly PlacedStar[],
@@ -52,13 +44,6 @@ export function useConstellationFilter(
   );
   const counts = useMemo(() => countByCategory(searchable), [searchable]);
 
-  /**
-   * A câmera desliza até o primeiro resultado — mas só quando o critério muda.
-   *
-   * Reagir a `dimmed` sem esta guarda arrastaria a câmera também na chegada dos
-   * dados e na troca de idioma, arrancando o leitor de onde ele estava por uma
-   * mudança que não foi dele.
-   */
   const criteriaKey = `${category}\u0000${query}`;
   const lastCriteriaRef = useRef(criteriaKey);
 

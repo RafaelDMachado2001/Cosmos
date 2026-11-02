@@ -35,7 +35,6 @@
   text-wrap: pretty;
 }
 
-/* Texto, não pílula: o ícone do mouse continua sendo a entrada principal. */
 .skip {
   margin: 0;
   padding: 8px 4px;
@@ -58,11 +57,6 @@
   color: var(--color-accent-hover);
 }
 
-/*
- * Só a área clicável do ícone: sem pílula, sem borda. O anel de foco vem do
- * `:focus-visible` global — nada aqui pode zerar o outline, porque sem a borda
- * ele passou a ser a única indicação de foco deste botão.
- */
 .enter {
   display: inline-flex;
   align-items: center;
@@ -86,12 +80,6 @@
   height: auto;
 }
 
-/*
- * A rodinha nasce no topo, desce e some. O último keyframe volta ao estado de
- * repouso de propósito: o bloco global de `prefers-reduced-motion` colapsa a
- * animação para 0.01ms com uma iteração só, congelando no frame final — se ele
- * fosse o ponto apagado, o mouse ficaria permanentemente sem rodinha.
- */
 .wheel {
   animation: wheel-scroll 1.6s var(--ease) infinite;
 }

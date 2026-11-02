@@ -10,7 +10,6 @@ body {
   padding: 0;
 }
 
-/* A experiência inteira é position:fixed; rolagem nativa nunca aparece. */
 html,
 body {
   overflow: hidden;

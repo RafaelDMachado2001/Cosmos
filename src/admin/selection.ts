@@ -1,10 +1,3 @@
-/**
- * A publicação aberta no Studio, no endereço (`?publication=<id>`).
- *
- * É o que deixa o painel do Filament abrir uma publicação direto no Studio e
- * o que faz recarregar a página voltar para a mesma publicação.
- */
-
 const PARAM = 'publication';
 
 export function selectedFromSearch(search: string): number | null {

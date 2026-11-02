@@ -1,15 +1,3 @@
-/**
- * Desenha o cartão de Open Graph: JSX → SVG (satori) → PNG (resvg em wasm).
- *
- * Roda no Node, no prerender e no job de regeração. Wasm e não o binário nativo
- * do resvg: o binário é por plataforma, e o mesmo prerender roda no Alpine do
- * build, no Alpine do `queue` e no `node` do desenvolvimento.
- *
- * As cores saem de `tokens.css`, embutido no bundle como texto: o job roda em
- * /srv/render, onde `src/` não existe. As fontes são as mesmas da interface,
- * lidas do `node_modules`, que existe nos dois lugares.
- */
-
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 
@@ -34,7 +22,6 @@ type Font = Parameters<typeof satori>[1]['fonts'][number];
 
 let ready: Promise<readonly Font[]> | null = null;
 
-/** Fontes e wasm, carregados uma vez por processo — o prerender desenha dezenas. */
 function prepare(): Promise<readonly Font[]> {
   ready ??= (async () => {
     await initWasm(readFile(require.resolve('@resvg/resvg-wasm/index_bg.wasm')));
@@ -53,18 +40,14 @@ function prepare(): Promise<readonly Font[]> {
   return ready;
 }
 
-/** O centro da estrela e os diâmetros, nas proporções da prévia do protótipo (15% e 70%). */
 const STAR_X = 960;
 const STAR_Y = 270;
 const STAR = 180;
 const AURA = 840;
 
-/** Um elemento, não um componente: satori o lê uma vez, sem React montando nada. */
 function cardElement(card: OgCard) {
   const accent = token(card.category === undefined ? 'color-accent' : `color-cat-${card.category}`);
   const date = card.date === undefined ? null : monthYearLabel(Date.parse(card.date), card.locale);
-  // Títulos longos descem um degrau em vez de serem cortados: o cartão é lido
-  // num feed, e o título inteiro é o que faz alguém clicar.
   const titleSize = card.title.length > 48 ? 60 : 72;
 
   return (
@@ -81,9 +64,6 @@ function cardElement(card: OgCard) {
         fontFamily: 'Roboto',
       }}
     >
-      {/* A estrela da categoria, como a prévia do RDM Studio a desenha: aura,
-          e um núcleo que vai do branco à cor e some na borda. Atrás de tudo, à
-          direita, onde o título (limitado em largura) não chega. */}
       <div
         style={{
           position: 'absolute',
@@ -149,7 +129,6 @@ function cardElement(card: OgCard) {
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* A marca do Cosmos (`BrandMark`), com as cores lidas dos tokens. */}
           <svg width={30} height={30} viewBox="0 0 32 32">
             <circle
               cx={16}

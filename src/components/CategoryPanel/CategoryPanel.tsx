@@ -11,13 +11,6 @@ export interface CategoryPanelProps {
   readonly onPick: (category: Category | 'all') => void;
 }
 
-/**
- * Filtro por categoria, ancorado abaixo do header.
- *
- * Clicar na categoria ativa remove o filtro — sem isso a única saída seria a
- * primeira linha, e o leitor que entrou por uma categoria teria de descobrir
- * que "Tudo" é um botão e não um rótulo.
- */
 export function CategoryPanel({ open, counts, active, onPick }: CategoryPanelProps) {
   const { t } = useLocale();
   const rows = categoryRows(counts, active);

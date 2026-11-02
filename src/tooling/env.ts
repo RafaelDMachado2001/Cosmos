@@ -1,10 +1,3 @@
-/**
- * Validação dos arquivos de ambiente, sem tocar em disco.
- *
- * `scripts/check-env.ts` lê os arquivos e decide o código de saída; aqui fica só
- * o julgamento, para ele ter teste. Roda no `predev`, no `prebuild` e no CI.
- */
-
 export type Env = Readonly<Record<string, string>>;
 
 export function parseEnv(text: string): Env {
@@ -19,11 +12,6 @@ export function parseEnv(text: string): Env {
   return env;
 }
 
-/**
- * Chave faltando quebra em silêncio — o código lê `undefined` e segue com o
- * padrão. Chave sobrando é quase sempre um nome digitado errado, que é a mesma
- * coisa vista do outro lado.
- */
 export function compareKeys(example: Env, actual: Env, label: string): readonly string[] {
   const missing = Object.keys(example)
     .filter((key) => !(key in actual))
@@ -34,10 +22,6 @@ export function compareKeys(example: Env, actual: Env, label: string): readonly 
   return [...missing, ...extra];
 }
 
-/**
- * O que não pode ir ao ar. Produção é o `APP_ENV` do backend dizendo que é —
- * fora dela, debug ligado e senha vazia são o normal do desenvolvimento.
- */
 export function productionProblems({ root, backend }: { root: Env; backend: Env }): readonly string[] {
   if (backend.APP_ENV !== 'production') return [];
 
@@ -46,7 +30,6 @@ export function productionProblems({ root, backend }: { root: Env; backend: Env 
   if (!backend.APP_KEY) problems.push('APP_KEY vazia em produção');
   if (!backend.DB_PASSWORD) problems.push('DB_PASSWORD vazia em produção');
 
-  // Canonical, hreflang, sitemap e og:image saem dela: relativa, todos mentem.
   const site = root.VITE_SITE_URL ?? '';
   if (!/^https?:\/\/[^/\s]+/.test(site)) {
     problems.push(`VITE_SITE_URL precisa ser absoluta (http:// ou https://): "${site}"`);

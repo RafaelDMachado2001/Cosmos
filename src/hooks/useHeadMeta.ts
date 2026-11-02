@@ -3,13 +3,6 @@ import { useEffect } from 'react';
 import { metaKeyAttribute } from '../core/seo';
 import type { JsonLd, PageMeta } from '../core/seo';
 
-/**
- * Marca as tags que esta camada governa.
- *
- * É um contrato com o prerender: o HTML gravado no build emite o mesmo atributo
- * nas mesmas tags, para que a primeira sincronização no cliente as reaproveite
- * em vez de acrescentar um segundo canonical ao lado do que já veio do servidor.
- */
 const OWNED = 'data-head';
 
 function upsert<E extends HTMLElement>(selector: string, create: () => E): E {
@@ -39,13 +32,6 @@ function setCanonical(href: string): void {
   element.href = href;
 }
 
-/**
- * Os `og:` e os `article:` são reescritos do zero a cada mudança.
- *
- * Reaproveitar tag a tag deixaria para trás as que a rota anterior tinha e a
- * nova não tem — sair de um artigo para a tela de entrada manteria um
- * `article:published_time` descrevendo um texto que já não está na página.
- */
 function setProperties(entries: Readonly<Record<string, string>>): void {
   for (const stale of document.head.querySelectorAll(`meta[${OWNED}][property], meta[${OWNED}][name^="twitter:"]`)) {
     stale.remove();
@@ -60,7 +46,6 @@ function setProperties(entries: Readonly<Record<string, string>>): void {
   }
 }
 
-/** Só a home tem — sai do `<head>` ao navegar para um artigo, sem ficar para trás. */
 function setRssLink(href: string | undefined): void {
   if (href === undefined) {
     document.head.querySelector('link[rel="alternate"][type="application/rss+xml"]')?.remove();
@@ -103,13 +88,6 @@ function setJsonLd(data: JsonLd | null): void {
   if (!existing) document.head.appendChild(script);
 }
 
-/**
- * Mantém o `<head>` de acordo com a rota aberta.
- *
- * O que vai aqui é decidido em `src/core/seo.ts`, testado e sem DOM; este hook
- * só escreve. A divisão é o que permite ao prerender produzir exatamente o
- * mesmo cabeçalho no build, a partir da mesma função.
- */
 export function useHeadMeta(
   meta: PageMeta,
   jsonLd: JsonLd | null,

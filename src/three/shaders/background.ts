@@ -1,17 +1,3 @@
-/**
- * O céu de fundo do cosmos: estrelas em três profundidades, galáxias e
- * nebulosas. Portado quase literalmente do `BG_FRAG` do protótipo de
- * atmosfera — é a especificação exata do efeito.
- *
- * Uma passada de tela cheia, custo fixo por pixel. Estrelas por grade com
- * hash, sem buffers; galáxias e nebulosas chegam por arrays de tamanho fixo,
- * já filtradas por `cullSky`. As cores internas (lavanda, quente pálido, o
- * branco-violeta das galáxias) são do handoff e só existem aqui.
- *
- * `uOctaves` (3 ou 5) é o recuo de performance: GLSL ES 1.0 exige laço com
- * limite constante, então o laço vai até 5 e sai antes.
- */
-
 export const MAX_NEBULAE = 8;
 export const MAX_GALAXIES = 3;
 
@@ -65,7 +51,6 @@ void main(){
     vec4 nb = uNeb[i]; vec2 d = (wp - nb.xy) / vec2(nb.z * 1.6, nb.z);
     neb += uNebC[i] * exp(-dot(d, d) * 1.5) * nb.w;
   }
-  // As três fbm só quando há nebulosa por perto: é a parte cara do quadro.
   if (max(neb.r, max(neb.g, neb.b)) > 0.002) {
     float n1 = fbm(wp * 0.0026 + vec2(uTime * 0.004, 0.0));
     float n2 = fbm(wp * 0.0072 + n1 * 1.6 - vec2(0.0, uTime * 0.006));
@@ -76,7 +61,6 @@ void main(){
     col += neb * (cloud * 0.36 + wisps * 0.24) * (1.0 - lane);
   }
   col *= uReveal;
-  // Dithering de meio degrau: some com as faixas visíveis no degradê.
   col += (h21(gl_FragCoord.xy + fract(uTime * 7.0)) - 0.5) / 255.0;
   col = max(col, 0.0);
   gl_FragColor = vec4(col, clamp(max(col.r, max(col.g, col.b)), 0.0, 1.0));

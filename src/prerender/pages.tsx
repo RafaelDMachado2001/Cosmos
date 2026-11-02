@@ -30,48 +30,25 @@ import { DICTIONARIES } from '../i18n/dictionaries';
 import { LocaleProvider } from '../i18n/LocaleProvider';
 import { SITE } from '../site';
 
-/** Uma página pronta para virar arquivo. O caminho é o da URL, sem `index.html`. */
 export interface PrerenderedPage {
   readonly path: string;
-  /** Vai no `lang` do `<html>`. */
   readonly lang: string;
-  /** As tags que entram antes de `</head>`. */
   readonly head: string;
-  /** O HTML que preenche `#prerender`. */
   readonly body: string;
-  /** O cartão que o `og:image` do cabeçalho promete. O 404 não tem. */
   readonly og?: OgCard;
 }
 
 export interface PrerenderOutput {
   readonly pages: readonly PrerenderedPage[];
-  /**
-   * A página que o Nginx serve em qualquer 404, com o status correto.
-   *
-   * Sai no idioma padrão: um endereço que não é rota nenhuma também não diz
-   * idioma, e adivinhar pelo `Accept-Language` exigiria lógica no servidor que
-   * o arquivo estático não tem. O JavaScript, ao subir, corrige para a
-   * preferência de quem lê.
-   */
   readonly notFound: PrerenderedPage;
   readonly sitemap: string;
   readonly robots: string;
-  /** Um feed RSS 2.0 por idioma, só com o que aquele idioma publicou. */
   readonly rss: Record<Locale, string>;
-  /** A lista de cada idioma, para o cliente abrir sem esperar a API (`core/snapshot.ts`). */
   readonly snapshot: Record<Locale, string>;
 }
 
-/**
- * Quanto o prerender pede à fonte: o teto que a API aceita.
- *
- * Sem `limit`, a API devolve 100 e declara o corte, e o adapter HTTP lança —
- * a 101ª publicação derrubaria todo build e todo job. Passar daqui é o que o
- * `truncated` existe para pegar.
- */
 export const ARCHIVE_LIMIT = 1000;
 
-/** A lista estática de um idioma: título, resumo, categoria e data de cada publicação. */
 function articleIndex(locale: Locale, summaries: readonly PublicationSummary[]): ArticleLink[] {
   const dictionary = DICTIONARIES[locale];
   return summaries.map((summary) => ({
@@ -84,13 +61,6 @@ function articleIndex(locale: Locale, summaries: readonly PublicationSummary[]):
   }));
 }
 
-/**
- * Renderiza a casca estática de cada rota.
- *
- * `LocaleProvider` com `initial` nunca consulta `localStorage` nem
- * `navigator` — é o que a torna renderizável aqui, onde não existe navegador.
- * Nada nesta árvore toca DOM, Three ou `requestAnimationFrame`.
- */
 function markup(locale: Locale, node: React.ReactElement): string {
   return renderToStaticMarkup(<LocaleProvider initial={locale}>{node}</LocaleProvider>);
 }
@@ -99,7 +69,6 @@ export async function prerenderPages(
   source: PublicationsSource = createSource(),
 ): Promise<PrerenderOutput> {
   const pages: PrerenderedPage[] = [];
-  /** O acervo como a fonte o devolve — é ele que o sitemap lista. */
   const listed = new Map<
     string,
     { publishedAt: string; updatedAt?: string; indexable?: boolean }
@@ -107,9 +76,6 @@ export async function prerenderPages(
   const rss: Partial<Record<Locale, string>> = {};
   const snapshot: Partial<Record<Locale, string>> = {};
 
-  // Primeira passada: que idiomas cada slug de fato tem. Uma publicação pode
-  // existir só num deles — o formulário do painel permite — e só se sabe ao
-  // ver as duas listas inteiras, antes de montar qualquer página.
   const summariesByLocale = {} as Record<Locale, readonly PublicationSummary[]>;
   const localesForSlug = new Map<string, Locale[]>();
   for (const locale of LOCALES) {
@@ -129,8 +95,6 @@ export async function prerenderPages(
     const other = otherLocale(locale);
     const dictionary = DICTIONARIES[locale];
     const summaries = summariesByLocale[locale];
-    // Do mais novo para o mais antigo, igual à constelação — não há motivo
-    // para um leitor de RSS ver o acervo em outra ordem.
     rss[locale] = rssXml(SITE.origin, locale, dictionary.meta, summaries);
     snapshot[locale] = serializeSnapshot(summaries);
 
@@ -151,8 +115,6 @@ export async function prerenderPages(
     });
 
     for (const summary of summaries) {
-      // O corpo do texto não vem na lista — ela é enxuta de propósito — e a
-      // segunda chamada é a mesma que o cliente faz ao abrir o artigo.
       const detail = await source.get(summary.slug, locale);
       if (detail === null) continue;
 
@@ -223,14 +185,6 @@ export async function prerenderPages(
         />,
       ),
     },
-    /*
-     * O sitemap lista o que a fonte devolveu, não o acervo semente.
-     *
-     * Com a API ligada os dois deixam de coincidir no primeiro item publicado
-     * pelo painel — e o sitemap é justamente o que precisa refletir o que está
-     * no ar. As duas raízes entram por conta dele; a lista de publicações é a
-     * mesma nos dois idiomas, daí o Map por slug.
-     */
     sitemap: sitemapXml(
       SITE,
       [...listed].map(([slug, entry]) => ({
@@ -240,8 +194,6 @@ export async function prerenderPages(
       })),
     ),
     robots: robotsTxt(SITE),
-    // Todo LOCALES passa pelo laço acima, então toda chave existe — o cast
-    // é só o que o TypeScript não infere de um objeto montado por atribuição.
     rss: rss as Record<Locale, string>,
     snapshot: snapshot as Record<Locale, string>,
   };

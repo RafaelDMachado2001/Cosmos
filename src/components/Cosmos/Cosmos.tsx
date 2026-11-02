@@ -25,13 +25,11 @@ import type { HoverCard, HoverVia } from '../HoverPanel/HoverPanel';
 import { Star } from '../Star/Star';
 import type { StarCaption } from '../Star/Star';
 
-/** Acima disto as estrelas fora da janela deixam de ser montadas. */
 const VIRTUALIZE_ABOVE = 800;
 
 export interface CosmosProps {
   readonly stars: readonly PlacedStar[];
   readonly layerRef: RefObject<HTMLDivElement>;
-  /** Camada dos anos gigantes, movida pelo laço com parallax própria. */
   readonly yearsRef: RefObject<HTMLDivElement>;
   readonly viewport: Viewport;
   readonly pan: number;
@@ -41,28 +39,14 @@ export interface CosmosProps {
   readonly hrefFor: (slug: string) => string;
   readonly dimmed: ReadonlySet<string>;
   readonly reducedMotion: boolean;
-  /** Cartão da estrela sob o ponteiro, ou nulo. */
   readonly hover: HoverCard | null;
   readonly onActivate: (star: PlacedStar) => void;
   readonly onHover: (slug: string | null, via?: HoverVia) => void;
   readonly onFocusStar: (star: PlacedStar) => void;
   readonly onPointerDown: (event: React.PointerEvent) => void;
-  /**
-   * Falso na tela de entrada, onde a constelação está invisível.
-   *
-   * Invisível não basta: sem isto o Tab, a partir do hero, caminhava por
-   * catorze âncoras que ninguém podia ver. Mesmo tratamento que a navegação
-   * do header já recebia.
-   */
   readonly interactive: boolean;
 }
 
-/**
- * A constelação: HTML posicionado por transform, nunca canvas.
- *
- * É o que garante que cada estrela seja um link real, focável e rastreável —
- * a camada 3D complementa o conteúdo, jamais o esconde.
- */
 export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   {
     stars,
@@ -97,8 +81,6 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
   const { locale } = useLocale();
   const docked = hoverDocked(viewport.width);
 
-  // Acima do limiar, monta só a janela. Abaixo dele, content-visibility já
-  // resolve o custo e manter tudo no DOM preserva a ordem de Tab sem truque.
   const window_ = useMemo(() => {
     if (stars.length <= VIRTUALIZE_ABOVE) return { start: 0, end: stars.length };
     return visibleRange(
@@ -111,7 +93,6 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
 
   const visibleStars = stars.slice(window_.start, window_.end);
   const hoveredStar = hover === null ? undefined : stars.find((star) => star.slug === hover.slug);
-  // Um conector a mais de cada lado: as arestas que entram e saem da janela.
   const visibleLinks = links.slice(Math.max(0, window_.start - 1), window_.end);
 
   return (
@@ -119,8 +100,6 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
       ref={ref}
       className={styles.cosmos}
       onPointerDown={(event) => {
-        // No toque, tocar fora de qualquer estrela fecha o painel aberto pelo
-        // primeiro toque — o equivalente do mouse saindo de cima dela.
         if (
           event.pointerType === 'touch' &&
           hover !== null &&
@@ -130,15 +109,12 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
         }
         onPointerDown(event);
       }}
-      // Sem isto o navegador arrasta a estrela como link (o fantasma da URL)
-      // em vez de deixar o gesto mover a linha do tempo.
       onDragStart={(event) => {
         event.preventDefault();
       }}
       aria-hidden={!interactive}
       {...(interactive ? {} : { inert: '' })}
     >
-      {/* Atrás de tudo, só textura: aria-hidden e sem ponteiro. */}
       <div ref={yearsRef} className={styles.giantYears} aria-hidden="true">
         {years.map((marker) => (
           <span
@@ -208,7 +184,6 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
           />
         ))}
 
-        {/* Depois das estrelas: sem z-index, quem vem por último pinta por cima. */}
         {hover && hoveredStar && !docked && (
           <HoverPanel
             card={hover}
@@ -219,7 +194,6 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
         )}
       </div>
 
-      {/* Encaixado, fora da camada: não viaja com o pan. */}
       {hover && hoveredStar && docked && (
         <HoverPanel
           card={hover}

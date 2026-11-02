@@ -5,16 +5,10 @@
   pointer-events: none;
 }
 
-/**
- * Substituto do núcleo sem WebGL: um gradiente radial respirando. Mantém a
- * composição de pé — o handoff pede fallback, não ausência.
- */
 .fallback {
   position: absolute;
   left: 50%;
   top: 34%;
-  /* Espelha os dois limites do enquadramento real (computeFraming):
-     a banda entre header e texto, e 28% da largura. */
   width: min(43vh, 56vw);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
@@ -30,7 +24,6 @@
   animation: rdmBreathe 7s var(--ease) infinite;
 }
 
-/* O roxo base das nebulosas, rgb(0.40, 0.27, 0.92), parado e bem baixo. */
 .skyFallback {
   position: absolute;
   inset: 0;

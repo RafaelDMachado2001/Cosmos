@@ -3,12 +3,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { compareKeys, parseEnv, productionProblems } from '../src/tooling/env';
 import type { Env } from '../src/tooling/env';
 
-/*
- * Roda no predev, no prebuild e no CI. Sem .env — o build da imagem, que o
- * exclui pelo .dockerignore, e o CI, que não tem segredo nenhum — não há o que
- * comparar, e isso não é erro.
- */
-
 function read(path: string): Env | null {
   return existsSync(path) ? parseEnv(readFileSync(path, 'utf8')) : null;
 }

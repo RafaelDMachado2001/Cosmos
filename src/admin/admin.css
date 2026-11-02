@@ -1,11 +1,3 @@
-/**
- * O reset do RDM Studio, não o do site público.
- *
- * `styles/reset.css` fixa `html,body{overflow:hidden}` porque a cosmos é
- * inteira `position:fixed`; aqui é um painel de formulário comum, que
- * precisa rolar de verdade. Por isso um reset próprio, pequeno, em vez de
- * importar aquele.
- */
 *,
 *::before,
 *::after {
@@ -18,12 +10,6 @@ body {
   padding: 0;
 }
 
-/*
- * O acento do Studio é a cor da marca dele, não o roxo do Cosmos. Redefine o
- * bloco de acento de `tokens.css` inteiro; a prévia do artigo declara
- * `data-brand="cosmos"` e volta ao roxo, porque mostra o site como ele é.
- * Texto escuro sobre o laranja cheio: o claro do Cosmos ficaria em 2:1.
- */
 body {
   --color-accent: var(--color-brand-studio);
   --color-accent-soft: #ffab7e;

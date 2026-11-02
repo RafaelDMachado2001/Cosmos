@@ -32,98 +32,61 @@ import { useCosmosInput } from './useCosmosInput';
 import type { InputState } from './useCosmosInput';
 import { useFrameLoop } from './useFrameLoop';
 
-/** Margem de virtualização, em múltiplos da largura da viewport. */
 const VIRTUAL_MARGIN_FACTOR = 1.5;
 
-/** O pan avança tanto antes de a janela de virtualização precisar mudar. */
 const PAN_BUCKET_PX = 512;
 
 export interface CosmosRefs {
   readonly hero: RefObject<HTMLElement>;
   readonly cosmos: RefObject<HTMLElement>;
   readonly layer: RefObject<HTMLElement>;
-  /** Anos gigantes ao fundo. */
   readonly years: RefObject<HTMLElement>;
   readonly scrub: RefObject<HTMLElement>;
   readonly marker: RefObject<HTMLElement>;
   readonly rail: RefObject<HTMLElement>;
-  /** Fallback em CSS do núcleo, quando não há WebGL. */
   readonly fallback: RefObject<HTMLElement>;
-  /** Céu estático, quando não há WebGL para o procedural. */
   readonly skyFallback: RefObject<HTMLElement>;
-  /** Overlay da vista de leitura. Só existe enquanto ela está montada. */
   readonly reader: RefObject<HTMLElement>;
 }
 
-/**
- * O que o laço precisa saber da vista de leitura.
- *
- * O estado em si é do React — é discreto, muda por clique. O laço só lê dele o
- * alvo do zoom e do fade, e avisa de volta uma única vez, quando o fade de
- * saída termina e a vista pode enfim sair do DOM.
- */
 export interface ReaderBridge {
   readonly state: ReaderState;
   onSettled: () => void;
 }
 
 export interface CosmosEngine {
-  /** O CoreCanvas registra a cena aqui; o laço a consome. */
   readonly sceneRef: MutableRefObject<CoreScene | null>;
   readonly phase: Phase;
-  /** Muda uma vez a cada PAN_BUCKET_PX; é o gatilho da virtualização. */
   readonly panBucket: number;
   readonly viewportWidth: number;
   readonly marginPx: number;
   readonly panRef: MutableRefObject<number>;
-  /**
-   * O pan para onde a câmera vai, não onde ela está: logo depois de um
-   * `slideTo` os dois diferem, e decidir o lado do cartão de hover pelo pan
-   * de agora o punha do lado errado de onde a estrela vai parar.
-   */
   targetPan: () => number;
   goHome: () => void;
   goCosmos: () => void;
-  /** Leva a câmera até a estrela, sem abrir a vista de leitura. */
   slideTo: (star: PlacedStar) => void;
-  /** Põe a constelação do outro lado do portal de imediato, sem animar a travessia. */
   jumpTo: (star: PlacedStar | null) => void;
-  /** Centraliza a estrela e avança a câmera. Devolve o pan de onde ela saiu. */
   openStar: (star: PlacedStar) => number;
-  /** Recua a câmera até o pan que a abertura guardou. */
   closeReader: (originPan: number | null) => void;
-  /** Verdadeiro se o ponteiro arrastou o bastante para o clique não valer. */
   didDrag: () => boolean;
   onCosmosPointerDown: (event: React.PointerEvent) => void;
   onRailPointerDown: (event: React.PointerEvent) => void;
 }
 
-/** Roxo neutro para quando o token não puder ser lido. */
 const FALLBACK_TINT: Rgb = [0.55, 0.42, 1];
 
-/** A cor da categoria, lida dos mesmos tokens que pintam as estrelas. */
 function categoryRgb(category: Category): Rgb {
   return hexToRgb(readColor(`--color-cat-${category}`, ''), FALLBACK_TINT);
 }
 
-/** Estado contínuo. Mutável de propósito: é escrito a cada quadro, fora do React. */
 interface MutableState extends InputState {
   mouseXS: number;
   mouseYS: number;
   zoomS: number;
-  /** x em tela da estrela aberta — origem do avanço da câmera. */
   focusX: number;
   readerFade: number;
 }
 
-/**
- * O orquestrador. Mantém todo o estado contínuo em refs e o aplica num único
- * requestAnimationFrame que escreve tanto os uniforms do shader quanto os
- * transforms do DOM.
- *
- * Nada aqui passa por estado do React por quadro — só a fase e o bucket de
- * virtualização, que mudam raramente.
- */
 export function useCosmosEngine(
   stars: readonly PlacedStar[],
   refs: CosmosRefs,
@@ -131,7 +94,6 @@ export function useCosmosEngine(
   reader: ReaderBridge,
 ): CosmosEngine {
   const sceneRef = useRef<CoreScene | null>(null);
-  // Lido dentro do laço e dos ouvintes, que não podem depender de re-render.
   const readerRef = useRef(reader);
   readerRef.current = reader;
   const state = useRef<MutableState>({
@@ -152,12 +114,9 @@ export function useCosmosEngine(
     dragMoved: 0,
   });
 
-  // O laço lê o acervo para anunciar o ano na régua, sem se recriar por isso.
   const starsRef = useRef(stars);
   starsRef.current = stars;
 
-  // O céu é derivado do acervo inteiro, uma vez por acervo: a busca e o
-  // filtro esmaecem estrelas, não recompõem a atmosfera.
   const sky = useMemo(() => generateSky(stars, categoryRgb), [stars]);
   const skyRef = useRef(sky);
   skyRef.current = sky;
@@ -168,7 +127,6 @@ export function useCosmosEngine(
     typeof window === 'undefined' ? 1280 : window.innerWidth,
   );
 
-  // O laço precisa da largura sem depender de re-render nem consultar o DOM.
   const widthRef = useRef(viewportWidth);
   widthRef.current = viewportWidth;
 
@@ -188,14 +146,6 @@ export function useCosmosEngine(
 
   const lambda = useMemo(() => lambdas(reducedMotion), [reducedMotion]);
 
-  // -- Entradas -------------------------------------------------------------
-
-  /**
-   * Com a vista de leitura em cena a constelação não recebe mais nada.
-   *
-   * Estável de propósito: os ouvintes de `useCosmosInput` dependem dele, e um
-   * novo a cada render os recadastraria a cada render.
-   */
   const locked = useCallback((): boolean => readerRef.current.state.phase !== 'closed', []);
 
   const goHome = useCallback(() => {
@@ -261,18 +211,8 @@ export function useCosmosEngine(
     };
   }, []);
 
-  // -- O quadro -------------------------------------------------------------
-
   const panRef = useRef(0);
 
-  /**
-   * O que a régua já anunciou.
-   *
-   * O inteiro evita um `setAttribute` por quadro. O acervo entra junto porque
-   * na primeira volta ele ainda não chegou — sem estrelas não há ano, e sem
-   * este segundo gatilho a régua ficaria para sempre sem `aria-valuetext`,
-   * anunciando uma porcentagem que não diz nada.
-   */
   const announcedRef = useRef<{
     percent: number;
     stars: readonly PlacedStar[] | null;
@@ -283,7 +223,6 @@ export function useCosmosEngine(
       (delta: number) => {
         const s = state.current;
 
-        // Inércia do arraste, antes da suavização.
         if (!s.dragging && s.velocity !== 0) {
           s.pan = Math.min(
             boundsRef.current.max,
@@ -325,8 +264,6 @@ export function useCosmosEngine(
 
         const layer = refs.layer.current;
         if (layer) {
-          // A parallax cede lugar ao avanço da câmera: dois deslocamentos
-          // horizontais somados leriam como tremor.
           const parallax = s.mouseXS * 10 * (1 - zoom);
           const push_ = zoomPush(s.focusX, widthRef.current, zoom);
           const x = -s.panS + parallax - push_;
@@ -345,8 +282,6 @@ export function useCosmosEngine(
         const scrub = refs.scrub.current;
         if (scrub) {
           scrub.style.opacity = String(reveal * 0.95 * (1 - zoom));
-          // Invisível na entrada, mas ainda por cima do botão de atravessar: sem
-          // a condição da revelação, o clique no botão caía na régua.
           scrub.style.pointerEvents = reveal > 0.9 && zoom <= 0.3 ? 'auto' : 'none';
         }
         const fraction = panToScrubFraction(s.panS, boundsRef.current);
@@ -355,9 +290,6 @@ export function useCosmosEngine(
           marker.style.left = `${fraction * 100}%`;
         }
 
-        // A régua é um `slider`: precisa dizer onde está. O inteiro é o gatilho
-        // — um atributo por quadro seria ruído para a tecnologia assistiva e
-        // trabalho para o navegador.
         const percent = Math.round(fraction * 100);
         const announced = announcedRef.current;
         if (percent !== announced.percent || starsRef.current !== announced.stars) {
@@ -370,25 +302,16 @@ export function useCosmosEngine(
           }
         }
 
-        // O núcleo não existe durante a exploração do cosmos: é a porta de
-        // entrada e só reaparece no retorno. O canvas apaga pelo uOpacity do
-        // shader; o fallback em CSS precisa apagar aqui.
         const fallback = refs.fallback.current;
         if (fallback) fallback.style.opacity = String(coreOpacity(enter));
         const skyFallback = refs.skyFallback.current;
         if (skyFallback) skyFallback.style.opacity = String(atmosphereIntensity(reveal, zoom));
 
-        // A vista de leitura sobe interpolada como todo o resto: nada aparece
-        // instantaneamente. Enquanto ela não está no DOM o fade fica zerado,
-        // para que a próxima abertura comece do escuro.
         const overlay = refs.reader.current;
         if (overlay) {
           const target = reader.state.phase === 'open' ? 1 : 0;
           s.readerFade = damp(s.readerFade, target, lambda.readerFade, delta);
           overlay.style.opacity = String(s.readerFade);
-          // Assentada a abertura, nenhum transform: com ele o overlay vira o
-          // contêiner dos `position: fixed` de dentro, que passavam a rolar
-          // com o texto (o X e a barra de progresso no celular).
           overlay.style.transform = s.readerFade > 0.995 ? 'none' : `scale(${1.06 - s.readerFade * 0.06})`;
           if (target === 0 && s.readerFade < SETTLE_BELOW) {
             s.readerFade = 0;
@@ -407,9 +330,6 @@ export function useCosmosEngine(
             scene.setAtmosphere(s.panS, atmosphereIntensity(reveal, zoom));
             scene.render(delta);
           } catch (error) {
-            // Mesmo tratamento de quando o WebGL nunca existiu (CoreCanvas):
-            // descarta a cena e deixa o fallback em CSS assumir a partir do
-            // próximo quadro, em vez de tentar de novo a cada quadro.
             console.error('cena 3D falhou durante o render; caindo para o fallback em CSS', error);
             scene.dispose();
             sceneRef.current = null;

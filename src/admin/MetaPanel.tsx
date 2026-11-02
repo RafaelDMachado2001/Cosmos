@@ -78,8 +78,6 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
     editor.currentDraft.seoDescription !== '' ? editor.currentDraft.seoDescription : editor.currentDraft.subtitle;
   const siteUrl = document.querySelector('meta[name="site-url"]')?.getAttribute('content') ?? null;
   const host = siteHost(siteUrl, window.location.host);
-  // Data futura e ainda fora do ar: o mesmo `publish` agenda em vez de
-  // publicar (o servidor marca `scheduled`), e o botão diz isso.
   const schedules = !live && Date.parse(editor.publishedAt) > Date.now();
 
   return (
@@ -129,9 +127,6 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           type="datetime-local"
           className={styles.input}
           value={editor.publishedAt.slice(0, 16)}
-          // Direto, sem passar por `Date`: um datetime-local não leva fuso, e o
-          // `Date` do navegador o interpretaria como hora local, deslocando o
-          // valor. `publishedAt` é sempre UTC (ver PublicationInput.publishedAt).
           onChange={(event) => editor.setPublishedAt(`${event.target.value}:00.000Z`)}
         />
       </label>
@@ -186,9 +181,6 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           <p className={styles.seoPreviewDescription}>{seoDescription === '' ? '(sem descrição)' : seoDescription}</p>
         </div>
 
-        {/* A miniatura do og:image que o prerender desenha (src/prerender/og.tsx):
-            mesma estrela, mesma posição, mesmo título. Abaixo, o que a rede
-            social escreve embaixo da imagem. */}
         <span className={styles.label}>Prévia do card</span>
         <div className={styles.cardPreview}>
           <div
@@ -225,8 +217,6 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           <button
             type="button"
             className={styles.primaryButton}
-            // Habilitado mesmo sem pendência acusada: o autosave pode estar a
-            // caminho, e republicar o mesmo conteúdo é inofensivo.
             disabled={busy}
             onClick={() => void handlePublish()}
           >
@@ -254,12 +244,6 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
 
 type ShareFeedback = 'idle' | 'copied' | 'failed';
 
-/**
- * O link do artigo, para mandar adiante. O card não vai junto como arquivo:
- * quem desenha a prévia é a rede social, lendo o `og:image` da página — o
- * mesmo cartão que a prévia acima imita. Só com a publicação no ar: agendada,
- * o link ainda daria 404.
- */
 function ShareRow({
   enabled,
   url,
@@ -272,8 +256,6 @@ function ShareRow({
   readonly text: string;
 }): React.JSX.Element {
   const [feedback, setFeedback] = useState<ShareFeedback>('idle');
-  // A folha de compartilhamento do sistema só existe em parte dos navegadores
-  // (e só em contexto seguro); sem ela, copiar o link é o caminho.
   const canShare = typeof navigator.share === 'function';
 
   async function copy(): Promise<void> {
@@ -289,7 +271,6 @@ function ShareRow({
     try {
       await navigator.share({ url, title, text });
     } catch {
-      // Fechar a folha sem escolher nada também rejeita; não é erro.
     }
   }
 
@@ -316,11 +297,6 @@ function ShareRow({
   );
 }
 
-/**
- * A nebulosa e o movimento da tela de leitura. "Herdar" grava nulo: a
- * publicação segue o padrão (`core/appearance.ts`) e muda junto com ele.
- * A prévia é o topo do artigo, com os mesmos `CategoryTheme` e `Nebula`.
- */
 function AppearanceSection({ editor }: { readonly editor: PublicationEditorState }): React.JSX.Element {
   const inherit = editor.appearance === null;
   const current = editor.appearance ?? DEFAULT_APPEARANCE;

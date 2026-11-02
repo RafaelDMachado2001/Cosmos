@@ -10,18 +10,8 @@
   border-radius: 50%;
   cursor: pointer;
 
-  /*
-   * Sem content-visibility desde a fase 10: ele aplica contenção de pintura, e
-   * o rótulo, que pende 180px abaixo e para os lados do alvo, saía cortado. A
-   * virtualização por desmontagem (acima de VIRTUALIZE_ABOVE) segue cuidando
-   * de acervos grandes.
-   */
-
   transition: opacity var(--dur-filter) var(--ease);
 
-  /* Entrada escalonada: as estrelas surgem conforme os dados chegam, em vez de
-     aparecerem todas de uma vez. `backwards` é o que as mantém invisíveis
-     durante o atraso — sem ele elas piscariam antes da própria animação. */
   animation: starIn 700ms var(--ease) var(--reveal-delay, 0ms) backwards;
 
   --size: var(--star-core);
@@ -57,7 +47,6 @@
     var(--star-color) 42%,
     transparent 78%
   );
-  /* Brilho duplo: 4a e 1c em hex são 29% e 11%. */
   box-shadow:
     0 0 42px 8px color-mix(in srgb, var(--star-color) 29%, transparent),
     0 0 110px 24px color-mix(in srgb, var(--star-color) 11%, transparent);
@@ -77,7 +66,6 @@
   border-color: color-mix(in srgb, var(--star-color) 23%, transparent);
 }
 
-/* Rótulo sempre visível: título curto e data, centrado sob a estrela. */
 .caption {
   position: absolute;
   top: 50%;
@@ -130,7 +118,6 @@
   transform: scale(1.25);
 }
 
-/* O painel completo assume: o rótulo some e desce um pouco. */
 .hit:hover .caption,
 .hit:focus-visible .caption {
   opacity: 0;

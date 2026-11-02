@@ -9,7 +9,6 @@ import { outline } from '../../core/outline';
 import type { CodeToken } from '../../core/highlight';
 
 export interface ArticleBodyProps {
-  /** O corpo cru, como o banco guarda — Markdown do subconjunto de `core/blocks.ts`. */
   readonly markdown: string;
 }
 
@@ -101,8 +100,6 @@ function renderBlock(block: Block, key: string, headingId?: string): ReactNode {
         </pre>
       );
       if (block.filename === null) return pre;
-      // Com nome de arquivo, o cabeçalho vira a legenda do bloco: o ponto na
-      // cor da categoria, o arquivo, e a linguagem à direita.
       return (
         <figure key={key} className={styles.codeFile}>
           <figcaption className={styles.codeHeader}>
@@ -138,10 +135,7 @@ function renderBlock(block: Block, key: string, headingId?: string): ReactNode {
         </ol>
       );
     case 'table':
-      // O alinhamento vai num `data-align`, não em `style`: a regra fica
-      // inteira no CSS do módulo, junto com o resto da tabela.
       return (
-        // A rolagem horizontal precisa ser alcançável pelo teclado.
         <div key={key} className={styles.tableScroll} tabIndex={0}>
           <table className={styles.table}>
             <thead>
@@ -177,17 +171,8 @@ function renderBlock(block: Block, key: string, headingId?: string): ReactNode {
   }
 }
 
-/**
- * O corpo do artigo, desenhado uma vez só.
- *
- * `ArticlePage` (prerender, sem navegador) e `ReaderView` (overlay no
- * cliente) montavam cada um o seu próprio `body.map((p) => <p>{p}</p>)`. Este
- * componente é o que fecha essa duplicação: os dois passam a só montar
- * `<ArticleBody markdown={...} />`.
- */
 export function ArticleBody({ markdown }: ArticleBodyProps) {
   const blocks = useMemo(() => parseBlocks(markdown), [markdown]);
-  // Os mesmos ids que o sumário da leitura monta (`core/outline.ts`).
   const ids = useMemo(() => outline(blocks).map((entry) => entry.id), [blocks]);
 
   let heading = 0;

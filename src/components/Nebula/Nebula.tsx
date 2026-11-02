@@ -5,29 +5,16 @@ import { blobOpacity, nebulaLayout } from '../../core/nebula';
 import type { NebulaVariant } from '../../core/nebula';
 
 export interface NebulaProps {
-  /** A mesma semente abre sempre o mesmo céu — o slug, na leitura. */
   readonly seed: string;
   readonly variant: NebulaVariant;
-  /** 0 a 1.6; ver `core/appearance.ts`. */
   readonly intensity: number;
   readonly motion: boolean;
   readonly className?: string | undefined;
-  /**
-   * `stars`: só as estrelas, o fundo do texto corrido. `cloud`: só manchas e
-   * poeira, para quem já tem estrelas por baixo — duas camadas de estrelas
-   * cintilavam por cima do começo do texto.
-   */
   readonly layers?: 'all' | 'stars' | 'cloud';
 }
 
 const pct = (value: number): string => `${value.toFixed(2)}%`;
 
-/**
- * A nebulosa da tela de leitura, em HTML: manchas com `radial-gradient` nas
- * cores do tema, poeira escura por cima e estrelas. Sempre atrás do texto e
- * nunca alvo de ponteiro. O movimento só liga com `motion` e quando o
- * sistema não pede movimento reduzido (o CSS decide a segunda parte).
- */
 export function Nebula({
   seed,
   variant,

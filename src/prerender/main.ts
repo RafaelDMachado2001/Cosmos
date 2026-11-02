@@ -1,17 +1,3 @@
-/**
- * O passo que grava o HTML no disco, depois do build de cliente.
- *
- * Roda no Node, compilado por `vite.prerender.config.ts` para
- * `dist-ssr/prerender.js`, e é disparado pelo `postbuild` do npm — o
- * `docker/web/Dockerfile` conta com isso e não acrescenta um segundo RUN.
- *
- * Parte do HTML que o Vite emitiu no build de cliente — o `index.html` na
- * primeira passada, o sidecar `dist-ssr/template.html` depois disso (ver
- * `readTemplate`) — em vez de remontar as tags de script e de estilo a partir
- * do manifest: ali os nomes com hash já estão corretos, e recalculá-los seria
- * uma segunda fonte de verdade para a mesma coisa.
- */
-
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
@@ -36,17 +22,8 @@ const DIST = distDir(process.env);
 const TEMPLATE_DIR = templateDir(process.env);
 const SSR_DIR = 'dist-ssr';
 
-/** Onde os cartões moram, igual ao prefixo de `ogImagePath`. */
 const OG_DIR = 'og';
 
-/**
- * O CSS dos componentes estáticos, embutido em cada página.
- *
- * `ArticlePage` e `HomePage` não são importados pelo bundle de cliente — nada
- * ali os renderiza — então o CSS deles não existe no `dist`. Embutir é melhor
- * que publicar um segundo arquivo: são poucos KB, só fazem falta antes de o
- * React montar, e assim a página sem JavaScript não espera por outra requisição.
- */
 async function readStaticCss(): Promise<string> {
   const entries = await readdir(SSR_DIR, { recursive: true, withFileTypes: true });
   const sheets = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.css'));
@@ -64,17 +41,6 @@ async function readStaticCss(): Promise<string> {
   return parts.join('\n');
 }
 
-/**
- * Grava por arquivo temporário e `rename`.
- *
- * O volume `site` tem dois escritores — o entrypoint do Nginx e o job — e
- * `rename` no mesmo sistema de arquivos e atomico: quem lê ou pega o arquivo
- * antigo inteiro, ou o novo inteiro, nunca meio HTML com 200. O sufixo usa
- * `randomUUID`, não `process.pid`: os dois escritores rodam em containers
- * Docker separados, cada um com seu próprio namespace de PID, então os dois
- * podem ser PID 1 ao mesmo tempo — um nome baseado só no PID colidiria entre
- * eles.
- */
 async function write(path: string, contents: string | Uint8Array): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const temporary = `${path}.${randomUUID()}.tmp`;
@@ -82,38 +48,17 @@ async function write(path: string, contents: string | Uint8Array): Promise<void>
   await rename(temporary, path);
 }
 
-/**
- * O molde, preferindo a cópia intocada gravada ao lado do bundle.
- *
- * `<TEMPLATE_DIR>/index.html` só serve de molde na primeira passada de um
- * build novo — depois disso a raiz composta é gravada por cima dele (ver a
- * escrita da raiz em `main`). `template.html` é o sidecar que sobrevive a
- * qualquer número de publicações; ver Passo 5b.
- */
 async function readTemplate(): Promise<{ html: string; path: string }> {
   const sidecar = join(TEMPLATE_DIR, 'template.html');
   try {
     return { html: await readFile(sidecar, 'utf8'), path: sidecar };
   } catch (error) {
-    // Só a ausência do sidecar (primeira passada de um build novo, onde só
-    // existe o index.html que o Vite acabou de emitir) justifica cair para o
-    // fallback. Qualquer outro erro — permissão, leitura parcial — precisa
-    // estourar aqui: escondê-lo atrás do index.html faria a validação do SLOT
-    // culpar o arquivo errado.
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     const fallback = join(TEMPLATE_DIR, 'index.html');
     return { html: await readFile(fallback, 'utf8'), path: fallback };
   }
 }
 
-/**
- * Apaga do disco os artigos que esta passada não gravou.
- *
- * O diretório de artigo de cada idioma sai de `articlePath`: `routing.ts`
- * continua dono único dos segmentos traduzidos. Some o diretório do slug
- * inteiro, não só o `index.html` — um diretório vazio deixado para trás faria
- * o `try_files $uri/index.html` do Nginx cair no `@app` em vez de 404.
- */
 async function pruneArticles(pages: readonly PrerenderedPage[]): Promise<readonly string[]> {
   const written = new Set(pages.map((page) => page.path.replace(/^\/+/, '')));
 
@@ -124,7 +69,6 @@ async function pruneArticles(pages: readonly PrerenderedPage[]): Promise<readonl
     try {
       entries = await readdir(join(DIST, articles), { withFileTypes: true });
     } catch (error) {
-      // Primeira passada num destino vazio: nada a podar neste idioma.
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
       throw error;
     }
@@ -140,13 +84,6 @@ async function pruneArticles(pages: readonly PrerenderedPage[]): Promise<readonl
   return stale;
 }
 
-/**
- * Desenha só os cartões que ainda não existem.
- *
- * O nome é um hash de tudo o que o cartão mostra (ver `core/og.ts`): se o
- * arquivo está lá, é o mesmo desenho. É o que impede cada publicação de
- * redesenhar o acervo inteiro.
- */
 async function drawOgImages(
   pages: readonly PrerenderedPage[],
 ): Promise<{ wanted: ReadonlySet<string>; drawn: number }> {
@@ -163,10 +100,6 @@ async function drawOgImages(
   return { wanted: new Set(cards.keys()), drawn };
 }
 
-/**
- * Apaga os cartões que nenhuma página cita mais: um título editado deixa o
- * desenho antigo para trás. Só `.png` — um `.tmp` ali é escrita em andamento.
- */
 async function pruneOgImages(wanted: ReadonlySet<string>): Promise<readonly string[]> {
   let entries;
   try {
@@ -186,8 +119,6 @@ async function pruneOgImages(wanted: ReadonlySet<string>): Promise<readonly stri
 async function main(): Promise<void> {
   const { html: template, path: templatePath } = await readTemplate();
 
-  // Um prerender que não encontra onde injetar grava páginas idênticas ao
-  // index e não avisa ninguém: o site sobe, e só os buscadores percebem.
   if (!template.includes(SLOT)) {
     throw new Error(`${SLOT} não está em ${templatePath} — nada a preencher.`);
   }
@@ -195,9 +126,6 @@ async function main(): Promise<void> {
     throw new Error(`${templatePath} sem </head> — não há onde pôr o cabeçalho.`);
   }
 
-  // Antes de gravar qualquer coisa: um molde de outro build poria em cada
-  // página scripts que o destino não tem, e o site inteiro ficaria sem
-  // JavaScript respondendo 200.
   const missing = missingAssets(template, (path) => existsSync(join(DIST, path)));
   if (missing.length > 0) {
     throw new Error(
@@ -206,15 +134,6 @@ async function main(): Promise<void> {
     );
   }
 
-  /*
-   * O molde, intocado, ao lado do bundle.
-   *
-   * A linha que grava a raiz compõe por cima de <DIST>/index.html, então o
-   * próprio destino deixa de servir de molde depois da primeira passada. O job
-   * da fase 9 roda este mesmo prerender a cada publicação: sem esta cópia ele
-   * leria um SLOT já preenchido e morreria. Fica em dist-ssr porque o Nginx
-   * não serve esse diretório.
-   */
   await write(join(SSR_DIR, 'template.html'), template);
 
   const css = await readStaticCss();
@@ -227,45 +146,29 @@ async function main(): Promise<void> {
         });
   const { pages, notFound, sitemap, robots, rss, snapshot } = await prerenderPages(source);
 
-  // Os cartões antes das páginas: nenhum HTML gravado aponta para um
-  // `og:image` que ainda não existe.
   const ogPaths = await drawOgImages(pages);
 
   for (const page of pages) {
     await write(join(DIST, page.path, 'index.html'), compose(template, page, css));
   }
 
-  /**
-   * A raiz recebe a casca do idioma padrão.
-   *
-   * Sem isto `/` serviria o template cru: título genérico e corpo vazio para
-   * quem não executa JavaScript. O canonical dela aponta para `/pt`, que é onde
-   * o conteúdo mora — é o que impede `/` e `/pt` de contarem como duas URLs do
-   * mesmo texto.
-   */
   const root = pages.find((page) => page.path === homePath(DEFAULT_LOCALE));
   if (root === undefined) {
     throw new Error(`prerender sem a raiz de ${DEFAULT_LOCALE}: ${DIST}/index.html ficaria cru.`);
   }
   await write(join(DIST, 'index.html'), compose(template, root, css));
 
-  // O 404 é um arquivo solto, não uma rota: o Nginx o serve por `error_page`,
-  // mantendo o endereço que a pessoa pediu e o status que o rastreador precisa.
   await write(join(DIST, notFound.path), compose(template, notFound, css));
 
   await write(join(DIST, 'sitemap.xml'), sitemap);
   await write(join(DIST, 'robots.txt'), robots);
-  // Um feed por idioma, na mesma pasta do idioma — /pt/rss.xml, /en/rss.xml.
   for (const locale of LOCALES) {
     await write(join(DIST, locale, 'rss.xml'), rss[locale]);
   }
-  // O mesmo caminho que o cliente pede (`snapshotPath`), sem a barra inicial.
   for (const locale of LOCALES) {
     await write(join(DIST, snapshotPath(locale).slice(1)), snapshot[locale]);
   }
 
-  // Depois de gravar tudo, nunca antes: o que fica no ar durante a passada e o
-  // site anterior inteiro, e o que sai é só o que o acervo não contém mais.
   const pruned = [...(await pruneArticles(pages)), ...(await pruneOgImages(ogPaths.wanted))];
 
   console.log(

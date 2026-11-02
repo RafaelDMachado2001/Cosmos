@@ -1,8 +1,3 @@
-/**
- * Cópia de tela cheia: amplia o céu desenhado em meia resolução. A textura já
- * está em alfa pré-multiplicado, e o material também, então nada é recalculado.
- */
-
 export const COPY_VERTEX_SHADER = /* glsl */ `
 varying vec2 vUv;
 void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }

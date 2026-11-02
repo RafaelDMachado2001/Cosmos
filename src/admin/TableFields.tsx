@@ -18,11 +18,6 @@ const ALIGN_NAME: Record<NonNullable<TableAlign> | 'none', string> = {
   right: 'à direita',
 };
 
-/**
- * Uma tabela de Markdown, editada como grade. Toda linha tem sempre uma
- * célula por coluna — é o que a validação exige e o que impede o
- * serializador de completar ou cortar texto em silêncio.
- */
 export function TableFields({
   block,
   onChange,

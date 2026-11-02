@@ -1,6 +1,3 @@
-/* Na voz dos metadados (mono, caixa alta, espaçado), um degrau abaixo do
-   subtítulo: acompanham o texto, não disputam com ele. O `#` leva a cor da
-   categoria, como o filete logo abaixo. */
 .tags {
   display: flex;
   flex-wrap: wrap;
@@ -9,8 +6,6 @@
   list-style: none;
 }
 
-/* Sem especificidade: a margem de quem monta vence independentemente da
-   ordem em que os módulos de CSS chegam. */
 :where(.tags) {
   margin: 0;
 }

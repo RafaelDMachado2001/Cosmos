@@ -6,7 +6,6 @@ import styles from './BlockEditor.module.css';
 import { PayloadTooLargeError, ValidationError, api } from './api';
 import { TableFields } from './TableFields';
 
-/** O `max:20480` do MediaController (KB). */
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 const UPLOAD_TOO_LARGE = 'Imagem grande demais: o máximo é 20 MB.';
 
@@ -15,11 +14,6 @@ export interface BlockEditorProps {
   readonly onChange: (blocks: readonly DraftBlock[]) => void;
 }
 
-/**
- * `getRandomValues`, não `randomUUID`: este só existe em contexto seguro
- * (HTTPS ou localhost), e o painel aberto por HTTP em qualquer outro host
- * lançava no clique — nenhum bloco podia ser adicionado.
- */
 function newId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(12));
   return `b${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
@@ -63,10 +57,6 @@ const TYPE_LABEL: Record<DraftBlock['type'], string> = {
   table: 'Tabela',
 };
 
-/**
- * Uma textarea que cresce com o texto até `maxVh` da tela e só então rola.
- * A alça de `resize` continua: crescer é o padrão, não um teto.
- */
 function AutoTextarea({
   maxVh = 70,
   ...props
@@ -78,8 +68,6 @@ function AutoTextarea({
     if (element === null) return;
     element.style.height = 'auto';
     const max = (window.innerHeight * maxVh) / 100;
-    // +2: a borda; sem ela o `scrollHeight` sempre deixa a última linha
-    // um pixel atrás e a barra de rolagem aparece à toa.
     element.style.height = `${String(Math.min(element.scrollHeight + 2, max))}px`;
   }, [props.value, maxVh]);
 
@@ -91,11 +79,6 @@ function replace(blocks: readonly DraftBlock[], index: number, block: DraftBlock
 }
 
 export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.Element {
-  /**
-   * O bloco em que a pessoa está — o último que recebeu foco. Inserir põe o
-   * bloco novo logo depois dele; sem nenhum, no fim. Guardado pelo id para
-   * sobreviver a mover e remover blocos.
-   */
   const [activeId, setActiveId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const cardRefs = useRef(new Map<string, HTMLDivElement>());
@@ -105,7 +88,6 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.E
     const card = cardRefs.current.get(focusId);
     setFocusId(null);
     if (card === undefined) return;
-    // jsdom não implementa `scrollIntoView`.
     card.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
     card.querySelector<HTMLElement>('textarea, input')?.focus({ preventScroll: true });
   }, [focusId]);
@@ -179,8 +161,6 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.E
         );
       })}
 
-      {/* Presa ao rodapé da coluna: num texto longo, inserir não exige rolar
-          até o fim, e o bloco novo entra depois daquele em que se está. */}
       <div className={styles.addBar} role="toolbar" aria-label="Inserir bloco">
         <span className={styles.addHint}>
           {activeIndex === -1 ? 'Inserir no fim' : `Inserir após o bloco ${String(activeIndex + 1)}`}
@@ -404,8 +384,6 @@ function ImageFields({
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   async function handleFile(file: File): Promise<void> {
-    // O mesmo teto do MediaController; checado aqui para não subir 30 MB só
-    // para ouvir um 413.
     if (file.size > MAX_UPLOAD_BYTES) {
       setUploadError(UPLOAD_TOO_LARGE);
       return;

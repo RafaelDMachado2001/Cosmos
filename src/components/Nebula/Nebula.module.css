@@ -32,7 +32,6 @@
   opacity: 0.7;
 }
 
-/* Brilho em cruz: dois traços de 1px atravessando a estrela. */
 .sparkle {
   opacity: 0.9;
   box-shadow: 0 0 6px 1px color-mix(in oklch, var(--cat, #ffffff) 50%, #ffffff);
