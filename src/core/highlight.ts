@@ -1,20 +1,3 @@
-/**
- * Syntax highlighting dos blocos de código, em tokens — nunca em HTML.
- *
- * Mesmo princípio de `core/blocks.ts`: uma gramática pequena escrita à mão,
- * em TypeScript puro, consumida igual pelo prerender (Node), pela vista de
- * leitura e pela pré-visualização do RDM Studio. Uma biblioteca (Shiki,
- * highlight.js) traria gramáticas completas e um motor de regex inteiro para
- * o bundle do cliente; aqui bastam comentário, texto, número e palavra-chave,
- * o que dá ao leitor a estrutura do código sem pretender ser um editor.
- *
- * Linguagem desconhecida ou ausente devolve o código inteiro como um token
- * `plain` — nunca uma cor errada. A concatenação dos tokens é sempre o código
- * original, caractere por caractere.
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 export type CodeTokenKind = 'plain' | 'keyword' | 'string' | 'number' | 'comment';
 
 export interface CodeToken {
@@ -23,7 +6,6 @@ export interface CodeToken {
 }
 
 interface Grammar {
-  /** Alternativas de comentário, em ordem; cada uma um trecho de regex. */
   readonly comments: readonly string[];
   readonly strings: readonly string[];
   readonly keywords: ReadonlySet<string>;
@@ -32,7 +14,6 @@ interface Grammar {
 
 const LINE_SLASH = String.raw`\/\/[^\n]*`;
 const BLOCK_SLASH = String.raw`\/\*[\s\S]*?(?:\*\/|$)`;
-/** `#` só abre comentário no começo da linha ou depois de espaço (`$#` no shell não). */
 const LINE_HASH = String.raw`(?<![^\s])#[^\n]*`;
 const LINE_DASH = String.raw`--[^\n]*`;
 

@@ -1,20 +1,3 @@
-/**
- * O céu procedural por trás da constelação: nebulosas e galáxias.
- *
- * Gerado uma vez por acervo e enviado ao shader de fundo por culling a cada
- * quadro. Nada aqui é desenhado à mão — tudo vem de uma sequência
- * determinística.
- *
- * **Divergência deliberada do handoff.** Lá a semente é o hash dos ids, e uma
- * publicação nova recompõe o céu inteiro. Aqui a semente é fixa e a sequência
- * avança pela linha do tempo, então o céu já gerado é um prefixo do próximo:
- * publicar só estende a ponta direita e retinge as nebulosas vizinhas da
- * estrela nova. É a mesma garantia que `placeStars` dá às estrelas — publicar
- * não move nada que já estava lá — e continua valendo "mesma lista, mesmo céu".
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 import { fnv1a32 } from './hash';
 import { mulberry32 } from './random';
 import { strandExtent } from './geometry';
@@ -24,9 +7,7 @@ import type { Category } from './types';
 export type Rgb = readonly [number, number, number];
 
 export interface Nebula {
-  /** x no espaço da camada, já multiplicado pelo fator de parallax. */
   readonly px: number;
-  /** Altura em fração da viewport. */
   readonly y01: number;
   readonly radius: number;
   readonly weight: number;
@@ -34,11 +15,9 @@ export interface Nebula {
 }
 
 export interface Galaxy {
-  /** x no espaço da camada, já multiplicado pelo fator de parallax. */
   readonly px: number;
   readonly y01: number;
   readonly size: number;
-  /** Achatamento do disco, aplicado no eixo y antes da rotação. */
   readonly squash: number;
   readonly angle: number;
   readonly brightness: number;
@@ -50,15 +29,8 @@ export interface Sky {
 }
 
 export const ATMOSPHERE = {
-  /** Fixa de propósito: ver a nota do módulo. */
   seed: fnv1a32('rdm-cosmos/atmosfera'),
-  /** Onde a sequência começa, no espaço da linha do tempo. */
   startX: 120,
-  /**
-   * Quanto o céu passa da última estrela. O handoff usa 600; aqui é maior
-   * porque a camada anda mais devagar que o pan, e numa tela larga a ponta
-   * direita do céu ficaria à vista antes da última estrela sair dela.
-   */
   tailPx: 3000,
   nebulaChance: 0.58,
   galaxyMinGapPx: 2400,
@@ -67,14 +39,12 @@ export const ATMOSPHERE = {
   nebulaParallax: 0.6,
   galaxyParallax: 0.3,
   basePurple: [0.4, 0.27, 0.92] as Rgb,
-  /** Quanto da cor da categoria entra na nebulosa: 32% a 52%. */
   tintMin: 0.32,
   tintRange: 0.2,
   maxNebulae: { wide: 8, narrow: 5 },
   maxGalaxies: 3,
 } as const;
 
-/** Estrela mais próxima de x. `stars` vem ordenado por x de `placeStars`. */
 function nearest(stars: readonly PlacedStar[], x: number): PlacedStar | undefined {
   let low = 0;
   let high = stars.length - 1;
@@ -98,11 +68,6 @@ function mix(base: Rgb, tint: Rgb, k: number): Rgb {
   ];
 }
 
-/**
- * Percorre a linha do tempo em passos de 460–1020px. Em cada parada: nebulosa
- * (58%), galáxia (se a última estiver a mais de 2400px) ou vazio, que é o
- * respiro entre elas.
- */
 export function generateSky(
   stars: readonly PlacedStar[],
   colorOf: (category: Category) => Rgb,
@@ -146,15 +111,10 @@ export function generateSky(
   return { nebulae, galaxies };
 }
 
-/**
- * Quanto do céu aparece. Acompanha a revelação do cosmos — invisível na
- * entrada, sobe com a travessia — e cai a 45% quando um artigo se abre.
- */
 export function atmosphereIntensity(reveal: number, zoom: number): number {
   return reveal * (1 - zoom * 0.55);
 }
 
-/** Saída do culling. Reaproveitada a cada quadro para não alocar no laço. */
 export interface SkyCull {
   readonly nebulae: Nebula[];
   readonly galaxies: Galaxy[];
@@ -164,10 +124,6 @@ export function emptyCull(): SkyCull {
   return { nebulae: [], galaxies: [] };
 }
 
-/**
- * O que está na tela, com margem, até o teto de cada tipo. O shader recebe
- * arrays de tamanho fixo, então o custo por pixel não cresce com o acervo.
- */
 export function cullSky(
   sky: Sky,
   pan: number,
@@ -198,21 +154,13 @@ export function cullSky(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Anos gigantes
-// ---------------------------------------------------------------------------
-
-/** Camada dos anos gigantes: anda a 75% do pan, atrás da constelação. */
 export const YEAR_LAYER = {
   parallax: 0.75,
-  /** Fração da parallax do ponteiro e do avanço da câmera que a camada segue. */
   pointerShare: 0.4,
   pushShare: 0.6,
-  /** O quanto ela cresce com o artigo aberto: bem menos que a constelação. */
   zoomGrowth: 0.4,
 } as const;
 
-/** x do numeral dentro da camada, a partir do x do 1º de janeiro na linha do tempo. */
 export function giantYearX(timelineX: number): number {
   return timelineX * YEAR_LAYER.parallax;
 }
@@ -222,11 +170,6 @@ export interface LayerTransform {
   readonly scale: number;
 }
 
-/**
- * Deslocamento da camada dos anos, a partir dos mesmos valores que movem a
- * constelação: `pointerX` é a parallax do ponteiro e `push` o avanço da
- * câmera na abertura de um artigo, ambos em px.
- */
 export function yearLayerTransform(
   pan: number,
   pointerX: number,

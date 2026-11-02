@@ -20,11 +20,9 @@ export const en: Dictionary = {
     brand: 'RDM LABS',
     home: 'START',
     categories: 'CATEGORIES',
-    /** Distingue este landmark dos outros `nav` da página. */
     primaryLabel: 'Main navigation',
     skipToContent: 'Skip to content',
     localeLabel: 'Language',
-    /** O outro idioma, nomeado na língua dele. */
     otherLocale: 'PORTUGUÊS',
     otherLocaleTag: 'pt-BR',
   },

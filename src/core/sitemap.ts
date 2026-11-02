@@ -1,62 +1,26 @@
-/**
- * O `sitemap.xml` e o `robots.txt`, gerados do acervo.
- *
- * O handoff pede o sitemap "a partir das publicações publicadas": nada aqui é
- * escrito à mão, pelo mesmo motivo que nenhuma coordenada de estrela é. Publicar
- * um item novo deve bastar.
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 import { articlePath, homePath } from './routing';
 import { DEFAULT_LOCALE, LOCALES } from './types';
 import type { MetaSite } from './seo';
 import type { Locale } from './types';
 import { absolute } from './url';
 
-/** O mínimo que uma URL do sitemap precisa saber da publicação. */
 export interface SitemapEntry {
   readonly slug: string;
-  /** ISO 8601. Vira o `lastmod` quando não há edição depois da publicação. */
   readonly publishedAt: string;
-  /**
-   * ISO 8601. Maior que `publishedAt` quando o texto foi editado depois de
-   * publicado — editar só a tradução não toca a linha da publicação no
-   * banco, então o servidor já devolve o maior dos dois. Ausente nas
-   * publicações que nunca viram o backend (acervo semente, sintéticas).
-   */
   readonly updatedAt?: string;
-  /**
-   * Os idiomas que de fato têm tradução — uma publicação pode existir só num
-   * deles (o formulário do painel permite). Sem isto o sitemap gerava uma
-   * `<url>` e um par de `hreflang` reciprocamente para um idioma que nunca
-   * foi pré-renderizado: o buscador e o seletor de idioma caíam num 404.
-   */
   readonly locales: readonly Locale[];
-  /** `false` tira a publicação do sitemap sem tirá-la do ar. Default `true`. */
   readonly indexable?: boolean;
 }
 
-/** `lastmod` aceita a data sozinha, e é tudo o que se sabe: não há hora de revisão. */
 function day(iso: string): string {
   return iso.slice(0, 10);
 }
 
-/** O mais recente dos dois, como dia — nunca o de publicação sozinho se houve edição depois. */
 function lastmod(entry: SitemapEntry): string {
   if (entry.updatedAt === undefined) return day(entry.publishedAt);
   return day(Date.parse(entry.updatedAt) > Date.parse(entry.publishedAt) ? entry.updatedAt : entry.publishedAt);
 }
 
-/**
- * Uma `<url>` com as suas alternativas.
- *
- * Cada idioma ganha a sua própria entrada, e todas as entradas listam todos os
- * idiomas disponíveis — inclusive a si mesmas. É o que a especificação de
- * sitemaps pede: o conjunto tem de ser recíproco, senão o buscador descarta os
- * pares. `locales` restringe a quais — uma publicação num só idioma não tem
- * par para anunciar.
- */
 function urlEntry(
   origin: string,
   path: (locale: Locale) => string,
@@ -64,8 +28,6 @@ function urlEntry(
   lastmod: string | null,
   locales: readonly Locale[],
 ): string {
-  // x-default aponta para o idioma padrão quando ele existe; senão, para
-  // qualquer um dos que existem — nunca para um idioma ausente.
   const defaultTarget = locales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : locales[0];
   const alternates = [
     ...locales.map((target) => ({ hreflang: target, href: absolute(origin, path(target)) })),

@@ -1,13 +1,3 @@
-/**
- * Tempo de leitura, derivado do corpo — nunca gravado, pelo mesmo motivo
- * que o sumário: editar o texto já o atualiza, e não existe valor velho.
- *
- * 220 palavras por minuto; código pesa duas palavras por linha (lê-se mais
- * devagar, mas tem menos palavras); imagem não conta. Mínimo de um minuto.
- *
- * Módulo puro: sem DOM, sem React, sem Three.
- */
-
 import type { Block } from './blocks';
 import { inlineText } from './outline';
 
@@ -41,7 +31,6 @@ function blockWords(block: Block): number {
   }
 }
 
-/** As palavras do corpo, com o mesmo peso do tempo de leitura: o `wordCount` do JSON-LD. */
 export function wordCount(blocks: readonly Block[]): number {
   return blocks.reduce((sum, block) => sum + blockWords(block), 0);
 }

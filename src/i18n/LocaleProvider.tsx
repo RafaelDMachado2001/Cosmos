@@ -6,13 +6,11 @@ import { DICTIONARIES } from './dictionaries';
 import { DEFAULT_LOCALE, STORAGE_KEY, isLocale } from './types';
 import type { Locale } from './types';
 
-/** localStorage lança em modo privado em alguns navegadores; nunca deixar quebrar o boot. */
 function readStoredLocale(): Locale {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (isLocale(stored)) return stored;
   } catch {
-    /* sem armazenamento: cai para o idioma do navegador */
   }
   const prefix = window.navigator.language.slice(0, 2);
   return isLocale(prefix) ? prefix : DEFAULT_LOCALE;
@@ -23,7 +21,6 @@ export function LocaleProvider({
   initial,
 }: {
   children: ReactNode;
-  /** Numa carga direta de /en/publications/... a URL manda, não o armazenamento. */
   initial?: Locale;
 }) {
   const [locale, setLocaleState] = useState<Locale>(() => initial ?? readStoredLocale());
@@ -33,7 +30,6 @@ export function LocaleProvider({
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      /* preferência não persistida: não é motivo para falhar */
     }
   }, []);
 

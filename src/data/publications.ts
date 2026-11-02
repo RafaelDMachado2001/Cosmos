@@ -1,29 +1,7 @@
-/**
- * Acervo semente.
- *
- * São as 14 publicações do protótipo. Treze são fictícias e existem para
- * exercitar as quatro categorias e a distribuição temporal de 2024 a 2026 —
- * substituir por conteúdo real. A décima quarta é real e está marcada abaixo.
- *
- * Os slugs são ASCII de propósito: é o que garante que o FNV-1a sobre bytes
- * UTF-8 e sobre code units UTF-16 coincidam, protegendo a paridade das
- * posições quando o backend em PHP assumir o cálculo.
- */
-
 import type { Publication } from '../core/types';
 
-/** A única publicação real do acervo semente. */
 export const REAL_PUBLICATION_SLUG = 'arquitetura-e-orquestracao-de-llms';
 
-/**
- * Corpo de demonstração, igual ao do protótipo. Cada publicação recebe um
- * parágrafo de abertura próprio antes deste Markdown, para que a vista de
- * leitura não fique idêntica entre itens enquanto o conteúdo real não chega.
- *
- * Exercita os seis tipos de bloco de `core/blocks.ts` — é o que prova, no
- * acervo semente, que `ArticleBody` desenha título, citação e lista, não só
- * parágrafo.
- */
 const DEMO_BODY = {
   pt: `## Como este texto chega até aqui
 
@@ -324,7 +302,6 @@ export const PUBLICATIONS: readonly Publication[] = [
         'A legacy system is a system that works. That sounds obvious until the first time you rewrite something "badly done" and find out what it was for.',
     },
   }),
-  // --- A única publicação real do acervo -----------------------------------
   seed({
     slug: REAL_PUBLICATION_SLUG,
     date: '2026-09-09',
