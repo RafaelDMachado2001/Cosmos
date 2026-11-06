@@ -112,6 +112,40 @@ describe('BlockEditor: tabela', () => {
   });
 });
 
+describe('BlockEditor: diagrama', () => {
+  const DIAGRAM = { id: 'd0', type: 'diagram', source: 'flow f\na "A"\na -> b' } as const;
+
+  it('mostra os erros com o número da linha, e nada com a fonte válida', () => {
+    const { rerender } = render(<BlockEditor blocks={[DIAGRAM]} onChange={() => undefined} />);
+    expect(screen.getByRole('list', { name: 'Erros do diagrama' }).textContent).toBe(
+      'linha 3: o nó "b" não foi declarado.',
+    );
+
+    rerender(<BlockEditor blocks={[{ ...DIAGRAM, source: 'flow f\na "A"' }]} onChange={() => undefined} />);
+    expect(screen.getByRole('list', { name: 'Erros do diagrama' }).textContent).toBe('');
+  });
+
+  it('digitar atualiza a fonte, em campo mono', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={[{ ...DIAGRAM, source: '' }]} onChange={onChange} />);
+
+    const field = screen.getByRole('textbox', { name: 'Fonte do diagrama' });
+    expect(field.className).toContain('textareaMono');
+    await userEvent.type(field, 'f');
+
+    expect(onChange.mock.calls[0]?.[0]).toEqual([{ ...DIAGRAM, source: 'f' }]);
+  });
+
+  it('o botão insere um bloco diagrama', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={[]} onChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: '+ Diagrama' }));
+
+    expect(onChange.mock.calls[0]?.[0]).toMatchObject([{ type: 'diagram', source: '' }]);
+  });
+});
+
 describe('BlockEditor: fluxo', () => {
   const FLOW = { id: 'f0', type: 'flow', steps: ['Ler', 'Escrever', 'Publicar'] } as const;
 

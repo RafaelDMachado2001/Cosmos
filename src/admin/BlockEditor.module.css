@@ -110,6 +110,14 @@
   color: var(--color-cat-rotina);
 }
 
+.errorList {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .addBar {
   position: sticky;
   bottom: 0;

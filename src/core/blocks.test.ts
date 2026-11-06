@@ -414,3 +414,27 @@ describe('destaque, nota e fluxo', () => {
     ]);
   });
 });
+
+describe('parseBlocks: cerca de diagrama', () => {
+  const source = 'flow f\na "A"';
+
+  it('vira bloco diagram, com a fonte crua e o resultado do parse', () => {
+    const [block] = parseBlocks(['```diagram', source, '```'].join('\n'));
+    expect(block).toMatchObject({ type: 'diagram', source, result: { ok: true } });
+  });
+
+  it('inválido continua bloco diagram, com os erros', () => {
+    const [block] = parseBlocks(['```diagram', 'flow f', '```'].join('\n'));
+    expect(block).toMatchObject({ type: 'diagram', result: { ok: false } });
+  });
+
+  it('outras linguagens seguem código', () => {
+    const [text] = parseBlocks(['```text', source, '```'].join('\n'));
+    expect(text).toEqual({ type: 'code', code: source, language: 'text', filename: null });
+  });
+
+  it('com nome de arquivo segue código', () => {
+    const [block] = parseBlocks(['```diagram title="a.txt"', source, '```'].join('\n'));
+    expect(block).toMatchObject({ type: 'code', language: 'diagram', filename: 'a.txt' });
+  });
+});

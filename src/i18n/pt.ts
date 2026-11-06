@@ -50,6 +50,12 @@ export const pt = {
     resume: 'Continuar de onde parou',
     tags: 'Tags',
   },
+  diagram: {
+    to: 'para',
+    via: 'via',
+    when: 'quando',
+    isolated: 'sem conexões',
+  },
   categories: {
     filterBy: 'FILTRAR POR CATEGORIA',
     all: 'Tudo',

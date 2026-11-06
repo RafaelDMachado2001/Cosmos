@@ -5,6 +5,14 @@ import { outline } from './outline';
 import { parseSavedProgress, percentLabel, scrollProgress, shouldOfferResume } from './readingProgress';
 import { readingMinutes } from './readingTime';
 
+describe('readingMinutes: diagrama', () => {
+  it('não soma tempo, como a imagem', () => {
+    const diagram = `\`\`\`diagram\nflow f\nn "N"\n\`\`\``;
+    const prose = 'palavra '.repeat(221);
+    expect(readingMinutes(parseBlocks(`${prose}\n\n${diagram}`))).toBe(readingMinutes(parseBlocks(prose)));
+  });
+});
+
 describe('outline', () => {
   it('um id por intertítulo, sem acento nem marcação, único no artigo', () => {
     const blocks = parseBlocks(['## Introdução', 'texto', '### O `código`', '## Introdução', '## !!!', '## Introdução'].join('\n\n'));

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseBlocks } from './blocks';
+import { REFERENCE_DIAGRAM } from './diagram/fixture';
 import type { Block } from './blocks';
 import { blocksToDraftBlocks, draftBlocksToMarkdown } from './draftBlocks';
 import type { DraftBlock } from './draftBlocks';
@@ -165,6 +166,19 @@ describe('fidelidade: rascunho -> Markdown -> leitura', () => {
       { id: 'b6', type: 'code', lang: null, filename: 'Makefile', text: 'all:' },
     ];
     expect(blocksToDraftBlocks(draftBlocksToMarkdown(blocks))).toEqual(blocks);
+  });
+
+  it('diagrama faz ida e volta exata, com crases e espaços na fonte', () => {
+    const blocks: readonly DraftBlock[] = [
+      { id: 'b0', type: 'p', text: 'Antes.' },
+      { id: 'b1', type: 'diagram', source: REFERENCE_DIAGRAM },
+      { id: 'b2', type: 'diagram', source: 'flow f\n```\n\n  a   "A"  ' },
+      { id: 'b3', type: 'p', text: 'Depois.' },
+    ];
+    expect(blocksToDraftBlocks(draftBlocksToMarkdown(blocks))).toEqual(blocks);
+    expect(draftBlocksToMarkdown(blocksToDraftBlocks(draftBlocksToMarkdown(blocks)))).toBe(
+      draftBlocksToMarkdown(blocks),
+    );
   });
 
   it('citação que começa com o marcador continua citação', () => {

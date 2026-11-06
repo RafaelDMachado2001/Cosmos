@@ -7,6 +7,7 @@ namespace App\Modules\Content\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Modules\Content\Http\Resources\Admin\PublicationAdminResource;
 use App\Modules\Content\Models\Publication;
+use App\Modules\Content\Models\PublicationDraft;
 use App\Modules\Content\Models\PublicationTranslation;
 use App\Modules\Content\Models\Tag;
 use App\Modules\Content\Rules\ValidDraftBlocks;
@@ -175,11 +176,21 @@ class PublicationAdminController extends Controller
             ]);
         }
 
-        foreach ($publication->drafts as $draft) {
-            if (trim((string) $draft->title) === '' || $draft->blocks === []) {
-                continue;
-            }
+        $publishable = $publication->drafts->reject(
+            fn (PublicationDraft $draft): bool => trim((string) $draft->title) === '' || $draft->blocks === [],
+        );
 
+        foreach ($publishable as $draft) {
+            $errors = DraftBlocksCli::diagramErrors($draft->blocks);
+
+            if ($errors !== []) {
+                throw ValidationException::withMessages([
+                    "drafts.{$draft->locale}.blocks" => array_column($errors, 'message'),
+                ]);
+            }
+        }
+
+        foreach ($publishable as $draft) {
             $publication->translations()->updateOrCreate(
                 ['locale' => $draft->locale],
                 [

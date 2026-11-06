@@ -1,5 +1,6 @@
 import { blocksToDraftBlocks, draftBlocksToMarkdown } from '../src/core/draftBlocks';
 import type { DraftBlock } from '../src/core/draftBlocks';
+import { validateDiagramBlocks } from '../src/core/draftValidation';
 
 function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -25,6 +26,12 @@ async function main(): Promise<void> {
   if (command === 'blocks-to-markdown') {
     const blocks = JSON.parse(input) as readonly DraftBlock[];
     process.stdout.write(draftBlocksToMarkdown(blocks));
+    return;
+  }
+
+  if (command === 'validate-diagrams') {
+    const blocks = JSON.parse(input) as readonly DraftBlock[];
+    process.stdout.write(JSON.stringify(validateDiagramBlocks(blocks)));
     return;
   }
 

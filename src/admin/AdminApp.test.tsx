@@ -139,6 +139,46 @@ describe('AdminApp', () => {
     );
   });
 
+  it('diagrama inválido em qualquer idioma impede publicar, sem chamar a API', async () => {
+    const base = publication();
+    api.list.mockResolvedValue([
+      publication({
+        drafts: {
+          ...base.drafts,
+          en: {
+            locale: 'en',
+            title: 'T',
+            subtitle: '',
+            blocks: [{ id: 'd0', type: 'diagram', source: 'flow f\na -> b' }],
+            seoTitle: null,
+            seoDescription: null,
+            updatedAt: null,
+          },
+        },
+      }),
+    ]);
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.click(await screen.findByRole('button', { name: 'Publicar' }));
+
+    expect(await screen.findByText(/Corrija o diagrama antes de publicar\. linha 2/)).not.toBeNull();
+    expect(api.publish).not.toHaveBeenCalled();
+  });
+
+  it('a pré-visualização usa a cor da categoria', async () => {
+    api.list.mockResolvedValue([publication({ category: 'rotina' })]);
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.click(await screen.findByRole('button', { name: 'Pré-visualizar' }));
+
+    const preview = screen.getByText('Um parágrafo.').parentElement;
+    expect(preview?.style.getPropertyValue('--cat')).toBe('var(--color-cat-rotina)');
+  });
+
   it('se o salvamento falha, não publica', async () => {
     api.list.mockResolvedValue([publication()]);
     api.update.mockRejectedValue(new Error('500'));

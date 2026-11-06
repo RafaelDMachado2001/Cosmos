@@ -35,6 +35,11 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
   const live = publication.status === 'published' || publication.status === 'scheduled';
 
   async function handlePublish(): Promise<void> {
+    const [diagramError] = editor.diagramErrors;
+    if (diagramError !== undefined) {
+      setActionError(`Corrija o diagrama antes de publicar. ${diagramError}`);
+      return;
+    }
     setBusy(true);
     setActionError(null);
     try {

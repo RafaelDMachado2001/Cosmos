@@ -1,4 +1,5 @@
-import { safeUrl } from './blocks';
+import { DIAGRAM_LANGUAGE, safeUrl } from './blocks';
+import { diagramErrorMessages } from './diagram/parse';
 import type { DraftBlock } from './draftBlocks';
 
 function words(text: string): number {
@@ -27,6 +28,7 @@ export function wordCount(blocks: readonly DraftBlock[]): number {
       case 'table':
         return total + [block.header, ...block.rows].flat().reduce((sum, cell) => sum + words(cell), 0);
       case 'code':
+      case 'diagram':
         return total;
     }
   }, 0);
@@ -42,7 +44,11 @@ export function validateDraftBlock(block: DraftBlock): string | null {
     case 'code':
       if (block.text.trim() === '') return 'Código vazio.';
       if (block.lang !== null && /[\s`]/.test(block.lang.trim())) return 'Linguagem sem espaços nem crases.';
+      if (block.lang?.trim() === DIAGRAM_LANGUAGE) return 'Para um diagrama, use o bloco Diagrama.';
       return null;
+    case 'diagram':
+      if (block.source.trim() === '') return 'Diagrama vazio.';
+      return diagramErrorMessages(block.source)[0] ?? null;
     case 'highlight':
     case 'note':
       return block.text.trim() === '' ? 'Texto vazio.' : null;
@@ -74,4 +80,14 @@ export function validateDraftBlocks(
     if (message !== null) errors.push({ id: block.id, message });
   }
   return errors;
+}
+
+function carriesDiagram(block: DraftBlock): boolean {
+  return block.type === 'diagram' || (block.type === 'code' && block.lang?.trim() === DIAGRAM_LANGUAGE);
+}
+
+export function validateDiagramBlocks(
+  blocks: readonly DraftBlock[],
+): readonly { readonly id: string; readonly message: string }[] {
+  return validateDraftBlocks(blocks.filter(carriesDiagram));
 }

@@ -214,6 +214,9 @@ class PublicationAdminApiTest extends TestCase
         yield 'fluxo de uma etapa' => [['id' => 'b0', 'type' => 'flow', 'steps' => ['Só']]];
         yield 'fluxo com etapa vazia' => [['id' => 'b0', 'type' => 'flow', 'steps' => ['Ler', '']]];
         yield 'fluxo sem lista' => [['id' => 'b0', 'type' => 'flow', 'steps' => 'Ler, Escrever']];
+        yield 'diagrama sem fonte' => [['id' => 'b0', 'type' => 'diagram']];
+        yield 'diagrama vazio' => [['id' => 'b0', 'type' => 'diagram', 'source' => '   ']];
+        yield 'diagrama longo demais' => [['id' => 'b0', 'type' => 'diagram', 'source' => str_repeat('a', 4001)]];
         yield 'nome de arquivo longo demais' => [['id' => 'b0', 'type' => 'code', 'lang' => null, 'filename' => str_repeat('a', 256), 'text' => 'x']];
     }
 
@@ -225,6 +228,62 @@ class PublicationAdminApiTest extends TestCase
         $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
             'drafts' => ['pt' => ['blocks' => [$block]]],
         ])->assertUnprocessable()->assertJsonValidationErrors('drafts.pt.blocks');
+    }
+
+    public function test_autosave_guarda_diagrama_com_erro_de_sintaxe(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $blocks = [['id' => 'b0', 'type' => 'diagram', 'source' => "flow f\na -> b"]];
+
+        $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
+            'drafts' => ['pt' => ['blocks' => $blocks]],
+        ])->assertOk();
+
+        $this->assertEquals($blocks, $publication->drafts()->where('locale', 'pt')->first()?->blocks);
+    }
+
+    public function test_publicar_serializa_o_diagrama_em_cerca(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $publication->drafts()->where('locale', 'pt')->update([
+            'title' => 'Título',
+            'blocks' => [['id' => 'b0', 'type' => 'diagram', 'source' => "flow f\na \"A\""]],
+        ]);
+
+        $this->actingAs($this->admin())
+            ->postJson("/admin/api/publications/{$publication->id}/publish")
+            ->assertOk();
+
+        $this->assertSame(
+            "```diagram\nflow f\na \"A\"\n```",
+            $publication->translations()->where('locale', 'pt')->first()?->body,
+        );
+    }
+
+    /** @return iterable<string, array{array<string, mixed>}> */
+    public static function diagramasQueNaoPublicam(): iterable
+    {
+        yield 'sintaxe inválida' => [['id' => 'b0', 'type' => 'diagram', 'source' => "flow f\na -> b"]];
+        yield 'código com a linguagem diagram' => [['id' => 'b0', 'type' => 'code', 'lang' => 'diagram', 'text' => 'flow f']];
+    }
+
+    #[DataProvider('diagramasQueNaoPublicam')]
+    public function test_diagrama_invalido_impede_publicar(array $block): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $publication->drafts()->where('locale', 'pt')->update([
+            'title' => 'Título',
+            'blocks' => [['id' => 'a0', 'type' => 'p', 'text' => 'Texto.']],
+        ]);
+        $publication->drafts()->where('locale', 'en')->update(['title' => 'Title', 'blocks' => [$block]]);
+
+        $this->actingAs($this->admin())
+            ->postJson("/admin/api/publications/{$publication->id}/publish")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('drafts.en.blocks');
+
+        $this->assertSame(0, $publication->translations()->count());
+        $this->assertSame(Publication::STATUS_DRAFT, $publication->refresh()->status);
     }
 
     public function test_aparencia_grava_limpa_e_recusa_fora_da_faixa(): void

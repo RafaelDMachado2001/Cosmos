@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 
+import { diagramErrorMessages } from '../core/diagram/parse';
 import { validateDraftBlock } from '../core/draftValidation';
 import type { DraftBlock } from '../core/draftBlocks';
 import styles from './BlockEditor.module.css';
@@ -35,6 +36,8 @@ function blankBlock(type: DraftBlock['type']): DraftBlock {
       return { id: newId(), type, steps: ['', ''] };
     case 'code':
       return { id: newId(), type, lang: null, filename: null, text: '' };
+    case 'diagram':
+      return { id: newId(), type, source: '' };
     case 'list':
       return { id: newId(), type, ordered: false, items: [''] };
     case 'img':
@@ -54,6 +57,7 @@ const TYPE_LABEL: Record<DraftBlock['type'], string> = {
   flow: 'Fluxo',
   list: 'Lista',
   code: 'Código',
+  diagram: 'Diagrama',
   img: 'Imagem',
   table: 'Tabela',
 };
@@ -157,7 +161,7 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps): React.JSX.E
 
             <BlockFields block={block} onChange={(next) => update(index, next)} />
 
-            {error !== null && <p className={styles.error}>{error}</p>}
+            {block.type !== 'diagram' && error !== null && <p className={styles.error}>{error}</p>}
           </div>
         );
       })}
@@ -261,6 +265,8 @@ function BlockFields({
           />
         </div>
       );
+    case 'diagram':
+      return <DiagramFields block={block} onChange={onChange} />;
     case 'list':
       return <ListFields block={block} onChange={onChange} />;
     case 'img':
@@ -268,6 +274,37 @@ function BlockFields({
     case 'table':
       return <TableFields block={block} onChange={onChange} />;
   }
+}
+
+function DiagramFields({
+  block,
+  onChange,
+}: {
+  readonly block: Extract<DraftBlock, { type: 'diagram' }>;
+  readonly onChange: (block: DraftBlock) => void;
+}): React.JSX.Element {
+  const errors = block.source.trim() === '' ? [] : diagramErrorMessages(block.source);
+
+  return (
+    <div className={styles.fieldGroup}>
+      <AutoTextarea
+        className={styles.textareaMono}
+        aria-label="Fonte do diagrama"
+        placeholder={'flow meu-fluxo\n\na "Origem"\nb "Destino"\n\na -> b : rótulo'}
+        spellCheck={false}
+        value={block.source}
+        onChange={(event) => onChange({ ...block, source: event.target.value })}
+        rows={8}
+      />
+      <ul className={styles.errorList} aria-label="Erros do diagrama" aria-live="polite">
+        {errors.map((message) => (
+          <li key={message} className={styles.error}>
+            {message}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function FlowFields({
