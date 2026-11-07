@@ -64,6 +64,7 @@ export const pt = {
     scenarios: 'Cenários do diagrama',
     rangeFrom: 'de',
     rangeTo: 'a',
+    repliesTo: 'responde a',
     zones: 'Zonas do espectro',
     inTheCup: 'Na xícara',
     diagnosis: 'Diagnóstico',

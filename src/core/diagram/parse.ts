@@ -1,7 +1,8 @@
 import { findReturnEdges } from './cycles';
 import { charCount } from './measure';
 import { parseSpectrum } from './parseSpectrum';
-import { DIRECTIVE_RE, ID_RE, closest, hasOddQuotes, sortedErrors, sourceLines } from './parseText';
+import { parseSequence } from './parseSequence';
+import { DIRECTIVE_RE, ID_RE, NODE_RE, closest, hasOddQuotes, sortedErrors, sourceLines } from './parseText';
 import type {
   DiagramDirection,
   DiagramEdge,
@@ -30,7 +31,6 @@ export const DIAGRAM_LIMITS = {
   stateHint: 120,
 } as const;
 
-const NODE_RE = /^(\S+)\s+"([^"]*)"\s*(?:\/\s*(.*))?$/;
 const EDGE_TARGET_RE = /^(\S+?)\s*(?::\s*([^|]*?))?\s*(?:\|\s*(.*?))?\s*$/;
 const HEADER_RE = /^([\p{L}]+)(?:\s+([^\s":]+))?$/u;
 
@@ -40,7 +40,8 @@ const STATE_EDGE_RE = /^(\S+?)\s*->\s*(\S+)(?:\s+(\S+))?$/;
 
 const DIRECTIONS: readonly DiagramDirection[] = ['auto', 'right', 'down'];
 const DIRECTIVES = ['title', 'direction'] as const;
-const PLANNED_KINDS: readonly string[] = ['compare', 'sequence'];
+const KINDS: readonly string[] = ['flow', 'spectrum', 'sequence'];
+const KIND_HINT = '"flow", "spectrum" ou "sequence"';
 const STATE_DIRECTIVES = ['title', 'text', 'hint'] as const;
 const EDGE_MARKS: readonly DiagramEdgeMark[] = ['broken', 'slow'];
 const NODE_MARKS: readonly DiagramNodeMark[] = ['down', 'slow'];
@@ -72,7 +73,7 @@ export function parseDiagram(source: string): DiagramParseResult {
 
   const first = lines[0];
   if (first === undefined) {
-    return { ok: false, errors: [{ line: 1, message: 'diagrama vazio. Comece com "flow <id>" ou "spectrum <id>"' }] };
+    return { ok: false, errors: [{ line: 1, message: `diagrama vazio. Comece com ${KIND_HINT} e um id` }] };
   }
 
   let id = '';
@@ -84,10 +85,8 @@ export function parseDiagram(source: string): DiagramParseResult {
     body = lines.slice(1);
     const kind = header[1] ?? '';
     const name = header[2];
-    if (PLANNED_KINDS.includes(kind)) {
-      fail(first.number, `o tipo "${kind}" ainda não é suportado. Use "flow" ou "spectrum"`);
-    } else if (kind !== 'flow' && kind !== 'spectrum') {
-      fail(first.number, `tipo desconhecido "${kind}". Use "flow" ou "spectrum"`);
+    if (!KINDS.includes(kind)) {
+      fail(first.number, `tipo desconhecido "${kind}". Use ${KIND_HINT}`);
     } else if (name === undefined) {
       fail(first.number, `falta o id. Use "${kind} <id>"`);
     } else if (!ID_RE.test(name)) {
@@ -98,6 +97,7 @@ export function parseDiagram(source: string): DiagramParseResult {
   }
 
   if (header?.[1] === 'spectrum') return parseSpectrum(id, body, first.number, errors);
+  if (header?.[1] === 'sequence') return parseSequence(id, body, first.number, errors);
 
   let title: string | null = null;
   let direction: DiagramDirection = 'auto';

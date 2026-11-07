@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { ArticleBody } from './ArticleBody';
-import { REFERENCE_DIAGRAM, REFERENCE_SPECTRUM, REFERENCE_STATES } from '../../core/diagram/fixture';
+import { REFERENCE_DIAGRAM, REFERENCE_SEQUENCE, REFERENCE_SPECTRUM, REFERENCE_STATES } from '../../core/diagram/fixture';
 import { DIAGRAM_LIMITS } from '../../core/diagram/parse';
 import { SPECTRUM_LIMITS } from '../../core/diagram/parseSpectrum';
 import { DICTIONARIES } from '../../i18n/dictionaries';
@@ -131,5 +131,19 @@ describe('ArticleBody com espectro', () => {
 
   it('o limite de zonas cabe nas regras de CSS', () => {
     expect(SPECTRUM_LIMITS.zones).toBeLessThanOrEqual(DIAGRAM_LIMITS.states);
+  });
+});
+
+describe('ArticleBody com sequência', () => {
+  it('desenha participantes, linhas de vida e mensagens num svg só', () => {
+    const html = render(fence(REFERENCE_SEQUENCE));
+    expect(html.match(/<svg[^>]*role="img"/g)).toHaveLength(1);
+    expect(html.match(/<line /g)).toHaveLength(3);
+    expect(html.match(/<polygon/g)).toHaveLength(4);
+    expect(html.match(/data-reply=""/g)).toHaveLength(1);
+  });
+
+  it('descreve as mensagens em ordem', () => {
+    expect(render(fence(REFERENCE_SEQUENCE))).toContain('4. Worker responde a Fila: confirma.');
   });
 });

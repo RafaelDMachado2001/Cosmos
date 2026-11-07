@@ -375,6 +375,7 @@ ol.list {
 
 .diagramSvg {
   display: block;
+  max-width: none;
   margin-inline: auto;
 }
 
@@ -396,6 +397,16 @@ ol.list {
   fill: none;
   stroke: color-mix(in oklch, var(--accent) 60%, var(--color-bg));
   stroke-width: 1.5;
+}
+
+.diagramLifeline {
+  stroke: var(--color-border-soft);
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+
+[data-reply] .diagramWire {
+  stroke-dasharray: 5 4;
 }
 
 .diagramArrow {

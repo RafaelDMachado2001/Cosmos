@@ -65,6 +65,19 @@ zone "Muito" 40-100
 lane "Primeira faixa" 0-60
 lane "Segunda faixa" 30-100`,
   },
+  {
+    id: 'sequencia',
+    label: 'Sequência',
+    source: `sequence sequencia
+title: Título da sequência
+
+cliente  "Cliente"  / quem pede
+servidor "Servidor" / quem responde
+
+cliente  -> servidor : pedido
+servidor -> servidor : processa
+servidor --> cliente : resposta`,
+  },
 ];
 
 export const DIAGRAM_SYNTAX_EXAMPLE = `flow meu-fluxo                  # sempre a primeira linha
@@ -98,3 +111,13 @@ zone "Muito" 40-100              # sem buracos, até 100
 
 lane "Primeira" 0-60             # faixa: uma linha na régua
 lane "Segunda" 30-100`;
+
+export const SEQUENCE_SYNTAX_EXAMPLE = `sequence minha-sequencia         # mensagens na ordem do tempo
+title: Legenda da figura          # opcional
+
+a "Primeiro" / subtítulo          # participante: de 2 a 5
+b "Segundo"
+
+a -> b : pedido                   # mensagem
+b -> b : processa                 # para si mesmo
+b --> a : resposta                # resposta, tracejada`;

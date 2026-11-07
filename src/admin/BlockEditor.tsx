@@ -1,7 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 
 import { diagramErrorMessages } from '../core/diagram/parse';
-import { DIAGRAM_SYNTAX_EXAMPLE, DIAGRAM_TEMPLATES, SPECTRUM_SYNTAX_EXAMPLE } from '../core/diagram/templates';
+import {
+  DIAGRAM_SYNTAX_EXAMPLE,
+  DIAGRAM_TEMPLATES,
+  SEQUENCE_SYNTAX_EXAMPLE,
+  SPECTRUM_SYNTAX_EXAMPLE,
+} from '../core/diagram/templates';
 import { validateDraftBlock } from '../core/draftValidation';
 import type { DraftBlock } from '../core/draftBlocks';
 import styles from './BlockEditor.module.css';
@@ -324,6 +329,7 @@ function DiagramFields({
         <summary>Sintaxe</summary>
         <pre className={styles.helpText}>{DIAGRAM_SYNTAX_EXAMPLE}</pre>
         <pre className={styles.helpText}>{SPECTRUM_SYNTAX_EXAMPLE}</pre>
+        <pre className={styles.helpText}>{SEQUENCE_SYNTAX_EXAMPLE}</pre>
       </details>
     </div>
   );

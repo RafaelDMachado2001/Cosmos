@@ -119,3 +119,27 @@ zone "Over-extracted" 66-100
 lane "Acids and fruit" 0-42
 lane "Sweetness" 24-74
 lane "Bitterness and astringency" 58-100`;
+
+export const REFERENCE_SEQUENCE = `sequence fila-de-jobs
+title: Um job saindo da request até o worker
+
+app    "Aplicação" / request
+fila   "Fila"      / Redis
+worker "Worker"    / processo
+
+app    -> fila   : despacha o job
+fila   -> worker : entrega o job
+worker -> worker : executa
+worker --> fila  : confirma`;
+
+export const REFERENCE_SEQUENCE_EN = `sequence fila-de-jobs
+title: A job leaving the request for the worker
+
+app    "Application" / request
+fila   "Queue"       / Redis
+worker "Worker"      / process
+
+app    -> fila   : dispatches the job
+fila   -> worker : hands over the job
+worker -> worker : runs
+worker --> fila  : acknowledges`;

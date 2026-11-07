@@ -410,6 +410,8 @@ test-runner directives).
   Scaling a viewBox shrinks text below the floor where no test can see it: the
   reference diagram at 641px would draw 13px labels at 9.4px. Between 641px and
   a diagram's natural width, the figure scrolls on its own; the page does not.
+  The reset caps every `svg` at `max-width: 100%`, which would scale it anyway,
+  so `.diagramSvg` sets `max-width: none`.
 - **`auto` draws both orientations and a container query picks one**, so the
   choice works without JavaScript. `display: none` also takes the hidden one out
   of the accessibility tree. A horizontal layout wider than the 1180px column
@@ -691,6 +693,10 @@ test-runner directives).
   `DIAGRAM_LIMITS.states`. A range input cannot drive CSS, so a slider would need
   JavaScript the static article does not have; the zones trade the gradual
   movement for a figure that works everywhere.
+- **A sequence has one orientation.** Time runs down and participants across, so
+  there is nothing to swap on a phone: it keeps its natural size and scrolls.
+  Column gaps grow to fit the longest message between them, and a message that
+  spans several columns shares what is missing across all of them.
 - **Starter templates are text.** The Studio's Linear, Branching and Converging
   buttons fill `source`, so the published format stays one thing and a template
   has no meaning after it is chosen. They appear only on an empty block, which

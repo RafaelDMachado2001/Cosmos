@@ -65,6 +65,7 @@ export const en: Dictionary = {
     scenarios: 'Diagram scenarios',
     rangeFrom: 'from',
     rangeTo: 'to',
+    repliesTo: 'replies to',
     zones: 'Spectrum zones',
     inTheCup: 'In the cup',
     diagnosis: 'Diagnosis',
