@@ -51,7 +51,8 @@ describe('PUBLICATIONS', () => {
         expect(content.title.trim()).not.toBe('');
         expect(content.summary.trim()).not.toBe('');
         expect(content.body.trim().length).toBeGreaterThan(0);
-        expect(parseBlocks(content.body).map((block) => block.type)).toEqual([
+        const types = parseBlocks(content.body).map((block) => block.type);
+        expect(types.filter((type) => type !== 'diagram')).toEqual([
           'paragraph',
           'heading',
           'paragraph',
@@ -64,6 +65,15 @@ describe('PUBLICATIONS', () => {
           'paragraph',
         ]);
       }
+    }
+  });
+
+  it('o fixture do diagrama existe em artigo técnico, válido nos dois idiomas', () => {
+    const fixture = PUBLICATIONS.find((publication) => publication.slug === 'n-mais-1-o-custo-invisivel-do-eloquent');
+    expect(fixture?.category).toBe('artigo');
+    for (const locale of LOCALES) {
+      const block = parseBlocks(fixture?.content[locale].body ?? '').find(({ type }) => type === 'diagram');
+      expect(block).toMatchObject({ type: 'diagram', result: { ok: true } });
     }
   });
 

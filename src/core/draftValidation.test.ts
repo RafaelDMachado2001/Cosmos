@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateDraftBlock, validateDraftBlocks, wordCount } from './draftValidation';
+import { validateDiagramBlocks, validateDraftBlock, validateDraftBlocks, wordCount } from './draftValidation';
 import type { DraftBlock } from './draftBlocks';
 
 describe('wordCount', () => {
@@ -109,5 +109,33 @@ describe('validateDraftBlocks', () => {
 
   it('sem blocos inválidos, devolve lista vazia', () => {
     expect(validateDraftBlocks([{ id: 'b0', type: 'p', text: 'Texto.' }])).toEqual([]);
+  });
+});
+
+describe('diagrama no rascunho', () => {
+  const diagram = (source: string): DraftBlock => ({ id: 'b0', type: 'diagram', source });
+
+  it('não conta como prosa', () => {
+    expect(wordCount([diagram('flow f\na "A"')])).toBe(0);
+  });
+
+  it('válido passa, vazio e inválido não, com o número da linha', () => {
+    expect(validateDraftBlock(diagram('flow f\na "A"'))).toBeNull();
+    expect(validateDraftBlock(diagram('   '))).toBe('Diagrama vazio.');
+    expect(validateDraftBlock(diagram('flow f\na "A"\na -> b'))).toBe('linha 3: o nó "b" não foi declarado.');
+  });
+
+  it('código com a linguagem diagram não contorna a validação', () => {
+    const code: DraftBlock = { id: 'b1', type: 'code', lang: ' diagram ', text: 'flow f\na -> b' };
+    expect(validateDraftBlock(code)).toBe('Para um diagrama, use o bloco Diagrama.');
+  });
+
+  it('validateDiagramBlocks só olha diagramas', () => {
+    const blocks: readonly DraftBlock[] = [
+      { id: 'b0', type: 'p', text: '' },
+      { id: 'b1', type: 'diagram', source: 'flow f' },
+      { id: 'b2', type: 'code', lang: 'diagram', text: 'x' },
+    ];
+    expect(validateDiagramBlocks(blocks).map((error) => error.id)).toEqual(['b1', 'b2']);
   });
 });

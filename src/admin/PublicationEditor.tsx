@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { ArticleBody } from '../components/ArticleBody/ArticleBody';
+import { categoryThemeStyle } from '../components/CategoryTheme/themeStyle';
 import { blocksToDraftBlocks, draftBlocksToMarkdown } from '../core/draftBlocks';
 import { wordCount } from '../core/draftValidation';
 import { LOCALES } from '../core/types';
@@ -95,7 +96,7 @@ export function PublicationEditor({ editor }: PublicationEditorProps): React.JSX
       )}
 
       {preview ? (
-        <div className={styles.preview} data-brand="cosmos">
+        <div className={styles.preview} data-brand="cosmos" style={categoryThemeStyle(editor.category)}>
           <ArticleBody markdown={draftBlocksToMarkdown(editor.currentDraft.blocks)} />
         </div>
       ) : (

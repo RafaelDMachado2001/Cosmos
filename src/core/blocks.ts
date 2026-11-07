@@ -1,3 +1,6 @@
+import { parseDiagram } from './diagram/parse';
+import type { DiagramParseResult } from './diagram/types';
+
 export type InlineNode =
   | { readonly type: 'text'; readonly text: string }
   | { readonly type: 'strong'; readonly children: readonly InlineNode[] }
@@ -29,6 +32,7 @@ export type Block =
       readonly language: string | null;
       readonly filename: string | null;
     }
+  | { readonly type: 'diagram'; readonly source: string; readonly result: DiagramParseResult }
   | {
       readonly type: 'table';
       readonly align: readonly TableAlign[];
@@ -132,6 +136,8 @@ export function inlineToMarkdown(nodes: readonly InlineNode[]): string {
     .join('');
 }
 
+export const DIAGRAM_LANGUAGE = 'diagram';
+
 const HEADING_RE = /^(#{2,3})\s+(.*)$/;
 const QUOTE_RE = /^>\s?(.*)$/;
 const CODE_FENCE_RE = /^(`{3,})\s*((?!title=)[^\s`]*)(?:\s+title="((?:\\.|[^"\\])*)")?\s*$/;
@@ -222,7 +228,12 @@ export function parseBlocks(markdown: string): readonly Block[] {
       }
       index += 1; // consome a cerca de fechamento, se houver
       const filename = fence[3] === undefined || fence[3].trim() === '' ? null : unescapeMarkdown(fence[3]);
-      blocks.push({ type: 'code', code: codeLines.join('\n'), language, filename });
+      const code = codeLines.join('\n');
+      if (language === DIAGRAM_LANGUAGE && filename === null) {
+        blocks.push({ type: 'diagram', source: code, result: parseDiagram(code) });
+      } else {
+        blocks.push({ type: 'code', code, language, filename });
+      }
       continue;
     }
 

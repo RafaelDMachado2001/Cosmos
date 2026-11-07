@@ -1,4 +1,4 @@
-import { inlineToMarkdown, parseBlocks } from './blocks';
+import { DIAGRAM_LANGUAGE, inlineToMarkdown, parseBlocks } from './blocks';
 import type { TableAlign } from './blocks';
 
 export type DraftBlock =
@@ -21,6 +21,7 @@ export type DraftBlock =
       readonly filename?: string | null;
       readonly text: string;
     }
+  | { readonly id: string; readonly type: 'diagram'; readonly source: string }
   | {
       readonly id: string;
       readonly type: 'table';
@@ -71,6 +72,8 @@ export function blocksToDraftBlocks(markdown: string): readonly DraftBlock[] {
         return { id, type: 'flow', steps: block.steps.map((step) => inlineToMarkdown(step)) };
       case 'code':
         return { id, type: 'code', lang: block.language, filename: block.filename, text: block.code };
+      case 'diagram':
+        return { id, type: 'diagram', source: block.source };
       case 'table':
         return {
           id,
@@ -164,6 +167,10 @@ export function draftBlocksToMarkdown(blocks: readonly DraftBlock[]): string {
           const filename = oneLine(block.filename ?? '');
           const title = filename === '' ? '' : ` title="${filename.replace(/["\\]/g, '\\$&')}"`;
           return `${fence}${block.lang?.trim() ?? ''}${title}\n${block.text}\n${fence}`;
+        }
+        case 'diagram': {
+          const fence = codeFence(block.source);
+          return `${fence}${DIAGRAM_LANGUAGE}\n${block.source}\n${fence}`;
         }
         case 'table': {
           const fit = (cells: readonly string[]): string[] => block.align.map((_, column) => cells[column] ?? '');

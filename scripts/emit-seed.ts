@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs';
 
 import { COMMENT_MAX_LENGTH } from '../src/core/comments';
+import { DIAGRAM_SOURCE_MAX_LENGTH } from '../src/core/diagram/parse';
 import { CATEGORIES, LOCALES } from '../src/core/types';
 import type { Locale } from '../src/core/types';
 import { PUBLICATIONS } from '../src/data/publications';
@@ -53,3 +54,16 @@ return [
 `,
 );
 console.log('limites emitidos em backend/config/community.php');
+
+writeFileSync(
+  'backend/config/diagrams.php',
+  `<?php
+
+declare(strict_types=1);
+
+return [
+    'source_max_length' => ${String(DIAGRAM_SOURCE_MAX_LENGTH)},
+];
+`,
+);
+console.log('limites emitidos em backend/config/diagrams.php');

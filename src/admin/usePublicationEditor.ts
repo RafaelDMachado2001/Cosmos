@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Appearance } from '../core/appearance';
 import type { DraftBlock } from '../core/draftBlocks';
+import { validateDiagramBlocks } from '../core/draftValidation';
 import { slugify } from '../core/slug';
 import { LOCALES } from '../core/types';
 import type { Category, Locale } from '../core/types';
@@ -177,6 +178,11 @@ export function usePublicationEditor(
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const diagramErrors = useMemo(
+    () => LOCALES.flatMap((loc) => validateDiagramBlocks(drafts[loc].blocks).map(({ message }) => message)),
+    [drafts],
+  );
+
   async function publish(): Promise<AdminPublication> {
     await flushSave();
     const updated = await api.publish(publication.id);
@@ -222,6 +228,7 @@ export function usePublicationEditor(
     copyStructureFrom,
     status,
     saveNow,
+    diagramErrors,
     publish,
     unpublish,
     destroy,

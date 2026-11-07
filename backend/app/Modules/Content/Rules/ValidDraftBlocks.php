@@ -9,7 +9,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class ValidDraftBlocks implements ValidationRule
 {
-    private const array TYPES = ['p', 'h2', 'h3', 'quote', 'list', 'code', 'img', 'table', 'highlight', 'note', 'flow'];
+    private const array TYPES = ['p', 'h2', 'h3', 'quote', 'list', 'code', 'img', 'table', 'highlight', 'note', 'flow', 'diagram'];
 
     private const array ALIGNS = ['left', 'center', 'right'];
 
@@ -56,7 +56,19 @@ class ValidDraftBlocks implements ValidationRule
             'list' => $this->validateList($attribute, $index, $block, $fail),
             'img' => $this->validateImage($attribute, $index, $block, $fail),
             'table' => $this->validateTable($attribute, $index, $block, $fail),
+            'diagram' => $this->validateDiagram($attribute, $index, $block, $fail),
         };
+    }
+
+    /** @param array<string, mixed> $block */
+    private function validateDiagram(string $attribute, int|string $index, array $block, Closure $fail): void
+    {
+        $this->requireNonEmptyString($attribute, $index, $block, 'source', $fail);
+
+        $max = config()->integer('diagrams.source_max_length');
+        if (is_string($block['source'] ?? null) && mb_strlen($block['source']) > $max) {
+            $fail("{$attribute}.{$index}.source aceita até {$max} caracteres.");
+        }
     }
 
     /** @param array<string, mixed> $block */

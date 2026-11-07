@@ -4,6 +4,7 @@
 .highlight,
 .note,
 .flow,
+.diagram,
 .codeFile,
 .inlineCode {
   --accent: var(--cat, var(--color-accent));
@@ -350,5 +351,98 @@ ol.list {
   color: var(--color-text-faint);
   font-size: var(--text-min);
   letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
+}
+
+.diagram {
+  container-type: inline-size;
+  margin: 0 0 30px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.diagramScroll {
+  padding: 8px;
+  overflow-x: auto;
+}
+
+.diagramScroll:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.diagramSvg {
+  display: block;
+  margin-inline: auto;
+}
+
+.diagramSwap .diagramScroll[data-orientation='down'] {
+  display: none;
+}
+
+@container (max-width: 640px) {
+  .diagramSwap .diagramScroll[data-orientation='right'] {
+    display: none;
+  }
+
+  .diagramSwap .diagramScroll[data-orientation='down'] {
+    display: block;
+  }
+}
+
+.diagramWire {
+  fill: none;
+  stroke: color-mix(in oklch, var(--accent) 60%, var(--color-bg));
+  stroke-width: 1.5;
+}
+
+.diagramArrow {
+  fill: color-mix(in oklch, var(--accent) 60%, var(--color-bg));
+}
+
+.diagramNode {
+  fill: var(--color-bg-elev);
+  stroke: color-mix(in oklch, var(--accent) 45%, transparent);
+  stroke-width: 1;
+}
+
+.diagramNodeLabel,
+.diagramNodeSub,
+.diagramLabelText {
+  font-family: var(--font-mono);
+}
+
+.diagramNodeLabel {
+  fill: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.diagramNodeSub {
+  fill: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.diagramLabel {
+  fill: var(--color-bg);
+  stroke: var(--color-border-soft);
+  stroke-width: 1;
+}
+
+.diagramLabelText {
+  fill: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.diagramCaption {
+  padding: 10px 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-hint);
+  text-align: center;
   text-transform: uppercase;
 }

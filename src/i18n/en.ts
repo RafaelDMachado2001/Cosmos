@@ -51,6 +51,12 @@ export const en: Dictionary = {
     resume: 'Pick up where you left off',
     tags: 'Tags',
   },
+  diagram: {
+    to: 'to',
+    via: 'via',
+    when: 'when',
+    isolated: 'not connected',
+  },
   categories: {
     filterBy: 'FILTER BY CATEGORY',
     all: 'All',

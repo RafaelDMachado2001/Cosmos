@@ -394,6 +394,41 @@ test-runner directives).
   margin of half a label plus 24px. Sliding on every Tab between neighbours
   would undo the return the reader view promised.
 
+### Diagrams
+
+- **A diagram is a code fence with the language `diagram`,** parsed, laid out
+  and drawn here, with no dependency. `src/core/diagram/` splits parse, measure,
+  layout and describe, all pure, so the prerender writes the SVG into the static
+  HTML and a reader without JavaScript gets the same figure. An invalid source
+  falls back to the code block: the text survives and nothing breaks.
+- **Measuring needs no browser.** Labels are JetBrains Mono, so a width is
+  characters × 0.6 × font size. The sizes in `measure.ts` have to match the
+  classes in `ArticleBody.module.css`, and `measure.test.ts` reads the CSS and
+  fails if they drift. The node subtitle is 11px, not the prototype's 10.5px,
+  because of the text floor.
+- **An SVG is never scaled.** It keeps its natural size inside a scroll wrapper.
+  Scaling a viewBox shrinks text below the floor where no test can see it: the
+  reference diagram at 641px would draw 13px labels at 9.4px. Between 641px and
+  a diagram's natural width, the figure scrolls on its own; the page does not.
+- **`auto` draws both orientations and a container query picks one**, so the
+  choice works without JavaScript. `display: none` also takes the hidden one out
+  of the accessibility tree. A horizontal layout wider than the 1180px column
+  would always scroll, so it is dropped and only the vertical one is drawn.
+- **Virtual nodes carry edges across layers.** An edge that skips a layer gets a
+  zero-width item in each layer it crosses, so the ordering and the pushing
+  leave it a slot and the wire cannot run through a real node.
+- **The trunk moves to give each label a segment of its own.** Centring a pill
+  on the longest segment fails on any branch: with the trunk in the middle of
+  the gap, two edges from one node tie on the shared first segment, and on the
+  last one a long pill runs into the node. So a fan-out puts the trunk next to
+  the source and the label on the last segment, a fan-in does the reverse, and
+  the middle of the gap is kept for elbows with no label in their gap. Pills
+  that still clash, as in two sources feeding the same two targets, take
+  further slots along the gap, which grows to fit them.
+- **Wires are an opaque mix with the page background,** not the accent over
+  transparent, because fanned-out edges share a trunk and two translucent
+  strokes would darken where they overlap.
+
 ### Loading and failure
 
 - **"No stars on screen" has three causes with three screens**: still loading,
@@ -631,6 +666,14 @@ test-runner directives).
   the compiled `draft-blocks-cli.js` with `Process` instead of reimplementing
   the parser. The URL allowlist is the one rule duplicated in PHP, because it
   is small and stable.
+- **An invalid diagram blocks publishing on the server.** Autosave only checks
+  the block's shape, so a half-written diagram is still saved. `publish()` runs
+  the same parser through the CLI's `validate-diagrams` before copying anything,
+  for every draft that would go live, and answers 422. The check lives there
+  because `ScheduledPublisher` only changes the status: the text was copied when
+  the post was scheduled. A code block with the language `diagram` would become
+  a diagram on the way back, so it is refused too. The other block rules stay
+  advisory in the editor, as they were.
 - **The site rebuild has a single entry point** (`SiteRebuild`). With the
   Vercel driver, a save marks the site dirty and the hook fires at most every
   60 seconds; concurrent flushes take a lock, and the dirty flag is cleared

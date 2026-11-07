@@ -27,6 +27,7 @@ function blockWords(block: Block): number {
     case 'code':
       return block.code.split('\n').filter((line) => line.trim() !== '').length * WORDS_PER_CODE_LINE;
     case 'image':
+    case 'diagram':
       return 0;
   }
 }

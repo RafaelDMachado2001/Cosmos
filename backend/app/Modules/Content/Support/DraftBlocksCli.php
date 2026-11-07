@@ -30,6 +30,18 @@ class DraftBlocksCli
         return self::run('blocks-to-markdown', json_encode($blocks, JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>  $blocks
+     * @return list<array{id: string, message: string}>
+     */
+    public static function diagramErrors(array $blocks): array
+    {
+        $output = self::run('validate-diagrams', json_encode($blocks, JSON_THROW_ON_ERROR));
+
+        /** @var list<array{id: string, message: string}> */
+        return json_decode($output, true, flags: JSON_THROW_ON_ERROR);
+    }
+
     private static function run(string $command, string $input): string
     {
         $process = new Process(

@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 
+import { Diagram } from './Diagram';
 import styles from './ArticleBody.module.css';
-import { parseBlocks } from '../../core/blocks';
+import { DIAGRAM_LANGUAGE, parseBlocks } from '../../core/blocks';
 import type { Block, InlineNode } from '../../core/blocks';
 import { highlight } from '../../core/highlight';
 import { outline } from '../../core/outline';
@@ -111,6 +112,9 @@ function renderBlock(block: Block, key: string, headingId?: string): ReactNode {
         </figure>
       );
     }
+    case 'diagram':
+      if (block.result.ok) return <Diagram key={key} diagram={block.result.diagram} instance={key} />;
+      return renderBlock({ type: 'code', code: block.source, language: DIAGRAM_LANGUAGE, filename: null }, key);
     case 'highlight':
       return (
         <p key={key} className={styles.highlight}>
