@@ -675,6 +675,10 @@ test-runner directives).
   motion and where `offset-path` is missing, since it would sit at the origin.
   Chromium reports a box for a shape inside a `display: none` group, so a test
   has to look at the layer, not at the shape.
+- **Starter templates are text.** The Studio's Linear, Branching and Converging
+  buttons fill `source`, so the published format stays one thing and a template
+  has no meaning after it is chosen. They appear only on an empty block, which
+  is what keeps them from overwriting anything without a confirmation.
 - **An invalid diagram blocks publishing on the server.** Autosave only checks
   the block's shape, so a half-written diagram is still saved. `publish()` runs
   the same parser through the CLI's `validate-diagrams` before copying anything,
