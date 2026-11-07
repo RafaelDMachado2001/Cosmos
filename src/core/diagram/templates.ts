@@ -60,6 +60,7 @@ c "Fim"
 
 a -> b : rótulo | curto         # aresta: "curto" vale no celular
 b -> c
+c -> a : de novo                # volta: fecha um ciclo
 
 state 502                       # cenário: vira uma aba
   title: Título do painel       # title, text e hint são opcionais
