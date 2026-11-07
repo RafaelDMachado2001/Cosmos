@@ -2,6 +2,7 @@ import type { DiagramError } from './types';
 
 export const ID_RE = /^[a-z][a-z0-9-]*$/;
 export const DIRECTIVE_RE = /^([\p{L}_-]+)\s*:\s*(.*)$/u;
+export const NODE_RE = /^(\S+)\s+"([^"]*)"\s*(?:\/\s*(.*))?$/;
 
 export interface SourceLine {
   readonly number: number;

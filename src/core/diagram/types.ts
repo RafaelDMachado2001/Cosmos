@@ -80,7 +80,30 @@ export interface SpectrumDiagram {
   readonly lanes: readonly SpectrumLane[];
 }
 
-export type Diagram = FlowDiagram | SpectrumDiagram;
+export interface SequenceParticipant {
+  readonly id: string;
+  readonly label: string;
+  readonly sub: string | null;
+  readonly line: number;
+}
+
+export interface SequenceMessage {
+  readonly from: string;
+  readonly to: string;
+  readonly label: string | null;
+  readonly reply: boolean;
+  readonly line: number;
+}
+
+export interface SequenceDiagram {
+  readonly kind: 'sequence';
+  readonly id: string;
+  readonly title: string | null;
+  readonly participants: readonly SequenceParticipant[];
+  readonly messages: readonly SequenceMessage[];
+}
+
+export type Diagram = FlowDiagram | SpectrumDiagram | SequenceDiagram;
 
 export interface DiagramError {
   readonly line: number;
@@ -121,4 +144,19 @@ export interface DiagramLayout {
   readonly orientation: DiagramOrientation;
   readonly nodes: readonly DiagramLayoutNode[];
   readonly edges: readonly DiagramLayoutEdge[];
+}
+
+export interface SequenceLayoutMessage {
+  readonly d: string;
+  readonly arrow: string;
+  readonly reply: boolean;
+  readonly label: DiagramLayoutLabel | null;
+}
+
+export interface SequenceLayout {
+  readonly width: number;
+  readonly height: number;
+  readonly participants: readonly DiagramLayoutNode[];
+  readonly lifelines: readonly { readonly x: number; readonly top: number; readonly bottom: number }[];
+  readonly messages: readonly SequenceLayoutMessage[];
 }

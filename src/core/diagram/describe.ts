@@ -1,4 +1,4 @@
-import type { DiagramState, FlowDiagram, SpectrumDiagram } from './types';
+import type { DiagramState, FlowDiagram, SequenceDiagram, SpectrumDiagram } from './types';
 
 export interface DiagramVocabulary {
   readonly to: string;
@@ -12,6 +12,7 @@ export interface DiagramVocabulary {
   readonly down: string;
   readonly rangeFrom: string;
   readonly rangeTo: string;
+  readonly repliesTo: string;
 }
 
 export const DIAGRAM_VOCABULARY_PT: DiagramVocabulary = {
@@ -26,6 +27,7 @@ export const DIAGRAM_VOCABULARY_PT: DiagramVocabulary = {
   down: 'fora do ar',
   rangeFrom: 'de',
   rangeTo: 'a',
+  repliesTo: 'responde a',
 };
 
 function sentence(text: string): string {
@@ -80,5 +82,17 @@ export function describeSpectrum(diagram: SpectrumDiagram, vocabulary: DiagramVo
   ]
     .filter((text) => text !== null)
     .map(sentence)
+    .join(' ');
+}
+
+export function describeSequence(diagram: SequenceDiagram, vocabulary: DiagramVocabulary = DIAGRAM_VOCABULARY_PT): string {
+  const labels = new Map(diagram.participants.map((participant) => [participant.id, participant.label]));
+  const name = (id: string): string => labels.get(id) ?? id;
+  return diagram.messages
+    .map((message, index) => {
+      const link = message.reply ? vocabulary.repliesTo : vocabulary.to;
+      const path = message.from === message.to ? name(message.from) : `${name(message.from)} ${link} ${name(message.to)}`;
+      return sentence(`${String(index + 1)}. ${path}${message.label === null ? '' : `: ${message.label}`}`);
+    })
     .join(' ');
 }

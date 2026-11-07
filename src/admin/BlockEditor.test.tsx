@@ -141,7 +141,7 @@ describe('BlockEditor: diagrama', () => {
     render(<BlockEditor blocks={[{ ...DIAGRAM, source: '' }]} onChange={onChange} />);
 
     const models = within(screen.getByRole('group', { name: 'Modelos de diagrama' })).getAllByRole('button');
-    expect(models.map((button) => button.textContent)).toEqual(['Linear', 'Ramificado', 'Convergente', 'Espectro']);
+    expect(models.map((button) => button.textContent)).toEqual(['Linear', 'Ramificado', 'Convergente', 'Espectro', 'Sequência']);
 
     await userEvent.click(screen.getByRole('button', { name: 'Ramificado' }));
 

@@ -1,19 +1,18 @@
 import { useContext } from 'react';
 
 import styles from './ArticleBody.module.css';
+import { LabelPill, NodeBox } from './DiagramShapes';
+import { Sequence } from './Sequence';
 import { Spectrum } from './Spectrum';
 import { describeDiagram } from '../../core/diagram/describe';
 import { diagramLayouts } from '../../core/diagram/layout';
-import { LABEL_HEIGHT } from '../../core/diagram/measure';
 import { diagramStateLayer, diagramStateTone } from '../../core/diagram/state';
-import type { DiagramEdgeTone, DiagramLayerBadge, DiagramNodeTone } from '../../core/diagram/state';
+import type { DiagramEdgeTone, DiagramLayerBadge } from '../../core/diagram/state';
 import type {
   Diagram as DiagramModel,
   FlowDiagram,
   DiagramLayout,
   DiagramLayoutEdge,
-  DiagramLayoutNode,
-  DiagramNode,
 } from '../../core/diagram/types';
 import { LocaleContext } from '../../i18n/LocaleContext';
 import { pt } from '../../i18n/pt';
@@ -23,11 +22,6 @@ export interface DiagramProps {
   readonly instance: string;
 }
 
-const NODE_RADIUS = 14;
-const LABEL_BASELINE = 3.9;
-const NODE_BASELINE = 4.5;
-const NODE_BASELINE_WITH_SUB = -2;
-const SUB_BASELINE = 14;
 const PACKET_RADIUS = 4.5;
 const BADGE_RADIUS = 8;
 const BADGE_GLYPH = 3;
@@ -50,65 +44,6 @@ function EdgeWire({ edge, tone, touched }: EdgeWireProps) {
     <g data-tone={tone} data-touched={touched === '' ? undefined : touched}>
       <path className={styles.diagramWire} d={edge.d} />
       <polygon className={styles.diagramArrow} points={edge.arrow} />
-    </g>
-  );
-}
-
-interface NodeBoxProps {
-  readonly box: DiagramLayoutNode;
-  readonly node: DiagramNode | undefined;
-  readonly tone?: DiagramNodeTone;
-}
-
-function NodeBox({ box, node, tone }: NodeBoxProps) {
-  const sub = node?.sub ?? null;
-  return (
-    <g data-tone={tone}>
-      <rect
-        className={styles.diagramNode}
-        x={box.x - box.w / 2}
-        y={box.y - box.h / 2}
-        width={box.w}
-        height={box.h}
-        rx={NODE_RADIUS}
-      />
-      <text
-        className={styles.diagramNodeLabel}
-        x={box.x}
-        y={box.y + (sub === null ? NODE_BASELINE : NODE_BASELINE_WITH_SUB)}
-        textAnchor="middle"
-      >
-        {node?.label}
-      </text>
-      {sub !== null && (
-        <text className={styles.diagramNodeSub} x={box.x} y={box.y + SUB_BASELINE} textAnchor="middle">
-          {sub}
-        </text>
-      )}
-    </g>
-  );
-}
-
-interface EdgeLabelProps {
-  readonly edge: DiagramLayoutEdge;
-  readonly tone?: DiagramEdgeTone;
-}
-
-function EdgeLabel({ edge, tone }: EdgeLabelProps) {
-  if (edge.label === null) return null;
-  return (
-    <g data-tone={tone}>
-      <rect
-        className={styles.diagramLabel}
-        x={edge.label.x - edge.label.w / 2}
-        y={edge.label.y - LABEL_HEIGHT / 2}
-        width={edge.label.w}
-        height={LABEL_HEIGHT}
-        rx={LABEL_HEIGHT / 2}
-      />
-      <text className={styles.diagramLabelText} x={edge.label.x} y={edge.label.y + LABEL_BASELINE} textAnchor="middle">
-        {edge.label.text}
-      </text>
     </g>
   );
 }
@@ -160,7 +95,7 @@ function DiagramSvg({ diagram, layout, description, baseId }: DiagramSvgProps) {
           <NodeBox key={box.id} box={box} node={nodes.get(box.id)} />
         ))}
         {layout.edges.map((edge) => (
-          <EdgeLabel key={`${edge.from}-${edge.to}-label`} edge={edge} />
+          <LabelPill key={`${edge.from}-${edge.to}-label`} label={edge.label} />
         ))}
       </g>
 
@@ -173,7 +108,7 @@ function DiagramSvg({ diagram, layout, description, baseId }: DiagramSvgProps) {
             <NodeBox key={node.id} box={node} node={nodes.get(node.id)} tone={tone} />
           ))}
           {layer.edges.map(({ edge, tone }) => (
-            <EdgeLabel key={`${edge.from}-${edge.to}-label`} edge={edge} tone={tone} />
+            <LabelPill key={`${edge.from}-${edge.to}-label`} label={edge.label} tone={tone} />
           ))}
           {layer.badges.map((badge) => (
             <DiagramBadge key={badge.key} badge={badge} />
@@ -278,5 +213,6 @@ function FlowFigure({ diagram, instance }: { readonly diagram: FlowDiagram; read
 
 export function Diagram({ diagram, instance }: DiagramProps) {
   if (diagram.kind === 'spectrum') return <Spectrum diagram={diagram} instance={instance} />;
+  if (diagram.kind === 'sequence') return <Sequence diagram={diagram} instance={instance} />;
   return <FlowFigure diagram={diagram} instance={instance} />;
 }

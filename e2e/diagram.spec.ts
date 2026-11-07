@@ -109,6 +109,31 @@ test.describe('espectro', () => {
   });
 });
 
+test.describe('sequência', () => {
+  const SEQUENCE = '/pt/publicacoes/filas-e-jobs-assincronos-no-laravel';
+
+  for (const [name, viewport] of [
+    ['desktop', WIDE],
+    ['celular', NARROW],
+  ] as const) {
+    test(`${name}: desenha sem JavaScript e sem rolagem na página`, async ({ browser }) => {
+      const context = await browser.newContext({ javaScriptEnabled: false, viewport });
+      const page = await context.newPage();
+      await page.goto(SEQUENCE);
+      const svg = page.locator('figure svg[role="img"]');
+      await expect(svg).toBeVisible();
+      const [natural, drawn] = await svg.evaluate((element) => [
+        Number(element.getAttribute('width')),
+        element.getBoundingClientRect().width,
+      ]);
+      expect(drawn).toBeCloseTo(natural ?? 0, 0);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBe(0);
+      await context.close();
+    });
+  }
+});
+
 test.describe('diagrama na vista de leitura', () => {
   for (const [name, viewport, shown] of [
     ['desktop', WIDE, 'right'],

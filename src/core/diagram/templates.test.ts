@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseDiagram } from './parse';
-import { DIAGRAM_SYNTAX_EXAMPLE, DIAGRAM_TEMPLATES, SPECTRUM_SYNTAX_EXAMPLE } from './templates';
+import {
+  DIAGRAM_SYNTAX_EXAMPLE,
+  DIAGRAM_TEMPLATES,
+  SEQUENCE_SYNTAX_EXAMPLE,
+  SPECTRUM_SYNTAX_EXAMPLE,
+} from './templates';
 
 describe('modelos do diagrama', () => {
   it.each(DIAGRAM_TEMPLATES.map((template) => [template.label, template.source]))('%s é válido', (_label, source) => {
@@ -39,5 +44,9 @@ describe('modelos do diagrama', () => {
 
   it('o exemplo do espectro é válido', () => {
     expect(parseDiagram(SPECTRUM_SYNTAX_EXAMPLE)).toMatchObject({ ok: true, diagram: { kind: 'spectrum' } });
+  });
+
+  it('o exemplo da sequência é válido', () => {
+    expect(parseDiagram(SEQUENCE_SYNTAX_EXAMPLE)).toMatchObject({ ok: true, diagram: { kind: 'sequence' } });
   });
 });
