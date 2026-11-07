@@ -671,8 +671,9 @@ test-runner directives).
   `:has(:checked)` shows the layer, so the static article and the reader behave
   the same and the keyboard works natively. The rules are written once per state
   number, which is why `DIAGRAM_LIMITS.states` and the CSS are tested together.
-  The packet is a CSS `offset-path` along the joined edges, hidden under reduced
-  motion and where `offset-path` is missing, since it would sit at the origin.
+  The packet is a CSS `offset-path` along the joined edges, and `alternate` is
+  what brings it back, with no reversed path. It is hidden under reduced motion
+  and where `offset-path` is missing, since it would sit at the origin.
   Chromium reports a box for a shape inside a `display: none` group, so a test
   has to look at the layer, not at the shape.
 - **Starter templates are text.** The Studio's Linear, Branching and Converging

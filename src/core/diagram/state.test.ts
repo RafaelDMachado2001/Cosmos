@@ -50,4 +50,18 @@ describe('diagramStateLayer', () => {
     if (state === undefined) throw new Error('fixture sem 502');
     expect(diagramStateLayer({ ...state, path: [], edges: [] }, layout).route).toBeNull();
   });
+
+  it('o selo vai no nó marcado, e a aresta só leva selo se o destino não tiver', () => {
+    const { diagram, layout } = reference();
+    const state = diagram.states[2];
+    if (state === undefined) throw new Error('fixture sem 502');
+    const fpm = layout.nodes.find((node) => node.id === 'fpm');
+    expect(diagramStateLayer(state, layout).badges).toEqual([
+      { key: 'fpm', x: (fpm?.x ?? 0) + (fpm?.w ?? 0) / 2, y: (fpm?.y ?? 0) - (fpm?.h ?? 0) / 2, tone: 'err' },
+    ]);
+
+    const [badge] = diagramStateLayer({ ...state, nodes: [] }, layout).badges;
+    const edge = layout.edges.find(({ to }) => to === 'fpm');
+    expect(badge).toEqual({ key: 'nginx-fpm', x: (edge?.tip.x ?? 0) - 12, y: edge?.tip.y, tone: 'err' });
+  });
 });

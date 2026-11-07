@@ -86,6 +86,7 @@ export interface DiagramLayoutEdge {
   readonly to: string;
   readonly d: string;
   readonly arrow: string;
+  readonly tip: { readonly x: number; readonly y: number };
   readonly label: DiagramLayoutLabel | null;
 }
 

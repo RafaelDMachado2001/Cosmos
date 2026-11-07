@@ -64,7 +64,7 @@ b -> c
 state 502                       # cenário: vira uma aba
   title: Título do painel       # title, text e hint são opcionais
   text: O que aconteceu.
-  hint: Por onde começar.
+  hint: Por onde começar.        # para um # literal, use \\#
   path a b                      # caminho destacado, nó a nó
   b -> c broken                 # aresta: broken ou slow
   c down                        # nó: down ou slow`;
