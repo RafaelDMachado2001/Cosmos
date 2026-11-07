@@ -676,6 +676,15 @@ test-runner directives).
   and where `offset-path` is missing, since it would sit at the origin.
   Chromium reports a box for a shape inside a `display: none` group, so a test
   has to look at the layer, not at the shape.
+- **A cycle is drawn as a loop outside the graph.** The depth-first search in
+  `cycles.ts` names the edges that close a cycle, in declaration order, so the
+  author decides which way is "back". Those edges stay out of the ranks, then
+  run from the source through a track beside its band, along a lane past every
+  node and label, and in through a track beside the target. Tracks and lanes
+  hold no nodes, so a return can cross a wire but never a box. It leaves and
+  arrives off centre, or `a -> b` with `b -> a` would share a line with the way
+  there. With no return edge the extra space is zero and the output is byte for
+  byte the same, which the layout snapshots prove.
 - **Starter templates are text.** The Studio's Linear, Branching and Converging
   buttons fill `source`, so the published format stays one thing and a template
   has no meaning after it is chosen. They appear only on an empty block, which

@@ -50,6 +50,26 @@ const flow = (...lines: readonly string[]): string => ['flow f', ...lines].join(
 const LONG = 'rótulo bem comprido demais';
 
 const GRAPHS: Readonly<Record<string, string>> = {
+  'volta simples': flow(...['a', 'b'].map(node), 'a -> b : pede', 'b -> a : responde | volta'),
+  'volta com saída': flow(...['a', 'b', 'c'].map(node), 'a -> b', 'b -> c : ok', 'b -> a : tenta de novo | de novo'),
+  'volta longa sobre ramos': flow(
+    ...['a', 'b', 'c', 'd', 'e'].map(node),
+    'a -> b : um',
+    'a -> c : dois',
+    'b -> d',
+    'c -> d',
+    'd -> e',
+    `e -> a : ${LONG}`,
+  ),
+  'três voltas': flow(
+    ...['a', 'b', 'c', 'd'].map(node),
+    'a -> b',
+    'b -> c',
+    'c -> d',
+    `b -> a : ${LONG}`,
+    `c -> a : ${LONG}`,
+    `d -> b : ${LONG}`,
+  ),
   linear: flow(...['a', 'b', 'c', 'd'].map(node), `a -> b : ${LONG}`, 'b -> c : x', 'c -> d'),
   ramificado: flow(...['a', 'b', 'c', 'd', 'e'].map(node), 'a -> b : um', 'a -> c : dois', 'a -> d : três', 'c -> e : fim'),
   convergencia: flow(...['a', 'b', 'c', 'd'].map(node), 'a -> d : um', 'b -> d : dois', 'c -> d : três'),
@@ -195,6 +215,43 @@ describe('layoutDiagram: regras', () => {
     const layout = layoutDiagram(diagram(flow('a "A"')), 'right');
     expect(layout.nodes[0]).toMatchObject({ x: 16 + (layout.nodes[0]?.w ?? 0) / 2, y: 32 });
     expect(layout.height).toBe(64);
+  });
+});
+
+describe('layoutDiagram: ciclos', () => {
+  const BACK = flow(...['a', 'b', 'c'].map(node), 'a -> b', 'b -> c', 'c -> a : de novo');
+
+  it('a volta não muda as camadas do resto', () => {
+    const without = layoutDiagram(diagram(flow(...['a', 'b', 'c'].map(node), 'a -> b', 'b -> c')), 'right');
+    const looped = layoutDiagram(diagram(BACK), 'right');
+    const order = (layout: DiagramLayout): readonly string[] =>
+      [...layout.nodes].sort((x, y) => x.x - y.x).map((box) => box.id);
+    expect(order(looped)).toEqual(order(without));
+  });
+
+  it('a volta corre por fora de todos os nós, com o rótulo na pista', () => {
+    const layout = layoutDiagram(diagram(BACK), 'right');
+    const back = layout.edges.find((edge) => edge.from === 'c');
+    const bottom = Math.max(...layout.nodes.map((box) => box.y + box.h / 2));
+    expect(back?.label?.y).toBeGreaterThan(bottom);
+  });
+
+  it('a seta da volta entra pelo lado de entrada do destino', () => {
+    const layout = layoutDiagram(diagram(BACK), 'right');
+    const target = layout.nodes.find((box) => box.id === 'a');
+    expect(layout.edges.find((edge) => edge.from === 'c')?.tip.x).toBe((target?.x ?? 0) - (target?.w ?? 0) / 2);
+  });
+
+  it('no celular a pista corre à direita', () => {
+    const layout = layoutDiagram(diagram(BACK), 'down');
+    const right = Math.max(...layout.nodes.map((box) => box.x + box.w / 2));
+    expect(layout.edges.find((edge) => edge.from === 'c')?.label?.x).toBeGreaterThan(right);
+  });
+
+  it('a seta da volta não encosta na do caminho de ida', () => {
+    const layout = layoutDiagram(diagram(flow(...['a', 'b'].map(node), 'a -> b', 'b -> a')), 'right');
+    const [ida, volta] = layout.edges;
+    expect(ida?.tip.y).not.toBe(volta?.tip.y);
   });
 });
 
