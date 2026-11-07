@@ -666,6 +666,15 @@ test-runner directives).
   the compiled `draft-blocks-cli.js` with `Process` instead of reimplementing
   the parser. The URL allowlist is the one rule duplicated in PHP, because it
   is small and stable.
+- **Diagram scenarios need no JavaScript.** A `state` block adds a radio button
+  and a layer that redraws the edges and nodes it touches over the dimmed base.
+  `:has(:checked)` shows the layer, so the static article and the reader behave
+  the same and the keyboard works natively. The rules are written once per state
+  number, which is why `DIAGRAM_LIMITS.states` and the CSS are tested together.
+  The packet is a CSS `offset-path` along the joined edges, hidden under reduced
+  motion and where `offset-path` is missing, since it would sit at the origin.
+  Chromium reports a box for a shape inside a `display: none` group, so a test
+  has to look at the layer, not at the shape.
 - **An invalid diagram blocks publishing on the server.** Autosave only checks
   the block's shape, so a half-written diagram is still saved. `publish()` runs
   the same parser through the CLI's `validate-diagrams` before copying anything,

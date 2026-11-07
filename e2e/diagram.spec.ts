@@ -33,6 +33,53 @@ test.describe('diagrama sem JavaScript', () => {
   });
 });
 
+test.describe('cenários do diagrama', () => {
+  test('sem JavaScript: visão geral por padrão, e o cenário 502 abre painel e camada', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: WIDE });
+    const page = await context.newPage();
+    await page.goto(ARTICLE);
+
+    const panel = page.getByText('Bad Gateway', { exact: true }).locator('visible=true');
+    await expect(panel).toHaveCount(0);
+
+    await page.getByRole('radio', { name: '502' }).check({ force: true });
+    await expect(panel).toBeVisible();
+    await expect(horizontal(page).locator('[data-tone="broken"]').first()).toBeVisible();
+    await expect(horizontal(page).locator('[data-tone="down"]').first()).toBeVisible();
+
+    await page.getByRole('radio', { name: 'Visão geral' }).check({ force: true });
+    await expect(panel).toHaveCount(0);
+    await context.close();
+  });
+
+  test('o teclado troca de cenário, e o pacote anda sobre a aresta', async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize(WIDE);
+    await page.goto(ARTICLE);
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('radio', { name: 'Visão geral' })).toBeChecked({ timeout: 30_000 });
+    await dialog.getByRole('radio', { name: 'Visão geral' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(dialog.getByRole('radio', { name: 'GET /posts/42' })).toBeChecked();
+
+    const packet = dialog.locator('[data-orientation="right"] [data-state="1"] circle');
+    const svg = await dialog.locator('[data-orientation="right"] svg[role="img"]').boundingBox();
+    await expect.poll(async () => (await packet.boundingBox())?.x ?? 0).toBeGreaterThan((svg?.x ?? 0) + 40);
+    await expect(dialog.locator('[data-orientation="right"] [data-state="2"]')).toHaveCSS('display', 'none');
+  });
+
+  test('movimento reduzido não mostra o pacote', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce', javaScriptEnabled: false, viewport: WIDE });
+    const page = await context.newPage();
+    await page.goto(ARTICLE);
+    await page.getByRole('radio', { name: 'GET /posts/42' }).check({ force: true });
+    await expect(page.getByText('Request dinâmica', { exact: true })).toBeVisible();
+    await expect(horizontal(page).locator('[data-state="1"] circle')).toHaveCSS('display', 'none');
+    await context.close();
+  });
+});
+
 test.describe('diagrama na vista de leitura', () => {
   for (const [name, viewport, shown] of [
     ['desktop', WIDE, 'right'],

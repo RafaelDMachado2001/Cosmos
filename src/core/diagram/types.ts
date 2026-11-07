@@ -17,6 +17,34 @@ export interface DiagramEdge {
   readonly line: number;
 }
 
+export type DiagramEdgeMark = 'broken' | 'slow';
+
+export type DiagramNodeMark = 'down' | 'slow';
+
+export type DiagramStateTone = 'neutral' | 'warn' | 'err';
+
+export interface DiagramStateEdge {
+  readonly from: string;
+  readonly to: string;
+  readonly mark: DiagramEdgeMark;
+}
+
+export interface DiagramStateNode {
+  readonly id: string;
+  readonly mark: DiagramNodeMark;
+}
+
+export interface DiagramState {
+  readonly label: string;
+  readonly title: string | null;
+  readonly text: string | null;
+  readonly hint: string | null;
+  readonly path: readonly string[];
+  readonly edges: readonly DiagramStateEdge[];
+  readonly nodes: readonly DiagramStateNode[];
+  readonly line: number;
+}
+
 export interface FlowDiagram {
   readonly kind: 'flow';
   readonly id: string;
@@ -24,6 +52,7 @@ export interface FlowDiagram {
   readonly direction: DiagramDirection;
   readonly nodes: readonly DiagramNode[];
   readonly edges: readonly DiagramEdge[];
+  readonly states: readonly DiagramState[];
 }
 
 export type Diagram = FlowDiagram;

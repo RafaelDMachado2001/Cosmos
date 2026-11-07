@@ -22,6 +22,8 @@
   --color-month-filet: rgba(169, 155, 255, 0.3);
   --color-month-filet-january: rgba(169, 155, 255, 0.45);
   --color-focus: #e8e9f2;
+  --color-status-err: #ff5d6a;
+  --color-status-warn: #f5b656;
 
   --color-brand-cosmos: #8c6bff;
   --color-brand-studio: #ff8a4c;
