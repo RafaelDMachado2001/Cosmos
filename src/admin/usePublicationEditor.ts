@@ -8,7 +8,7 @@ import { slugify } from '../core/slug';
 import { LOCALES } from '../core/types';
 import type { Category, Locale } from '../core/types';
 import { api } from './api';
-import type { AdminPublication, AdminReference, DraftPatch, PublicationPatch } from './api';
+import type { AdminPublication, AdminReference, DraftPatch, PublicationPatch, TagsByLocale } from './api';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -61,7 +61,7 @@ export function usePublicationEditor(
   const [featured, setFeatured] = useState(publication.featured);
   const [indexable, setIndexable] = useState(publication.indexable);
   const [appearance, setAppearance] = useState<Appearance | null>(publication.appearance);
-  const [tags, setTags] = useState<readonly string[]>(publication.tags);
+  const [tags, setTags] = useState<TagsByLocale>(publication.tags);
   const [references, setReferences] = useState<readonly AdminReference[]>(publication.references);
   const [drafts, setDrafts] = useState<DraftsByLocale>(() => draftsFrom(publication));
   const [status, setStatus] = useState<SaveStatus>('idle');
@@ -220,8 +220,8 @@ export function usePublicationEditor(
     setIndexable,
     appearance,
     setAppearance,
-    tags,
-    setTags,
+    currentTags: tags[locale],
+    setCurrentTags: (next: readonly string[]) => setTags((prev) => ({ ...prev, [locale]: next })),
     references,
     setReferences,
     currentDraft,

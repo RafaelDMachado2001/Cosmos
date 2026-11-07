@@ -22,6 +22,8 @@ export interface AdminReference {
   readonly url: string;
 }
 
+export type TagsByLocale = Readonly<Record<Locale, readonly string[]>>;
+
 export interface AdminPublication {
   readonly id: number;
   readonly slug: string;
@@ -32,7 +34,7 @@ export interface AdminPublication {
   readonly appearance: Appearance | null;
   readonly status: PublicationStatus;
   readonly pendingChanges: boolean;
-  readonly tags: readonly string[];
+  readonly tags: TagsByLocale;
   readonly references: readonly AdminReference[];
   readonly drafts: Partial<Record<Locale, AdminDraft>>;
 }
@@ -61,7 +63,7 @@ export interface PublicationPatch {
   readonly featured?: boolean;
   readonly indexable?: boolean;
   readonly appearance?: Appearance | null;
-  readonly tags?: readonly string[];
+  readonly tags?: Partial<TagsByLocale>;
   readonly references?: readonly { readonly title: string; readonly url: string }[];
   readonly drafts?: Partial<Record<Locale, DraftPatch>>;
 }
@@ -113,5 +115,6 @@ export const api = {
     return write('POST', '/media', form);
   },
 
-  searchTags: (q: string): Promise<readonly string[]> => read(`/tags?q=${encodeURIComponent(q)}`),
+  searchTags: (q: string, locale: Locale): Promise<readonly string[]> =>
+    read(`/tags?q=${encodeURIComponent(q)}&locale=${locale}`),
 };

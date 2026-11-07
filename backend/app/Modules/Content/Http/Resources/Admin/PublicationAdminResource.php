@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Content\Http\Resources\Admin;
 
 use App\Modules\Content\Models\Publication;
+use App\Modules\Content\Models\PublicationTranslation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,12 +24,24 @@ class PublicationAdminResource extends JsonResource
             'appearance' => $this->resource->appearance,
             'status' => $this->resource->status,
             'pendingChanges' => $this->pendingChanges(),
-            'tags' => $this->resource->tags->pluck('slug')->values(),
+            'tags' => $this->tagsByLocale(),
             'references' => PublicationReferenceResource::collection($this->resource->references),
             'drafts' => $this->resource->drafts
                 ->keyBy('locale')
                 ->map(fn ($draft) => new PublicationDraftResource($draft)),
         ];
+    }
+
+    /** @return array<string, list<string>> */
+    private function tagsByLocale(): array
+    {
+        $tags = [];
+
+        foreach (PublicationTranslation::locales() as $locale) {
+            $tags[$locale] = $this->resource->tags->where('locale', $locale)->pluck('slug')->all();
+        }
+
+        return $tags;
     }
 
     private function pendingChanges(): bool

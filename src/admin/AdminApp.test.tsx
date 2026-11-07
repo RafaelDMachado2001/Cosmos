@@ -32,7 +32,7 @@ function publication(overrides: Partial<AdminPublication> = {}): AdminPublicatio
     status: 'draft',
     pendingChanges: false,
     appearance: null,
-    tags: [],
+    tags: { pt: [], en: [] },
     references: [],
     drafts: {
       pt: {
@@ -78,6 +78,33 @@ describe('AdminApp', () => {
     await user.click(item);
 
     expect(await screen.findByDisplayValue('Code review sem atrito')).not.toBeNull();
+  });
+
+  it('cada idioma edita as próprias tags, e o autosave leva as duas listas', async () => {
+    const aberta = publication({ tags: { pt: ['indices'], en: ['indexes'] } });
+    api.list.mockResolvedValue([aberta]);
+    api.update.mockResolvedValue(aberta);
+    api.searchTags.mockResolvedValue(['performance']);
+    const user = userEvent.setup();
+
+    render(<AdminApp initialSelectedId={1} />);
+
+    expect(await screen.findByRole('button', { name: 'indices ✕' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'indexes ✕' })).toBeNull();
+
+    await user.click(screen.getByRole('tab', { name: /english|inglês/i }));
+
+    expect(screen.getByRole('button', { name: 'indexes ✕' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'indices ✕' })).toBeNull();
+
+    await user.type(screen.getByPlaceholderText('Adicionar tag…'), 'perf');
+    await waitFor(() => expect(api.searchTags).toHaveBeenLastCalledWith('perf', 'en'));
+    await user.click(await screen.findByRole('button', { name: 'performance' }));
+
+    await waitFor(() => expect(api.update).toHaveBeenCalled(), { timeout: 3000 });
+    expect(api.update.mock.lastCall?.[1]).toMatchObject({
+      tags: { pt: ['indices'], en: ['indexes', 'performance'] },
+    });
   });
 
   it('abre direto na publicação do endereço, e o endereço segue a seleção', async () => {

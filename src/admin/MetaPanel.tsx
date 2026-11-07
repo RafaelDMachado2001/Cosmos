@@ -151,8 +151,13 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
       </label>
 
       <div className={styles.field}>
-        <span className={styles.label}>Tags</span>
-        <TagInput tags={editor.tags} onChange={editor.setTags} />
+        <span className={styles.label}>Tags ({editor.locale.toUpperCase()})</span>
+        <TagInput
+          key={editor.locale}
+          locale={editor.locale}
+          tags={editor.currentTags}
+          onChange={editor.setCurrentTags}
+        />
       </div>
 
       <div className={styles.seo}>

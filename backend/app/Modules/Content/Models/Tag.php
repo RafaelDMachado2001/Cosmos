@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
+ * @property string $locale
  * @property string $slug
  */
 class Tag extends Model
 {
-    protected $fillable = ['slug'];
+    protected $fillable = ['locale', 'slug'];
 
     /** @return BelongsToMany<Publication, $this> */
     public function publications(): BelongsToMany

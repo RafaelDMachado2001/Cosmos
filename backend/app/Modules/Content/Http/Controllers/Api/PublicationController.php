@@ -77,7 +77,7 @@ class PublicationController extends Controller
 
         $translated = PublicationTranslation::where('publication_id', $publication->id)->pluck('locale')->all();
         $publication->setAttribute('locales', array_values(array_intersect(config('publications.locales'), $translated)));
-        $publication->setAttribute('tags', $publication->tags()->orderBy('tags.slug')->pluck('tags.slug')->all());
+        $publication->setAttribute('tags', $publication->tags()->where('tags.locale', $input['locale'])->orderBy('tags.slug')->pluck('tags.slug')->all());
 
         return new PublicationDetailResource($publication);
     }
