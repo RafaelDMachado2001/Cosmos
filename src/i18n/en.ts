@@ -63,6 +63,12 @@ export const en: Dictionary = {
     down: 'down',
     overview: 'Overview',
     scenarios: 'Diagram scenarios',
+    rangeFrom: 'from',
+    rangeTo: 'to',
+    zones: 'Spectrum zones',
+    inTheCup: 'In the cup',
+    diagnosis: 'Diagnosis',
+    nextStep: 'Next adjustment',
   },
   categories: {
     filterBy: 'FILTER BY CATEGORY',

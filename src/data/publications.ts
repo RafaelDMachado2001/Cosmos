@@ -1,4 +1,11 @@
-import { REFERENCE_DIAGRAM, REFERENCE_DIAGRAM_EN, REFERENCE_STATES, REFERENCE_STATES_EN } from '../core/diagram/fixture';
+import {
+  REFERENCE_DIAGRAM,
+  REFERENCE_DIAGRAM_EN,
+  REFERENCE_SPECTRUM,
+  REFERENCE_SPECTRUM_EN,
+  REFERENCE_STATES,
+  REFERENCE_STATES_EN,
+} from '../core/diagram/fixture';
 import type { Publication } from '../core/types';
 
 export const REAL_PUBLICATION_SLUG = 'arquitetura-e-orquestracao-de-llms';
@@ -140,13 +147,13 @@ export const PUBLICATIONS: readonly Publication[] = [
       title: 'Como organizo minha semana de código',
       summary: 'Blocos de foco, revisão e estudo. O que sobreviveu depois de um ano tentando.',
       opening:
-        'Quase todo método de produtividade que tentei morreu na terceira semana. Sobrou pouca coisa, e é justamente a parte chata que sobreviveu.',
+        `Quase todo método de produtividade que tentei morreu na terceira semana. Sobrou pouca coisa, e é justamente a parte chata que sobreviveu.\n\n\`\`\`diagram\n${REFERENCE_SPECTRUM}\n\`\`\``,
     },
     en: {
       title: 'How I organise a week of code',
       summary: 'Focus, review and study blocks. What survived after a year of trying.',
       opening:
-        'Almost every productivity method I tried died in week three. Little survived, and what did is precisely the boring part.',
+        `Almost every productivity method I tried died in week three. Little survived, and what did is precisely the boring part.\n\n\`\`\`diagram\n${REFERENCE_SPECTRUM_EN}\n\`\`\``,
     },
   }),
   seed({

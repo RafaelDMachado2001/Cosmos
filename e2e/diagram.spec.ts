@@ -81,6 +81,34 @@ test.describe('cenários do diagrama', () => {
   });
 });
 
+test.describe('espectro', () => {
+  const SPECTRUM = '/pt/publicacoes/como-organizo-minha-semana-de-codigo';
+
+  test('sem JavaScript: a zona troca o diagnóstico', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: WIDE });
+    const page = await context.newPage();
+    await page.goto(SPECTRUM);
+
+    await expect(page.getByRole('radio', { name: 'Extração de menos' })).toBeChecked();
+    await expect(page.getByText('Azedo, ralo, sem doçura', { exact: true }).locator('visible=true')).toBeVisible();
+
+    await page.getByRole('radio', { name: 'Ponto certo' }).check({ force: true });
+    await expect(page.getByText('Doce, equilibrado', { exact: true }).locator('visible=true')).toBeVisible();
+    await expect(page.getByText('Azedo, ralo, sem doçura', { exact: true }).locator('visible=true')).toHaveCount(0);
+    await context.close();
+  });
+
+  test('no celular não há rolagem horizontal', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: NARROW });
+    const page = await context.newPage();
+    await page.goto(SPECTRUM);
+    await expect(page.getByRole('radio', { name: 'Ponto certo' })).toHaveCount(1);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBe(0);
+    await context.close();
+  });
+});
+
 test.describe('diagrama na vista de leitura', () => {
   for (const [name, viewport, shown] of [
     ['desktop', WIDE, 'right'],

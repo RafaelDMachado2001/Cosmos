@@ -55,7 +55,32 @@ export interface FlowDiagram {
   readonly states: readonly DiagramState[];
 }
 
-export type Diagram = FlowDiagram;
+export interface SpectrumZone {
+  readonly label: string;
+  readonly from: number;
+  readonly to: number;
+  readonly taste: string | null;
+  readonly next: string | null;
+  readonly line: number;
+}
+
+export interface SpectrumLane {
+  readonly label: string;
+  readonly from: number;
+  readonly to: number;
+  readonly line: number;
+}
+
+export interface SpectrumDiagram {
+  readonly kind: 'spectrum';
+  readonly id: string;
+  readonly title: string | null;
+  readonly axis: { readonly from: string; readonly to: string } | null;
+  readonly zones: readonly SpectrumZone[];
+  readonly lanes: readonly SpectrumLane[];
+}
+
+export type Diagram = FlowDiagram | SpectrumDiagram;
 
 export interface DiagramError {
   readonly line: number;

@@ -62,6 +62,12 @@ export const pt = {
     down: 'fora do ar',
     overview: 'Visão geral',
     scenarios: 'Cenários do diagrama',
+    rangeFrom: 'de',
+    rangeTo: 'a',
+    zones: 'Zonas do espectro',
+    inTheCup: 'Na xícara',
+    diagnosis: 'Diagnóstico',
+    nextStep: 'Próximo ajuste',
   },
   categories: {
     filterBy: 'FILTRAR POR CATEGORIA',

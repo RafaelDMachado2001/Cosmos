@@ -1,5 +1,7 @@
 import { findReturnEdges } from './cycles';
 import { charCount } from './measure';
+import { parseSpectrum } from './parseSpectrum';
+import { DIRECTIVE_RE, ID_RE, closest, hasOddQuotes, sortedErrors, sourceLines } from './parseText';
 import type {
   DiagramDirection,
   DiagramEdge,
@@ -28,8 +30,6 @@ export const DIAGRAM_LIMITS = {
   stateHint: 120,
 } as const;
 
-const ID_RE = /^[a-z][a-z0-9-]*$/;
-const DIRECTIVE_RE = /^([\p{L}_-]+)\s*:\s*(.*)$/u;
 const NODE_RE = /^(\S+)\s+"([^"]*)"\s*(?:\/\s*(.*))?$/;
 const EDGE_TARGET_RE = /^(\S+?)\s*(?::\s*([^|]*?))?\s*(?:\|\s*(.*?))?\s*$/;
 const HEADER_RE = /^([\p{L}]+)(?:\s+([^\s":]+))?$/u;
@@ -62,71 +62,17 @@ interface StateDraft {
   readonly seen: Map<string, number>;
 }
 
-function stripComment(line: string): string {
-  const chars = [...line];
-  let kept = '';
-  let quoted = false;
-  for (const [index, char] of chars.entries()) {
-    if (char === '\\' && chars[index + 1] === '#') continue;
-    const escaped = chars[index - 1] === '\\';
-    if (char === '"') quoted = !quoted;
-    if (char === '#' && !quoted && !escaped) return kept;
-    kept += char;
-  }
-  return kept;
-}
-
-function hasOddQuotes(line: string): boolean {
-  return line.split('"').length % 2 === 0;
-}
-
-function editDistance(a: string, b: string): number {
-  let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
-  for (let row = 1; row <= a.length; row += 1) {
-    const current = [row];
-    for (let column = 1; column <= b.length; column += 1) {
-      const cost = a[row - 1] === b[column - 1] ? 0 : 1;
-      current.push(
-        Math.min(
-          (previous[column] ?? 0) + 1,
-          (current[column - 1] ?? 0) + 1,
-          (previous[column - 1] ?? 0) + cost,
-        ),
-      );
-    }
-    previous = current;
-  }
-  return previous[b.length] ?? 0;
-}
-
-function closest(word: string, candidates: readonly string[]): string | null {
-  const limit = Math.max(1, Math.floor(word.length / 2));
-  let best: string | null = null;
-  let bestDistance = limit + 1;
-  for (const candidate of candidates) {
-    const distance = editDistance(word, candidate);
-    if (distance < bestDistance && distance < word.length) {
-      best = candidate;
-      bestDistance = distance;
-    }
-  }
-  return best;
-}
-
 export function parseDiagram(source: string): DiagramParseResult {
   const errors: DiagramError[] = [];
   const fail = (line: number, message: string): void => {
     errors.push({ line, message });
   };
 
-  const lines = source
-    .split(/\r?\n/)
-    .map((raw, index) => ({ number: index + 1, text: stripComment(raw).trim() }))
-    .filter((line) => line.text !== '');
+  const lines = sourceLines(source);
 
   const first = lines[0];
   if (first === undefined) {
-    return { ok: false, errors: [{ line: 1, message: 'diagrama vazio. Comece com "flow <id>"' }] };
+    return { ok: false, errors: [{ line: 1, message: 'diagrama vazio. Comece com "flow <id>" ou "spectrum <id>"' }] };
   }
 
   let id = '';
@@ -139,17 +85,19 @@ export function parseDiagram(source: string): DiagramParseResult {
     const kind = header[1] ?? '';
     const name = header[2];
     if (PLANNED_KINDS.includes(kind)) {
-      fail(first.number, `o tipo "${kind}" ainda não é suportado. Use "flow"`);
-    } else if (kind !== 'flow') {
-      fail(first.number, `tipo desconhecido "${kind}". Use "flow"`);
+      fail(first.number, `o tipo "${kind}" ainda não é suportado. Use "flow" ou "spectrum"`);
+    } else if (kind !== 'flow' && kind !== 'spectrum') {
+      fail(first.number, `tipo desconhecido "${kind}". Use "flow" ou "spectrum"`);
     } else if (name === undefined) {
-      fail(first.number, 'falta o id do fluxo. Use "flow <id>"');
+      fail(first.number, `falta o id. Use "${kind} <id>"`);
     } else if (!ID_RE.test(name)) {
       fail(first.number, `id "${name}" inválido; use minúsculas, números e hífen, começando por letra`);
     } else {
       id = name;
     }
   }
+
+  if (header?.[1] === 'spectrum') return parseSpectrum(id, body, first.number, errors);
 
   let title: string | null = null;
   let direction: DiagramDirection = 'auto';
@@ -430,7 +378,7 @@ export function parseDiagram(source: string): DiagramParseResult {
   }
 
   if (errors.length > 0) {
-    return { ok: false, errors: [...errors].sort((a, b) => a.line - b.line) };
+    return { ok: false, errors: sortedErrors(errors) };
   }
 
   const finished = states.map(

@@ -6,7 +6,7 @@ import type { DiagramError, FlowDiagram } from './types';
 
 function valid(source: string): FlowDiagram {
   const result = parseDiagram(source);
-  if (!result.ok) throw new Error(JSON.stringify(result.errors));
+  if (!result.ok || result.diagram.kind !== 'flow') throw new Error(JSON.stringify(result));
   return result.diagram;
 }
 
@@ -168,12 +168,12 @@ describe('parseDiagram: erros', () => {
   });
 
   it('cabeçalho: vazio, sem id, id inválido, tipo planejado, tipo desconhecido, ausente', () => {
-    expect(errors('  \n# nada')[0]?.message).toBe('diagrama vazio. Comece com "flow <id>"');
-    expect(errors('flow\na "A"')[0]?.message).toBe('falta o id do fluxo. Use "flow <id>"');
+    expect(errors('  \n# nada')[0]?.message).toBe('diagrama vazio. Comece com "flow <id>" ou "spectrum <id>"');
+    expect(errors('flow\na "A"')[0]?.message).toBe('falta o id. Use "flow <id>"');
     expect(errors('flow 1x\na "A"')[0]?.message).toContain('id "1x" inválido');
-    expect(errors('compare x\na "A"')[0]?.message).toBe('o tipo "compare" ainda não é suportado. Use "flow"');
-    expect(errors('sequence x\na "A"')[0]?.message).toBe('o tipo "sequence" ainda não é suportado. Use "flow"');
-    expect(errors('grafo x\na "A"')[0]?.message).toBe('tipo desconhecido "grafo". Use "flow"');
+    expect(errors('compare x\na "A"')[0]?.message).toBe('o tipo "compare" ainda não é suportado. Use "flow" ou "spectrum"');
+    expect(errors('sequence x\na "A"')[0]?.message).toBe('o tipo "sequence" ainda não é suportado. Use "flow" ou "spectrum"');
+    expect(errors('grafo x\na "A"')[0]?.message).toBe('tipo desconhecido "grafo". Use "flow" ou "spectrum"');
     expect(errors('a "A"\nb "B"')[0]).toEqual({ line: 1, message: 'comece com "flow <id>"' });
   });
 

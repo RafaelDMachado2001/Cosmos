@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 
 import styles from './ArticleBody.module.css';
+import { Spectrum } from './Spectrum';
 import { describeDiagram } from '../../core/diagram/describe';
 import { diagramLayouts } from '../../core/diagram/layout';
 import { LABEL_HEIGHT } from '../../core/diagram/measure';
@@ -8,6 +9,7 @@ import { diagramStateLayer, diagramStateTone } from '../../core/diagram/state';
 import type { DiagramEdgeTone, DiagramLayerBadge, DiagramNodeTone } from '../../core/diagram/state';
 import type {
   Diagram as DiagramModel,
+  FlowDiagram,
   DiagramLayout,
   DiagramLayoutEdge,
   DiagramLayoutNode,
@@ -31,7 +33,7 @@ const BADGE_RADIUS = 8;
 const BADGE_GLYPH = 3;
 
 interface DiagramSvgProps {
-  readonly diagram: DiagramModel;
+  readonly diagram: FlowDiagram;
   readonly layout: DiagramLayout;
   readonly description: string;
   readonly baseId: string;
@@ -191,7 +193,7 @@ function DiagramSvg({ diagram, layout, description, baseId }: DiagramSvgProps) {
 }
 
 interface DiagramStatesProps {
-  readonly diagram: DiagramModel;
+  readonly diagram: FlowDiagram;
   readonly group: string;
   readonly overview: string;
   readonly label: string;
@@ -214,7 +216,7 @@ function DiagramTabs({ diagram, group, overview, label }: DiagramStatesProps) {
   );
 }
 
-function DiagramPanels({ diagram }: { readonly diagram: DiagramModel }) {
+function DiagramPanels({ diagram }: { readonly diagram: FlowDiagram }) {
   return (
     <div aria-live="polite">
       {diagram.states.map(
@@ -241,7 +243,7 @@ function DiagramPanels({ diagram }: { readonly diagram: DiagramModel }) {
   );
 }
 
-export function Diagram({ diagram, instance }: DiagramProps) {
+function FlowFigure({ diagram, instance }: { readonly diagram: FlowDiagram; readonly instance: string }) {
   const words = useContext(LocaleContext)?.t.diagram ?? pt.diagram;
   const layouts = diagramLayouts(diagram);
   const description = describeDiagram(diagram, words);
@@ -272,4 +274,9 @@ export function Diagram({ diagram, instance }: DiagramProps) {
       {diagram.title !== null && <figcaption className={styles.diagramCaption}>{diagram.title}</figcaption>}
     </figure>
   );
+}
+
+export function Diagram({ diagram, instance }: DiagramProps) {
+  if (diagram.kind === 'spectrum') return <Spectrum diagram={diagram} instance={instance} />;
+  return <FlowFigure diagram={diagram} instance={instance} />;
 }
