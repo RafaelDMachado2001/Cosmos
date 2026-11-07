@@ -93,6 +93,8 @@ async function expectPtBody(article: Locator): Promise<void> {
   await expect(image).toHaveCount(1);
   await expect(image).toHaveAttribute('src', /^\/storage\//);
   await expect(article.locator('figure figcaption', { hasText: 'Legenda da imagem' })).toHaveCount(1);
+  await expect(article.locator('figure svg[role="img"]')).toHaveCount(2);
+  await expect(article.getByRole('radio', { name: 'lento' })).toHaveCount(1);
 }
 
 test('todos os blocos e uma imagem enviada chegam ao site nas duas línguas', async ({ page, baseURL, request, browser }) => {
@@ -114,6 +116,24 @@ test('todos os blocos e uma imagem enviada chegam ao site nas duas línguas', as
   await page.locator('input[type="file"]').setInputFiles({ name: 'quadrado.png', mimeType: 'image/png', buffer: PNG });
   await expect(page.getByPlaceholder('URL da imagem')).toHaveValue(/\/storage\//);
   const imageUrl = await page.getByPlaceholder('URL da imagem').inputValue();
+
+  await page.getByRole('button', { name: '+ Diagrama' }).click();
+  const savedWithBlank = page.waitForResponse((response) => response.request().method() === 'PATCH');
+  await page.getByPlaceholder(/^Subtítulo/).fill('Resumo da prova, com bloco em branco');
+  expect((await savedWithBlank).status()).toBe(200);
+  await page.getByRole('button', { name: 'Ramificado' }).click();
+  const diagram = page.getByRole('textbox', { name: 'Fonte do diagrama' });
+  await expect(diagram).toHaveValue(/^flow ramificado/);
+  await expect(page.getByRole('group', { name: 'Modelos de diagrama' })).toHaveCount(0);
+  const template = await diagram.inputValue();
+
+  await diagram.fill(`${template}\nentrada -> ninguem`);
+  await expect(page.getByRole('list', { name: 'Erros do diagrama' })).toContainText('o nó "ninguem" não foi declarado');
+  await page.getByRole('button', { name: 'Publicar' }).click();
+  await expect(page.getByText(/^Corrija o diagrama antes de publicar/)).toBeVisible();
+
+  await diagram.fill(`${template}\n\nstate lento\n  title: Painel da prova\n  normal -> saida slow`);
+  await expect(page.getByRole('list', { name: 'Erros do diagrama' })).toBeEmpty();
 
   await page.getByRole('tab', { name: 'English' }).click();
   await page.getByPlaceholder('Título', { exact: true }).fill(`${title} EN`);

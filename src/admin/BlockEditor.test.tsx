@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -134,6 +134,29 @@ describe('BlockEditor: diagrama', () => {
     await userEvent.type(field, 'f');
 
     expect(onChange.mock.calls[0]?.[0]).toEqual([{ ...DIAGRAM, source: 'f' }]);
+  });
+
+  it('o bloco vazio oferece os modelos, e escolher um preenche a fonte', async () => {
+    const onChange = vi.fn();
+    render(<BlockEditor blocks={[{ ...DIAGRAM, source: '' }]} onChange={onChange} />);
+
+    const models = within(screen.getByRole('group', { name: 'Modelos de diagrama' })).getAllByRole('button');
+    expect(models.map((button) => button.textContent)).toEqual(['Linear', 'Ramificado', 'Convergente']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ramificado' }));
+
+    const [block] = onChange.mock.calls[0]?.[0] as readonly { readonly source: string }[];
+    expect(block?.source).toMatch(/^flow ramificado/);
+  });
+
+  it('os modelos somem com texto na fonte, para não apagar o que foi escrito', () => {
+    render(<BlockEditor blocks={[DIAGRAM]} onChange={() => undefined} />);
+    expect(screen.queryByRole('group', { name: 'Modelos de diagrama' })).toBeNull();
+  });
+
+  it('a ajuda de sintaxe acompanha o bloco', () => {
+    render(<BlockEditor blocks={[DIAGRAM]} onChange={() => undefined} />);
+    expect(screen.getByText('Sintaxe').closest('details')?.textContent).toContain('state 502');
   });
 
   it('o botão insere um bloco diagrama', async () => {

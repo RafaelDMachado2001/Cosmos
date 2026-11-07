@@ -179,6 +179,25 @@ describe('AdminApp', () => {
     expect(preview?.style.getPropertyValue('--cat')).toBe('var(--color-cat-rotina)');
   });
 
+  it('a pré-visualização descreve o diagrama no idioma da aba', async () => {
+    const base = publication();
+    const pt = base.drafts.pt;
+    if (pt === undefined) throw new Error('fixture sem pt');
+    const blocks = [{ id: 'b0', type: 'diagram', source: 'flow f\na "A"\nb "B"\na -> b' }] as const;
+    api.list.mockResolvedValue([
+      publication({ drafts: { pt: { ...pt, blocks }, en: { ...pt, locale: 'en', blocks } } }),
+    ]);
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.click(await screen.findByRole('button', { name: 'Pré-visualizar' }));
+    expect(document.querySelector('desc')?.textContent).toBe('A para B.');
+
+    await user.click(screen.getByRole('tab', { name: 'English' }));
+    expect(document.querySelector('desc')?.textContent).toBe('A to B.');
+  });
+
   it('se o salvamento falha, não publica', async () => {
     api.list.mockResolvedValue([publication()]);
     api.update.mockRejectedValue(new Error('500'));
@@ -229,6 +248,22 @@ describe('AdminApp', () => {
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     expect(api.publish).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull();
+  });
+
+  it('bloco em branco fica na tela, mas não vai no salvamento', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.update.mockResolvedValue(publication());
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.click(await screen.findByRole('button', { name: '+ Diagrama' }));
+    await user.keyboard('{Control>}s{/Control}');
+
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+    const patch = api.update.mock.calls[0]?.[1] as { drafts: { pt: { blocks: readonly { type: string }[] } } };
+    expect(patch.drafts.pt.blocks.map(({ type }) => type)).not.toContain('diagram');
+    expect(screen.getByRole('textbox', { name: 'Fonte do diagrama' })).toBeDefined();
   });
 
   it('data futura fora do ar: o botão agenda', async () => {

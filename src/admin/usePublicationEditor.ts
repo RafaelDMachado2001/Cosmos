@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Appearance } from '../core/appearance';
+import { isBlankDraftBlock } from '../core/draftBlocks';
 import type { DraftBlock } from '../core/draftBlocks';
 import { validateDiagramBlocks } from '../core/draftValidation';
 import { slugify } from '../core/slug';
@@ -102,7 +103,7 @@ export function usePublicationEditor(
         draftPatches[loc] = {
           title: draft.title,
           subtitle: draft.subtitle,
-          blocks: draft.blocks,
+          blocks: draft.blocks.filter((block) => !isBlankDraftBlock(block)),
           seoTitle: draft.seoTitle === '' ? null : draft.seoTitle,
           seoDescription: draft.seoDescription === '' ? null : draft.seoDescription,
         };

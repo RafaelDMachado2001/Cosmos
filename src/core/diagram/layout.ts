@@ -1,6 +1,8 @@
+import { findReturnEdges } from './cycles';
 import { LABEL_HEIGHT, labelWidth, nodeSize } from './measure';
 import type {
   Diagram,
+  DiagramEdge,
   DiagramLayout,
   DiagramLayoutEdge,
   DiagramLayoutLabel,
@@ -23,6 +25,11 @@ const CORNER_RADIUS = 12;
 const ARROW_LENGTH = 8;
 const ARROW_HALF_BASE = 4;
 const SAME_POSITION = 0.5;
+const RETURN_TRACK = 12;
+const RETURN_LANE_GAP = 22;
+const RETURN_SIDE_INSET = 14;
+const RETURN_MIN_OFFSET = 4;
+const RETURN_MAX_OFFSET = 10;
 
 interface Item {
   readonly id: string;
@@ -70,14 +77,14 @@ function round(value: number): number {
   return Math.round(value * 10) / 10 + 0;
 }
 
-function ranks(diagram: FlowDiagram): ReadonlyMap<string, number> {
+function ranks(diagram: FlowDiagram, edges: readonly DiagramEdge[]): ReadonlyMap<string, number> {
   const rank = new Map(diagram.nodes.map((node) => [node.id, 0]));
   const pending = new Map(diagram.nodes.map((node) => [node.id, 0]));
-  for (const edge of diagram.edges) pending.set(edge.to, (pending.get(edge.to) ?? 0) + 1);
+  for (const edge of edges) pending.set(edge.to, (pending.get(edge.to) ?? 0) + 1);
 
   const ready = diagram.nodes.map((node) => node.id).filter((id) => pending.get(id) === 0);
   for (const id of ready) {
-    for (const edge of diagram.edges) {
+    for (const edge of edges) {
       if (edge.from !== id) continue;
       rank.set(edge.to, Math.max(rank.get(edge.to) ?? 0, (rank.get(id) ?? 0) + 1));
       const left = (pending.get(edge.to) ?? 0) - 1;
@@ -231,7 +238,16 @@ function arrowPoints(points: readonly Point[]): readonly Point[] {
 }
 
 export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientation): DiagramLayout {
-  const rankOf = ranks(diagram);
+  const returning = new Set(
+    findReturnEdges(
+      diagram.nodes.map((node) => node.id),
+      diagram.edges,
+    ).map(({ edge }) => edge),
+  );
+  const rankOf = ranks(
+    diagram,
+    diagram.edges.filter((edge) => !returning.has(edge)),
+  );
   const horizontal = orientation === 'right';
 
   let order = 0;
@@ -257,7 +273,7 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
   const chains = diagram.edges.map((edge, edgeIndex) => {
     const source = items.get(edge.from);
     const target = items.get(edge.to);
-    if (source === undefined || target === undefined) return [];
+    if (source === undefined || target === undefined || returning.has(edge)) return [];
     const virtual: Item[] = [];
     for (let rank = source.rank + 1; rank < target.rank; rank += 1) {
       virtual.push(createItem(`${String(edgeIndex)}:${String(rank)}`, rank, 0, 0));
@@ -291,8 +307,33 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
     return { ...gap, size: Math.max(MIN_GAP[orientation], gap.used + gap.clearance * 2) };
   });
 
+  const loops = [...returning]
+    .flatMap((edge) => {
+      const source = items.get(edge.from);
+      const target = items.get(edge.to);
+      if (source === undefined || target === undefined) return [];
+      return [{ edge, source, target, index: diagram.edges.indexOf(edge) }];
+    })
+    .sort((a, b) => a.source.rank - a.target.rank - (b.source.rank - b.target.rank) || a.index - b.index);
+
+  const exitTracks = new Map<(typeof loops)[number], number>();
+  const entryTracks = new Map<(typeof loops)[number], number>();
+  const trail = layers.map(() => 0);
+  const lead = layers.map(() => 0);
+  for (const loop of loops) {
+    const exits = trail[loop.source.rank] ?? 0;
+    const entries = lead[loop.target.rank] ?? 0;
+    exitTracks.set(loop, exits + 1);
+    entryTracks.set(loop, entries + 1);
+    trail[loop.source.rank] = exits + 1;
+    lead[loop.target.rank] = entries + 1;
+  }
+
+  const bodySize = layers.map((layer) => Math.max(...layer.map((item) => item.mainSize)));
   const bandStart: number[] = [];
-  const bandSize = layers.map((layer) => Math.max(...layer.map((item) => item.mainSize)));
+  const bandSize = bodySize.map(
+    (size, rank) => size + ((lead[rank] ?? 0) + (trail[rank] ?? 0)) * RETURN_TRACK,
+  );
   let cursor = 0;
   bandSize.forEach((size, rank) => {
     bandStart[rank] = cursor;
@@ -301,7 +342,9 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
 
   const start = (rank: number): number => bandStart[rank] ?? 0;
   const end = (rank: number): number => start(rank) + (bandSize[rank] ?? 0);
-  const center = (rank: number): number => start(rank) + (bandSize[rank] ?? 0) / 2;
+  const bodyStart = (rank: number): number => start(rank) + (lead[rank] ?? 0) * RETURN_TRACK;
+  const bodyEnd = (rank: number): number => bodyStart(rank) + (bodySize[rank] ?? 0);
+  const center = (rank: number): number => bodyStart(rank) + (bodySize[rank] ?? 0) / 2;
   const toPoint = (main: number, cross: number): Point => (horizontal ? { x: main, y: cross } : { x: cross, y: main });
 
   const trunkAt = (link: Link): number => {
@@ -312,7 +355,7 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
     return free ? (from + to) / 2 : from + TRUNK_INSET;
   };
 
-  const routes = links.map((chain) => {
+  const routes: (readonly Point[])[] = links.map((chain) => {
     const points: Point[] = [];
     for (const link of chain) {
       const leave = link.first ? center(link.from.rank) + link.from.mainSize / 2 : end(link.from.rank);
@@ -339,6 +382,46 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
     }
   });
 
+  const crossHalf = (text: string | null): number => {
+    if (text === null) return 0;
+    return horizontal ? LABEL_HEIGHT / 2 : labelWidth(text) / 2;
+  };
+  const crossEdges = [
+    ...everyItem.map((item) => item.cross + item.crossSize / 2),
+    ...[...labels.values()].map((label) => (horizontal ? label.y + LABEL_HEIGHT / 2 : label.x + label.w / 2)),
+    ...routes.flat().map((point) => (horizontal ? point.y : point.x)),
+  ];
+  let laneEdge = Math.max(...crossEdges);
+  const returnLabels = new Map<number, DiagramLayoutLabel>();
+
+  for (const loop of loops) {
+    const { source, target, index, edge } = loop;
+    const text = horizontal ? edge.label : (edge.short ?? edge.label);
+    const half = crossHalf(text);
+    const lane = laneEdge + RETURN_LANE_GAP + half;
+    laneEdge = lane + half;
+
+    const offset = (item: Item): number =>
+      Math.max(RETURN_MIN_OFFSET, Math.min(RETURN_MAX_OFFSET, item.crossSize / 2 - RETURN_SIDE_INSET));
+    const exit = bodyEnd(source.rank) + (exitTracks.get(loop) ?? 1) * RETURN_TRACK;
+    const entry = bodyStart(target.rank) - (entryTracks.get(loop) ?? 1) * RETURN_TRACK;
+    const leaveCross = source.cross + offset(source);
+    const arriveCross = target.cross + offset(target);
+
+    routes[index] = [
+      toPoint(center(source.rank) + source.mainSize / 2, leaveCross),
+      toPoint(exit, leaveCross),
+      toPoint(exit, lane),
+      toPoint(entry, lane),
+      toPoint(entry, arriveCross),
+      toPoint(center(target.rank) - target.mainSize / 2, arriveCross),
+    ];
+    if (text !== null) {
+      const point = toPoint((exit + entry) / 2, lane);
+      returnLabels.set(index, { text, x: point.x, y: point.y, w: labelWidth(text) });
+    }
+  }
+
   const nodeBoxes = diagram.nodes.flatMap((node): DiagramLayoutNode[] => {
     const item = items.get(node.id);
     if (item === undefined) return [];
@@ -353,7 +436,7 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
     xs.push(box.x - box.w / 2, box.x + box.w / 2);
     ys.push(box.y - box.h / 2, box.y + box.h / 2);
   }
-  for (const label of labels.values()) {
+  for (const label of [...labels.values(), ...returnLabels.values()]) {
     xs.push(label.x - label.w / 2, label.x + label.w / 2);
     ys.push(label.y - LABEL_HEIGHT / 2, label.y + LABEL_HEIGHT / 2);
   }
@@ -368,7 +451,9 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
 
   const edges = diagram.edges.map((edge, index): DiagramLayoutEdge => {
     const route = (routes[index] ?? []).map(shift);
-    const label = (links[index] ?? []).map((link) => labels.get(link)).find((entry) => entry !== undefined);
+    const label =
+      returnLabels.get(index) ?? (links[index] ?? []).map((link) => labels.get(link)).find((entry) => entry !== undefined);
+    const tip = route.at(-1) ?? { x: 0, y: 0 };
     return {
       from: edge.from,
       to: edge.to,
@@ -376,6 +461,7 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
       arrow: arrowPoints(route)
         .map((point) => `${String(round(point.x))},${String(round(point.y))}`)
         .join(' '),
+      tip: { x: round(tip.x), y: round(tip.y) },
       label:
         label === undefined
           ? null

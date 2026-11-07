@@ -55,6 +55,12 @@ describe('parseDiagram: sintaxe livre', () => {
     expect(valid(body('a "C# # rápido" / sub # fora')).nodes[0]).toMatchObject({ label: 'C# # rápido', sub: 'sub' });
   });
 
+  it('\\# é uma cerquilha literal, dentro e fora de aspas', () => {
+    const diagram = valid(['flow f', 'title: Pedido \\#42 # comentário', 'a "C\\#"'].join('\n'));
+    expect(diagram.title).toBe('Pedido #42');
+    expect(diagram.nodes[0]?.label).toBe('C#');
+  });
+
   it('direção e nós declarados depois da aresta', () => {
     const diagram = valid(body('direction: down', 'a -> b', 'a "A"', 'b "B"'));
     expect(diagram.direction).toBe('down');
@@ -87,14 +93,17 @@ describe('parseDiagram: erros', () => {
     ]);
   });
 
-  it('ciclo mostra o caminho e a linha que o fecha', () => {
-    expect(errors(body('nginx "N"', 'fpm "F"', 'nginx -> fpm', 'fpm -> nginx'))).toEqual([
-      { line: 5, message: 'este fluxo tem um ciclo (nginx -> fpm -> nginx). Ciclos ainda não são suportados' },
-    ]);
+  it('aresta para si mesmo continua recusada', () => {
+    expect(errors(body('a "A"', 'a -> a'))[0]?.message).toBe('aresta de "a" para ele mesmo não é suportada');
   });
 
-  it('aresta para si mesmo é ciclo', () => {
-    expect(errors(body('a "A"', 'a -> a'))[0]?.message).toContain('ciclo (a -> a)');
+  it('o quarto ciclo é recusado, na linha que o fecha', () => {
+    const lines = ['a', 'b', 'c', 'd', 'e'].map((id) => `${id} "${id}"`);
+    const forward = ['a -> b', 'b -> c', 'c -> d', 'd -> e'];
+    const back = ['b -> a', 'c -> a', 'd -> a', 'e -> a'];
+    expect(errors(body(...lines, ...forward, ...back))).toEqual([
+      { line: 11, message: 'mais de 3 arestas fecham ciclo (a -> b -> a); o máximo é 3' },
+    ]);
   });
 
   it('diretiva desconhecida sugere a certa', () => {
@@ -187,6 +196,18 @@ describe('diagramErrorMessages', () => {
   it('recusa fonte acima do teto', () => {
     const [message] = diagramErrorMessages(`flow f\n#${'x'.repeat(DIAGRAM_SOURCE_MAX_LENGTH)}`);
     expect(message).toContain('o máximo é 4000');
+  });
+});
+
+describe('parseDiagram: ciclos', () => {
+  it('aceita volta simples e volta maior', () => {
+    expect(valid(body('a "A"', 'b "B"', 'a -> b', 'b -> a')).edges).toHaveLength(2);
+    expect(valid(body('a "A"', 'b "B"', 'c "C"', 'a -> b', 'b -> c', 'c -> a : de novo')).edges).toHaveLength(3);
+  });
+
+  it('o cenário pode passar pela volta', () => {
+    const diagram = valid(body('a "A"', 'b "B"', 'a -> b', 'b -> a', 'state x', 'path a b a'));
+    expect(diagram.states[0]?.path).toEqual(['a', 'b', 'a']);
   });
 });
 

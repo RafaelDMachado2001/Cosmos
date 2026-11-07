@@ -38,6 +38,35 @@ export type DraftBlock =
       readonly caption: string | null;
     };
 
+function blank(...values: readonly (string | null | undefined)[]): boolean {
+  return values.every((value) => (value ?? '').trim() === '');
+}
+
+export function isBlankDraftBlock(block: DraftBlock): boolean {
+  switch (block.type) {
+    case 'p':
+    case 'h2':
+    case 'h3':
+    case 'quote':
+    case 'highlight':
+      return blank(block.text);
+    case 'note':
+      return blank(block.title, block.text);
+    case 'list':
+      return blank(...block.items);
+    case 'flow':
+      return blank(...block.steps);
+    case 'code':
+      return blank(block.lang, block.filename, block.text);
+    case 'diagram':
+      return blank(block.source);
+    case 'table':
+      return blank(...block.header, ...block.rows.flat());
+    case 'img':
+      return blank(block.url, block.alt, block.caption);
+  }
+}
+
 function blockId(index: number): string {
   return `b${index}`;
 }

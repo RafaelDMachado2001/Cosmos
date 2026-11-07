@@ -1,3 +1,4 @@
+import { findReturnEdges } from './cycles';
 import { charCount } from './measure';
 import type {
   DiagramDirection,
@@ -15,6 +16,7 @@ export const DIAGRAM_SOURCE_MAX_LENGTH = 4000;
 export const DIAGRAM_LIMITS = {
   nodes: 12,
   edges: 16,
+  returnEdges: 3,
   nodeLabel: 28,
   nodeSub: 24,
   edgeLabel: 28,
@@ -61,12 +63,17 @@ interface StateDraft {
 }
 
 function stripComment(line: string): string {
+  const chars = [...line];
+  let kept = '';
   let quoted = false;
-  for (const [index, char] of [...line].entries()) {
+  for (const [index, char] of chars.entries()) {
+    if (char === '\\' && chars[index + 1] === '#') continue;
+    const escaped = chars[index - 1] === '\\';
     if (char === '"') quoted = !quoted;
-    if (char === '#' && !quoted) return [...line].slice(0, index).join('');
+    if (char === '#' && !quoted && !escaped) return kept;
+    kept += char;
   }
-  return line;
+  return kept;
 }
 
 function hasOddQuotes(line: string): boolean {
@@ -104,34 +111,6 @@ function closest(word: string, candidates: readonly string[]): string | null {
     }
   }
   return best;
-}
-
-function cyclePaths(
-  nodes: readonly DiagramNode[],
-  edges: readonly DiagramEdge[],
-): readonly { readonly line: number; readonly path: readonly string[] }[] {
-  const outgoing = new Map<string, DiagramEdge[]>();
-  for (const edge of edges) outgoing.set(edge.from, [...(outgoing.get(edge.from) ?? []), edge]);
-
-  const finished = new Set<string>();
-  const trail: string[] = [];
-  const found: { line: number; path: string[] }[] = [];
-
-  const visit = (id: string): void => {
-    trail.push(id);
-    for (const edge of outgoing.get(id) ?? []) {
-      const start = trail.indexOf(edge.to);
-      if (start !== -1) found.push({ line: edge.line, path: [...trail.slice(start), edge.to] });
-      else if (!finished.has(edge.to)) visit(edge.to);
-    }
-    trail.pop();
-    finished.add(id);
-  };
-
-  for (const node of nodes) {
-    if (!finished.has(node.id)) visit(node.id);
-  }
-  return found;
 }
 
 export function parseDiagram(source: string): DiagramParseResult {
@@ -427,8 +406,17 @@ export function parseDiagram(source: string): DiagramParseResult {
     if (resolved) resolvable.push(edge);
   }
 
-  for (const { line, path } of cyclePaths(nodes, resolvable)) {
-    fail(line, `este fluxo tem um ciclo (${path.join(' -> ')}). Ciclos ainda não são suportados`);
+  const returns = findReturnEdges(
+    nodes.map((node) => node.id),
+    resolvable,
+  );
+  for (const { edge } of returns) {
+    if (edge.from === edge.to) fail(edge.line, `aresta de "${edge.from}" para ele mesmo não é suportada`);
+  }
+  const [, , , excess] = returns;
+  if (excess !== undefined) {
+    const max = String(DIAGRAM_LIMITS.returnEdges);
+    fail(excess.edge.line, `mais de ${max} arestas fecham ciclo (${excess.path.join(' -> ')}); o máximo é ${max}`);
   }
 
   for (const state of states) {

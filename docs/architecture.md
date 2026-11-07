@@ -671,10 +671,29 @@ test-runner directives).
   `:has(:checked)` shows the layer, so the static article and the reader behave
   the same and the keyboard works natively. The rules are written once per state
   number, which is why `DIAGRAM_LIMITS.states` and the CSS are tested together.
-  The packet is a CSS `offset-path` along the joined edges, hidden under reduced
-  motion and where `offset-path` is missing, since it would sit at the origin.
+  The packet is a CSS `offset-path` along the joined edges, and `alternate` is
+  what brings it back, with no reversed path. It is hidden under reduced motion
+  and where `offset-path` is missing, since it would sit at the origin.
   Chromium reports a box for a shape inside a `display: none` group, so a test
   has to look at the layer, not at the shape.
+- **A cycle is drawn as a loop outside the graph.** The depth-first search in
+  `cycles.ts` names the edges that close a cycle, in declaration order, so the
+  author decides which way is "back". Those edges stay out of the ranks, then
+  run from the source through a track beside its band, along a lane past every
+  node and label, and in through a track beside the target. Tracks and lanes
+  hold no nodes, so a return can cross a wire but never a box. It leaves and
+  arrives off centre, or `a -> b` with `b -> a` would share a line with the way
+  there. With no return edge the extra space is zero and the output is byte for
+  byte the same, which the layout snapshots prove.
+- **Starter templates are text.** The Studio's Linear, Branching and Converging
+  buttons fill `source`, so the published format stays one thing and a template
+  has no meaning after it is chosen. They appear only on an empty block, which
+  is what keeps them from overwriting anything without a confirmation.
+- **Autosave leaves blank blocks out.** The server refuses an empty block, and
+  a block is empty the moment it is added, so one untouched block used to stop
+  the whole article from saving. `isBlankDraftBlock` keeps it on screen and off
+  the request. It holds no content, so losing it on reload loses nothing; a
+  half-filled block still reaches the server and still fails.
 - **An invalid diagram blocks publishing on the server.** Autosave only checks
   the block's shape, so a half-written diagram is still saved. `publish()` runs
   the same parser through the CLI's `validate-diagrams` before copying anything,

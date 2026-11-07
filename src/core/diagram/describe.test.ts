@@ -14,10 +14,10 @@ function diagram(source: string): FlowDiagram {
 describe('describeDiagram', () => {
   it('descreve o exemplo de referência', () => {
     expect(describeDiagram(diagram(REFERENCE_DIAGRAM))).toBe(
-      'Navegador para NGINX, via HTTPS. ' +
+      'Navegador para NGINX: HTTPS. ' +
         'NGINX para public/, quando arquivo existe? ' +
-        'NGINX para PHP-FPM, via FastCGI · unix socket. ' +
-        'PHP-FPM para index.php, via executa.',
+        'NGINX para PHP-FPM: FastCGI · unix socket. ' +
+        'PHP-FPM para index.php: executa.',
     );
   });
 
@@ -26,7 +26,7 @@ describe('describeDiagram', () => {
   });
 
   it('usa o vocabulário recebido', () => {
-    const words = { ...DIAGRAM_VOCABULARY_PT, to: 'to', via: 'via', when: 'when', isolated: 'not connected' };
+    const words = { ...DIAGRAM_VOCABULARY_PT, to: 'to', when: 'when', isolated: 'not connected' };
     expect(describeDiagram(diagram('flow f\na "A"\nb "B"\na -> b : ok?'), words)).toBe('A to B, when ok?');
   });
 

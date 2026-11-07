@@ -2,7 +2,6 @@ import type { DiagramState, FlowDiagram } from './types';
 
 export interface DiagramVocabulary {
   readonly to: string;
-  readonly via: string;
   readonly when: string;
   readonly isolated: string;
   readonly scenario: string;
@@ -15,7 +14,6 @@ export interface DiagramVocabulary {
 
 export const DIAGRAM_VOCABULARY_PT: DiagramVocabulary = {
   to: 'para',
-  via: 'via',
   when: 'quando',
   isolated: 'sem conexões',
   scenario: 'Cenário',
@@ -54,8 +52,7 @@ export function describeDiagram(diagram: FlowDiagram, vocabulary: DiagramVocabul
   const sentences = diagram.edges.map((edge) => {
     const path = `${labels.get(edge.from) ?? edge.from} ${vocabulary.to} ${labels.get(edge.to) ?? edge.to}`;
     if (edge.label === null) return path;
-    const connector = edge.label.endsWith('?') ? vocabulary.when : vocabulary.via;
-    return `${path}, ${connector} ${edge.label}`;
+    return edge.label.endsWith('?') ? `${path}, ${vocabulary.when} ${edge.label}` : `${path}: ${edge.label}`;
   });
 
   const isolated = diagram.nodes

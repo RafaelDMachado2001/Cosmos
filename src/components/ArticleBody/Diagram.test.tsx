@@ -24,7 +24,7 @@ describe('ArticleBody com diagrama', () => {
   it('title, desc e legenda saem do diagrama', () => {
     const html = render(fence(REFERENCE_DIAGRAM));
     expect(html.match(/<title id="[^"]+">O caminho de uma request até o PHP<\/title>/g)).toHaveLength(2);
-    expect(html).toContain('Navegador para NGINX, via HTTPS.');
+    expect(html).toContain('Navegador para NGINX: HTTPS.');
     expect(html).toMatch(/<figcaption[^>]*>O caminho de uma request até o PHP<\/figcaption>/);
   });
 
@@ -69,7 +69,7 @@ describe('ArticleBody com diagrama', () => {
         <ArticleBody markdown={fence('flow f\na "A"\nb "B"\na -> b : HTTPS')} />
       </LocaleProvider>,
     );
-    expect(html).toContain('A to B, via HTTPS.');
+    expect(html).toContain('A to B: HTTPS.');
   });
 
   it('sem estados não há seletor, painel nem camada', () => {
@@ -83,9 +83,11 @@ describe('ArticleBody com diagrama', () => {
     expect(html).toMatch(/<input[^>]*data-state="0"[^>]*checked=""/);
     expect(html.match(/checked=""/g)).toHaveLength(1);
     expect(html.match(/<g[^>]*data-state="3"/g)).toHaveLength(2);
-    expect(html.match(/<circle/g)).toHaveLength(8);
+    expect(html.match(/<circle[^>]*style=/g)).toHaveLength(8);
     expect(html).toMatch(/offset-path:path\(/);
     expect(html).toContain('Bad Gateway');
+    expect(html.match(/data-badge="err"/g)).toHaveLength(2);
+    expect(html.match(/data-badge="warn"/g)).toHaveLength(2);
   });
 
   it('dois diagramas iguais não compartilham o grupo de rádio', () => {

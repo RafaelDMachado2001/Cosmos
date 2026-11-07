@@ -53,7 +53,6 @@ export const en: Dictionary = {
   },
   diagram: {
     to: 'to',
-    via: 'via',
     when: 'when',
     isolated: 'not connected',
     scenario: 'Scenario',
