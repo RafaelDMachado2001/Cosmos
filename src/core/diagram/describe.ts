@@ -1,10 +1,16 @@
-import type { FlowDiagram } from './types';
+import type { DiagramState, FlowDiagram } from './types';
 
 export interface DiagramVocabulary {
   readonly to: string;
   readonly via: string;
   readonly when: string;
   readonly isolated: string;
+  readonly scenario: string;
+  readonly route: string;
+  readonly hint: string;
+  readonly broken: string;
+  readonly slow: string;
+  readonly down: string;
 }
 
 export const DIAGRAM_VOCABULARY_PT: DiagramVocabulary = {
@@ -12,7 +18,34 @@ export const DIAGRAM_VOCABULARY_PT: DiagramVocabulary = {
   via: 'via',
   when: 'quando',
   isolated: 'sem conexões',
+  scenario: 'Cenário',
+  route: 'Caminho',
+  hint: 'Dica',
+  broken: 'com falha',
+  slow: 'lento',
+  down: 'fora do ar',
 };
+
+function sentence(text: string): string {
+  return /[.?!]$/.test(text) ? text : `${text}.`;
+}
+
+function describeState(diagram: FlowDiagram, state: DiagramState, vocabulary: DiagramVocabulary): string {
+  const labels = new Map(diagram.nodes.map((node) => [node.id, node.label]));
+  const name = (id: string): string => labels.get(id) ?? id;
+  const heading = `${vocabulary.scenario} ${state.label}${state.title === null ? '' : `: ${state.title}`}`;
+  return [
+    heading,
+    state.text,
+    state.path.length === 0 ? null : `${vocabulary.route}: ${state.path.map(name).join(', ')}`,
+    ...state.edges.map((edge) => `${name(edge.from)} ${vocabulary.to} ${name(edge.to)} ${vocabulary[edge.mark]}`),
+    ...state.nodes.map((node) => `${name(node.id)} ${vocabulary[node.mark]}`),
+    state.hint === null ? null : `${vocabulary.hint}: ${state.hint}`,
+  ]
+    .filter((text) => text !== null)
+    .map(sentence)
+    .join(' ');
+}
 
 export function describeDiagram(diagram: FlowDiagram, vocabulary: DiagramVocabulary = DIAGRAM_VOCABULARY_PT): string {
   const labels = new Map(diagram.nodes.map((node) => [node.id, node.label]));
@@ -29,5 +62,7 @@ export function describeDiagram(diagram: FlowDiagram, vocabulary: DiagramVocabul
     .filter((node) => !connected.has(node.id))
     .map((node) => `${node.label}, ${vocabulary.isolated}`);
 
-  return [...sentences, ...isolated].map((sentence) => `${sentence}${sentence.endsWith('?') ? '' : '.'}`).join(' ');
+  const flow = [...sentences, ...isolated].map(sentence);
+  const states = diagram.states.map((state) => describeState(diagram, state, vocabulary));
+  return [...flow, ...states].join(' ');
 }

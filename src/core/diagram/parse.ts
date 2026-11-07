@@ -2,9 +2,12 @@ import { charCount } from './measure';
 import type {
   DiagramDirection,
   DiagramEdge,
+  DiagramEdgeMark,
   DiagramError,
   DiagramNode,
+  DiagramNodeMark,
   DiagramParseResult,
+  DiagramState,
 } from './types';
 
 export const DIAGRAM_SOURCE_MAX_LENGTH = 4000;
@@ -16,6 +19,11 @@ export const DIAGRAM_LIMITS = {
   nodeSub: 24,
   edgeLabel: 28,
   edgeShort: 12,
+  states: 6,
+  stateLabel: 20,
+  stateTitle: 60,
+  stateText: 280,
+  stateHint: 120,
 } as const;
 
 const ID_RE = /^[a-z][a-z0-9-]*$/;
@@ -24,9 +32,33 @@ const NODE_RE = /^(\S+)\s+"([^"]*)"\s*(?:\/\s*(.*))?$/;
 const EDGE_TARGET_RE = /^(\S+?)\s*(?::\s*([^|]*?))?\s*(?:\|\s*(.*?))?\s*$/;
 const HEADER_RE = /^([\p{L}]+)(?:\s+([^\s":]+))?$/u;
 
+const STATE_RE = /^state(?:\s+(.*))?$/;
+const STATE_LABEL_RE = /^(?:"([^"]*)"|(\S+))$/;
+const STATE_EDGE_RE = /^(\S+?)\s*->\s*(\S+)(?:\s+(\S+))?$/;
+
 const DIRECTIONS: readonly DiagramDirection[] = ['auto', 'right', 'down'];
 const DIRECTIVES = ['title', 'direction'] as const;
 const PLANNED_KINDS: readonly string[] = ['compare', 'sequence'];
+const STATE_DIRECTIVES = ['title', 'text', 'hint'] as const;
+const EDGE_MARKS: readonly DiagramEdgeMark[] = ['broken', 'slow'];
+const NODE_MARKS: readonly DiagramNodeMark[] = ['down', 'slow'];
+const STATE_FIELD_LIMITS = {
+  title: DIAGRAM_LIMITS.stateTitle,
+  text: DIAGRAM_LIMITS.stateText,
+  hint: DIAGRAM_LIMITS.stateHint,
+} as const;
+
+interface StateDraft {
+  label: string;
+  title: string | null;
+  text: string | null;
+  hint: string | null;
+  path: readonly string[];
+  readonly edges: { readonly from: string; readonly to: string; readonly mark: DiagramEdgeMark }[];
+  readonly nodes: { readonly id: string; readonly mark: DiagramNodeMark }[];
+  readonly line: number;
+  readonly seen: Map<string, number>;
+}
 
 function stripComment(line: string): string {
   let quoted = false;
@@ -225,9 +257,150 @@ export function parseDiagram(source: string): DiagramParseResult {
     nodes.push({ id: nodeId, label, sub, line });
   };
 
+  const states: StateDraft[] = [];
+
+  const unknownNode = (line: number, id: string): void => {
+    const hint = closest(
+      id,
+      nodes.map((node) => node.id),
+    );
+    fail(line, `o nó "${id}" não foi declarado.${hint === null ? '' : ` Você quis dizer "${hint}"?`}`);
+  };
+
+  const hasEdge = (from: string, to: string): boolean =>
+    edges.some((edge) => edge.from === from && edge.to === to);
+
+  const claim = (state: StateDraft, line: number, key: string, what: string): boolean => {
+    const earlier = state.seen.get(key);
+    if (earlier !== undefined) {
+      fail(line, `${what} repetido; já declarado na linha ${String(earlier)}`);
+      return false;
+    }
+    state.seen.set(key, line);
+    return true;
+  };
+
+  const openState = (line: number, rest: string): void => {
+    const match = STATE_LABEL_RE.exec(rest);
+    const label = (match?.[1] ?? match?.[2] ?? '').trim();
+    if (label === '') {
+      fail(line, 'estado sem nome. Use: state "nome"');
+    } else {
+      checkLength(line, label, DIAGRAM_LIMITS.stateLabel, 'nome do estado');
+      const earlier = states.find((state) => state.label === label);
+      if (earlier !== undefined) fail(line, `estado "${label}" repetido; já declarado na linha ${String(earlier.line)}`);
+    }
+    if (states.length === DIAGRAM_LIMITS.states) {
+      fail(line, `mais de ${String(DIAGRAM_LIMITS.states)} estados; o máximo é ${String(DIAGRAM_LIMITS.states)}`);
+    }
+    states.push({ label, title: null, text: null, hint: null, path: [], edges: [], nodes: [], line, seen: new Map() });
+  };
+
+  const readStateDirective = (state: StateDraft, line: number, name: string, value: string): void => {
+    const field = STATE_DIRECTIVES.find((candidate) => candidate === name);
+    if (field === undefined) {
+      const hint = closest(name, STATE_DIRECTIVES);
+      fail(line, `diretiva desconhecida "${name}" no estado. ${hint === null ? 'Use "title", "text" ou "hint"' : `Use "${hint}"`}`);
+      return;
+    }
+    if (!claim(state, line, field, `"${field}"`)) return;
+    if (value === '') {
+      fail(line, `"${field}" sem texto`);
+      return;
+    }
+    checkLength(line, value, STATE_FIELD_LIMITS[field], `"${field}"`);
+    state[field] = value;
+  };
+
+  const readStatePath = (state: StateDraft, line: number, ids: readonly string[]): void => {
+    if (!claim(state, line, 'path', '"path"')) return;
+    if (ids.length < 2) {
+      fail(line, 'o caminho precisa de ao menos dois nós: path a b');
+      return;
+    }
+    const unknown = ids.filter((id) => !nodeLines.has(id));
+    for (const id of unknown) unknownNode(line, id);
+    if (unknown.length > 0) return;
+    for (const [index, to] of ids.slice(1).entries()) {
+      const from = ids[index] ?? '';
+      if (!hasEdge(from, to)) fail(line, `o caminho usa ${from} -> ${to}, aresta que o fluxo não tem`);
+    }
+    state.path = ids;
+  };
+
+  const readStateEdge = (state: StateDraft, line: number, text: string): void => {
+    const match = STATE_EDGE_RE.exec(text);
+    const from = match?.[1];
+    const to = match?.[2];
+    if (match === null || from === undefined || to === undefined) {
+      fail(line, 'aresta incompleta no estado. Use: de -> para broken');
+      return;
+    }
+    const word = match[3] ?? '';
+    const mark = EDGE_MARKS.find((candidate) => candidate === word);
+    if (mark === undefined) {
+      const hint = closest(word, EDGE_MARKS);
+      fail(line, `marca "${word}" inválida na aresta. Use ${hint === null ? 'broken ou slow' : `"${hint}"`}`);
+      return;
+    }
+    if (!nodeLines.has(from) || !nodeLines.has(to)) {
+      for (const id of [from, to]) if (!nodeLines.has(id)) unknownNode(line, id);
+      return;
+    }
+    if (!hasEdge(from, to)) {
+      fail(line, `a aresta ${from} -> ${to} não existe no fluxo`);
+      return;
+    }
+    if (claim(state, line, `${from} -> ${to}`, `aresta ${from} -> ${to}`)) state.edges.push({ from, to, mark });
+  };
+
+  const readStateNode = (state: StateDraft, line: number, words: readonly string[]): void => {
+    const id = words[0] ?? '';
+    const mark = NODE_MARKS.find((candidate) => candidate === words[1]);
+    if (words.length !== 2 || words[1] === undefined || words[1].startsWith('"')) {
+      fail(line, `linha inválida no estado. Use: ${id} down, ou declare nós e arestas antes do primeiro "state"`);
+      return;
+    }
+    if (mark === undefined) {
+      const hint = closest(words[1], NODE_MARKS);
+      fail(line, `marca "${words[1]}" inválida no nó. Use ${hint === null ? 'down ou slow' : `"${hint}"`}`);
+      return;
+    }
+    if (!nodeLines.has(id)) {
+      unknownNode(line, id);
+      return;
+    }
+    if (claim(state, line, `node:${id}`, `nó "${id}"`)) state.nodes.push({ id, mark });
+  };
+
+  const readStateLine = (state: StateDraft, line: number, text: string): void => {
+    const directive = DIRECTIVE_RE.exec(text);
+    if (directive !== null) {
+      readStateDirective(state, line, directive[1] ?? '', directive[2] ?? '');
+      return;
+    }
+    if (text.includes('->')) {
+      readStateEdge(state, line, text);
+      return;
+    }
+    const words = text.split(/\s+/);
+    if (words[0] === 'path') readStatePath(state, line, words.slice(1));
+    else readStateNode(state, line, words);
+  };
+
   for (const { number, text } of body) {
     if (hasOddQuotes(text)) {
       fail(number, 'aspas sem fechar');
+      continue;
+    }
+    const opening = STATE_RE.exec(text);
+    const current = states.at(-1);
+    if (opening !== null) {
+      openState(number, opening[1]?.trim() ?? '');
+      continue;
+    }
+    if (current !== undefined) {
+      readStateLine(current, number, text);
       continue;
     }
     const directive = DIRECTIVE_RE.exec(text);
@@ -236,18 +409,13 @@ export function parseDiagram(source: string): DiagramParseResult {
     else readNode(number, text);
   }
 
-  const known = nodes.map((node) => node.id);
   const resolvable: DiagramEdge[] = [];
   for (const edge of edges) {
     let resolved = true;
     for (const end of [edge.from, edge.to]) {
       if (nodeLines.has(end)) continue;
       resolved = false;
-      const hint = closest(end, known);
-      fail(
-        edge.line,
-        `o nó "${end}" não foi declarado.${hint === null ? '' : ` Você quis dizer "${hint}"?`}`,
-      );
+      unknownNode(edge.line, end);
     }
     const key = `${edge.from} -> ${edge.to}`;
     const earlier = edgeLines.get(key);
@@ -263,6 +431,12 @@ export function parseDiagram(source: string): DiagramParseResult {
     fail(line, `este fluxo tem um ciclo (${path.join(' -> ')}). Ciclos ainda não são suportados`);
   }
 
+  for (const state of states) {
+    if (state.path.length === 0 && state.edges.length === 0 && state.nodes.length === 0 && errors.length === 0) {
+      fail(state.line, `o estado "${state.label}" não marca nada. Use path, uma aresta ou um nó`);
+    }
+  }
+
   if (nodes.length === 0 && errors.length === 0) {
     fail(first.number, 'o fluxo não tem nós. Declare ao menos um: id "Rótulo"');
   }
@@ -271,7 +445,19 @@ export function parseDiagram(source: string): DiagramParseResult {
     return { ok: false, errors: [...errors].sort((a, b) => a.line - b.line) };
   }
 
-  return { ok: true, diagram: { kind: 'flow', id, title, direction, nodes, edges } };
+  const finished = states.map(
+    (state): DiagramState => ({
+      label: state.label,
+      title: state.title,
+      text: state.text,
+      hint: state.hint,
+      path: state.path,
+      edges: state.edges,
+      nodes: state.nodes,
+      line: state.line,
+    }),
+  );
+  return { ok: true, diagram: { kind: 'flow', id, title, direction, nodes, edges, states: finished } };
 }
 
 export function diagramErrorMessages(source: string): readonly string[] {

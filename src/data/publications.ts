@@ -1,4 +1,4 @@
-import { REFERENCE_DIAGRAM, REFERENCE_DIAGRAM_EN } from '../core/diagram/fixture';
+import { REFERENCE_DIAGRAM, REFERENCE_DIAGRAM_EN, REFERENCE_STATES, REFERENCE_STATES_EN } from '../core/diagram/fixture';
 import type { Publication } from '../core/types';
 
 export const REAL_PUBLICATION_SLUG = 'arquitetura-e-orquestracao-de-llms';
@@ -105,13 +105,13 @@ export const PUBLICATIONS: readonly Publication[] = [
       summary:
         'Como consultas aninhadas derrubam a performance de telas simples e o que fazer a respeito.',
       opening:
-        `O N+1 raramente aparece em desenvolvimento, onde a tabela tem trinta linhas. Ele aparece em produção, onde tem trezentas mil, e sempre na tela que o cliente mais usa.\n\n\`\`\`diagram\n${REFERENCE_DIAGRAM}\n\`\`\``,
+        `O N+1 raramente aparece em desenvolvimento, onde a tabela tem trinta linhas. Ele aparece em produção, onde tem trezentas mil, e sempre na tela que o cliente mais usa.\n\n\`\`\`diagram\n${REFERENCE_DIAGRAM}${REFERENCE_STATES}\n\`\`\``,
     },
     en: {
       title: 'N+1: the invisible cost of Eloquent',
       summary: 'How nested queries sink simple screens, and what to do about it.',
       opening:
-        `N+1 rarely shows up in development, where the table holds thirty rows. It shows up in production, where it holds three hundred thousand, and always on the screen the client uses most.\n\n\`\`\`diagram\n${REFERENCE_DIAGRAM_EN}\n\`\`\``,
+        `N+1 rarely shows up in development, where the table holds thirty rows. It shows up in production, where it holds three hundred thousand, and always on the screen the client uses most.\n\n\`\`\`diagram\n${REFERENCE_DIAGRAM_EN}${REFERENCE_STATES_EN}\n\`\`\``,
     },
   }),
   seed({

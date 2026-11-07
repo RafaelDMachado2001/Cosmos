@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { REFERENCE_DIAGRAM } from './fixture';
-import { DIAGRAM_SOURCE_MAX_LENGTH, diagramErrorMessages, parseDiagram } from './parse';
+import { REFERENCE_DIAGRAM, REFERENCE_STATES } from './fixture';
+import { DIAGRAM_LIMITS, DIAGRAM_SOURCE_MAX_LENGTH, diagramErrorMessages, parseDiagram } from './parse';
 import type { DiagramError, FlowDiagram } from './types';
 
 function valid(source: string): FlowDiagram {
@@ -187,5 +187,64 @@ describe('diagramErrorMessages', () => {
   it('recusa fonte acima do teto', () => {
     const [message] = diagramErrorMessages(`flow f\n#${'x'.repeat(DIAGRAM_SOURCE_MAX_LENGTH)}`);
     expect(message).toContain('o máximo é 4000');
+  });
+});
+
+describe('parseDiagram: estados', () => {
+  const flow = body('a "A"', 'b "B"', 'c "C"', 'a -> b', 'b -> c');
+  const withState = (...lines: readonly string[]): string => [flow, ...lines].join('\n');
+
+  it('lê caminho, marcas e painel', () => {
+    const diagram = valid(`${REFERENCE_DIAGRAM}${REFERENCE_STATES}`);
+    expect(diagram.states.map((state) => state.label)).toEqual(['GET /posts/42', 'GET /css/app.css', '502', '504']);
+    expect(diagram.states[2]).toMatchObject({
+      title: 'Bad Gateway',
+      path: ['navegador', 'nginx'],
+      edges: [{ from: 'nginx', to: 'fpm', mark: 'broken' }],
+      nodes: [{ id: 'fpm', mark: 'down' }],
+    });
+    expect(Object.keys(diagram.states[2] ?? {})).not.toContain('seen');
+  });
+
+  it('fluxo sem estado continua com a lista vazia', () => {
+    expect(valid(flow).states).toEqual([]);
+  });
+
+  it.each([
+    ['state', 'estado sem nome'],
+    ['state "dois nomes" extra', 'estado sem nome'],
+    ['state x', 'não marca nada'],
+    ['state x\npath a', 'ao menos dois nós'],
+    ['state x\npath a c', 'aresta que o fluxo não tem'],
+    ['state x\npath a z', 'o nó "z" não foi declarado'],
+    ['state x\npath a b\npath b c', '"path" repetido'],
+    ['state x\na -> c broken', 'não existe no fluxo'],
+    ['state x\na -> b', 'marca "" inválida'],
+    ['state x\na -> b brokn', 'Use "broken"'],
+    ['state x\na -> b broken\na -> b slow', 'repetido'],
+    ['state x\nb dwn', 'Use "down"'],
+    ['state x\nz down', 'o nó "z" não foi declarado'],
+    ['state x\nb down\nb slow', 'repetido'],
+    ['state x\nb down\nd "D"', 'antes do primeiro "state"'],
+    ['state x\nb down\ntitel: oi', 'Use "title"'],
+    ['state x\nb down\ntext: um\ntext: dois', '"text" repetido'],
+    ['state x\nb down\nstate x\nb down', 'estado "x" repetido'],
+  ])('%s', (lines, message) => {
+    expect(errors(withState(lines)).map((error) => error.message).join('\n')).toContain(message);
+  });
+
+  it('o erro aponta a linha do estado', () => {
+    expect(errors(withState('state x', '  path a z'))[0]?.line).toBe(8);
+  });
+
+  it('limita a quantidade de estados', () => {
+    const many = Array.from({ length: DIAGRAM_LIMITS.states + 1 }, (_, index) => `state s${String(index)}\nb down`);
+    expect(errors(withState(...many))[0]?.message).toContain('estados; o máximo é 6');
+  });
+
+  it('limita o tamanho dos campos do painel', () => {
+    expect(errors(withState('state x', 'b down', `hint: ${'h'.repeat(DIAGRAM_LIMITS.stateHint + 1)}`))[0]?.message).toContain(
+      '"hint" com 121 caracteres',
+    );
   });
 });
