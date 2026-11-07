@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 
 import { diagramErrorMessages } from '../core/diagram/parse';
+import { DIAGRAM_SYNTAX_EXAMPLE, DIAGRAM_TEMPLATES } from '../core/diagram/templates';
 import { validateDraftBlock } from '../core/draftValidation';
 import type { DraftBlock } from '../core/draftBlocks';
 import styles from './BlockEditor.module.css';
@@ -283,10 +284,26 @@ function DiagramFields({
   readonly block: Extract<DraftBlock, { type: 'diagram' }>;
   readonly onChange: (block: DraftBlock) => void;
 }): React.JSX.Element {
-  const errors = block.source.trim() === '' ? [] : diagramErrorMessages(block.source);
+  const empty = block.source.trim() === '';
+  const errors = empty ? [] : diagramErrorMessages(block.source);
 
   return (
     <div className={styles.fieldGroup}>
+      {empty && (
+        <div className={styles.templates} role="group" aria-label="Modelos de diagrama">
+          <span className={styles.templatesLabel}>Começar de</span>
+          {DIAGRAM_TEMPLATES.map((template) => (
+            <button
+              key={template.id}
+              type="button"
+              className={styles.template}
+              onClick={() => onChange({ ...block, source: template.source })}
+            >
+              {template.label}
+            </button>
+          ))}
+        </div>
+      )}
       <AutoTextarea
         className={styles.textareaMono}
         aria-label="Fonte do diagrama"
@@ -303,6 +320,10 @@ function DiagramFields({
           </li>
         ))}
       </ul>
+      <details className={styles.help}>
+        <summary>Sintaxe</summary>
+        <pre className={styles.helpText}>{DIAGRAM_SYNTAX_EXAMPLE}</pre>
+      </details>
     </div>
   );
 }
