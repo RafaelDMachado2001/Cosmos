@@ -333,13 +333,25 @@ class PublicationApiTest extends TestCase
     {
         $publication = Publication::where('slug', 'code-review-sem-atrito')->firstOrFail();
         $publication->tags()->attach([
-            Tag::create(['slug' => 'times'])->id,
-            Tag::create(['slug' => 'code-review'])->id,
+            Tag::create(['locale' => 'pt', 'slug' => 'times'])->id,
+            Tag::create(['locale' => 'pt', 'slug' => 'code-review'])->id,
         ]);
 
         $this->getJson('/api/publications/code-review-sem-atrito')->assertJsonPath('data.tags', ['code-review', 'times']);
         $this->getJson('/api/publications/fundamentos-de-indices-no-postgresql')->assertJsonPath('data.tags', []);
         $this->assertArrayNotHasKey('tags', $this->getJson('/api/publications')->json('data.0'));
+    }
+
+    public function test_as_tags_seguem_o_idioma_pedido(): void
+    {
+        $publication = Publication::where('slug', 'code-review-sem-atrito')->firstOrFail();
+        $publication->tags()->attach([
+            Tag::create(['locale' => 'pt', 'slug' => 'revisao'])->id,
+            Tag::create(['locale' => 'en', 'slug' => 'review'])->id,
+        ]);
+
+        $this->getJson('/api/publications/code-review-sem-atrito?locale=pt')->assertJsonPath('data.tags', ['revisao']);
+        $this->getJson('/api/publications/code-review-sem-atrito?locale=en')->assertJsonPath('data.tags', ['review']);
     }
 
     public function test_seo_title_e_seo_description_vem_nulos_sem_override(): void

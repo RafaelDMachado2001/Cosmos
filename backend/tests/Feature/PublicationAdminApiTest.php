@@ -11,6 +11,7 @@ use App\Modules\Content\Models\PublicationDraft;
 use App\Modules\Content\Models\Tag;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -61,14 +62,16 @@ class PublicationAdminApiTest extends TestCase
     public function test_show_traz_tags_e_referencias(): void
     {
         $publication = $this->publicationWithDrafts();
-        $tag = Tag::create(['slug' => 'postgres']);
-        $publication->tags()->attach($tag);
+        $publication->tags()->attach([
+            Tag::create(['locale' => 'pt', 'slug' => 'indices'])->id,
+            Tag::create(['locale' => 'en', 'slug' => 'indexes'])->id,
+        ]);
         $publication->references()->create(['position' => 0, 'title' => 'Fonte', 'url' => 'https://example.com']);
 
         $this->actingAs($this->admin())
             ->getJson("/admin/api/publications/{$publication->id}")
             ->assertOk()
-            ->assertJsonPath('data.tags.0', 'postgres')
+            ->assertJsonPath('data.tags', ['pt' => ['indices'], 'en' => ['indexes']])
             ->assertJsonPath('data.references.0.title', 'Fonte');
     }
 
@@ -340,17 +343,52 @@ class PublicationAdminApiTest extends TestCase
         $publication = $this->publicationWithDrafts();
 
         $this->actingAs($this->admin())->patchJson("/admin/api/publications/{$publication->id}", [
-            'tags' => ['postgres', 'indices'],
+            'tags' => ['pt' => ['postgres', 'indices'], 'en' => ['postgres', 'indexes']],
             'references' => [
                 ['title' => 'Fonte A', 'url' => 'https://example.com/a'],
                 ['title' => 'Fonte B', 'url' => '/pt'],
             ],
         ])->assertOk()
-            ->assertJsonPath('data.tags', ['postgres', 'indices'])
+            ->assertJsonPath('data.tags.pt', ['postgres', 'indices'])
+            ->assertJsonPath('data.tags.en', ['postgres', 'indexes'])
             ->assertJsonPath('data.references.0.title', 'Fonte A')
             ->assertJsonPath('data.references.1.title', 'Fonte B');
 
-        $this->assertSame(2, $publication->tags()->count());
+        $this->assertSame(4, $publication->tags()->count());
+    }
+
+    public function test_autosave_de_um_idioma_nao_mexe_nas_tags_do_outro(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->patchJson("/admin/api/publications/{$publication->id}", [
+            'tags' => ['pt' => ['indices', 'postgres'], 'en' => ['indexes']],
+        ])->assertOk();
+
+        $this->actingAs($admin)->patchJson("/admin/api/publications/{$publication->id}", [
+            'tags' => ['pt' => ['postgres']],
+        ])->assertOk()
+            ->assertJsonPath('data.tags', ['pt' => ['postgres'], 'en' => ['indexes']]);
+
+        $this->actingAs($admin)->patchJson("/admin/api/publications/{$publication->id}", [
+            'tags' => ['en' => []],
+        ])->assertOk()
+            ->assertJsonPath('data.tags', ['pt' => ['postgres'], 'en' => []]);
+    }
+
+    public function test_autosave_recusa_tags_sem_idioma_ou_de_idioma_desconhecido(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->patchJson("/admin/api/publications/{$publication->id}", ['tags' => ['postgres']])
+            ->assertUnprocessable()->assertJsonValidationErrors('tags');
+
+        $this->actingAs($admin)->patchJson("/admin/api/publications/{$publication->id}", ['tags' => ['fr' => ['postgres']]])
+            ->assertUnprocessable()->assertJsonValidationErrors('tags');
+
+        $this->assertSame(0, $publication->tags()->count());
     }
 
     public function test_autosave_recusa_url_de_referencia_insegura(): void
@@ -555,16 +593,51 @@ class PublicationAdminApiTest extends TestCase
             ->assertJsonValidationErrors('file');
     }
 
-    public function test_busca_tags_por_prefixo(): void
+    public function test_busca_tags_por_prefixo_no_idioma_pedido(): void
     {
-        Tag::create(['slug' => 'postgres']);
-        Tag::create(['slug' => 'performance']);
-        Tag::create(['slug' => 'react']);
+        $publication = $this->publicationWithDrafts();
+        $publication->tags()->attach([
+            Tag::create(['locale' => 'pt', 'slug' => 'postgres'])->id,
+            Tag::create(['locale' => 'pt', 'slug' => 'performance'])->id,
+            Tag::create(['locale' => 'en', 'slug' => 'performance'])->id,
+            Tag::create(['locale' => 'en', 'slug' => 'permissions'])->id,
+        ]);
+        $admin = $this->admin();
 
-        $response = $this->actingAs($this->admin())
-            ->getJson('/admin/api/tags?q=per')
-            ->assertOk();
+        $this->assertSame(['performance'], $this->actingAs($admin)->getJson('/admin/api/tags?q=per&locale=pt')->assertOk()->json());
+        $this->assertSame(['performance', 'permissions'], $this->actingAs($admin)->getJson('/admin/api/tags?q=per&locale=en')->assertOk()->json());
+    }
 
-        $this->assertSame(['performance'], $response->json());
+    public function test_busca_de_tags_nao_sugere_quem_ficou_sem_publicacao(): void
+    {
+        Tag::create(['locale' => 'en', 'slug' => 'performance']);
+
+        $this->assertSame([], $this->actingAs($this->admin())->getJson('/admin/api/tags?q=per&locale=en')->assertOk()->json());
+    }
+
+    public function test_busca_de_tags_exige_idioma_valido(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->getJson('/admin/api/tags?q=per')->assertUnprocessable();
+        $this->actingAs($admin)->getJson('/admin/api/tags?q=per&locale=fr')->assertUnprocessable();
+    }
+
+    public function test_a_migracao_copia_as_tags_existentes_para_o_ingles(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $migration = require database_path('migrations/2026_11_07_000000_add_locale_to_tags_table.php');
+        $migration->down();
+
+        $tagId = DB::table('tags')->insertGetId(['slug' => 'indices']);
+        DB::table('publication_tag')->insert(['publication_id' => $publication->id, 'tag_id' => $tagId]);
+
+        $migration->up();
+
+        $publication->load('tags');
+        $this->assertEqualsCanonicalizing(
+            [['pt', 'indices'], ['en', 'indices']],
+            $publication->tags->map(fn (Tag $tag): array => [$tag->locale, $tag->slug])->all(),
+        );
     }
 }

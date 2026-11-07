@@ -730,6 +730,12 @@ test-runner directives).
   Images are resized to 1600px wide, never upscaled, stored under a UUID name
   (cacheable forever), and their width and height are saved so pages reserve
   the space.
+- **Tags belong to a locale.** A `tags` row is a word in one language, so
+  `(locale, slug)` is the identity and the same slug in two languages is two
+  rows. The studio sends one list per locale and a patch only touches the
+  locales it names. Tags still go live on autosave, like the category. The
+  suggestions list only tags in use, so a word replaced on every post stops
+  coming back.
 - **Search is a generated `tsvector` column**, not a trigger: no write path,
   the admin panel included, can skip indexing. The dictionary comes from the
   row's own locale.

@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 
 import { slugify } from '../core/slug';
+import type { Locale } from '../core/types';
 import styles from './TagInput.module.css';
 import { api } from './api';
 
 export interface TagInputProps {
+  readonly locale: Locale;
   readonly tags: readonly string[];
   readonly onChange: (tags: readonly string[]) => void;
 }
 
-export function TagInput({ tags, onChange }: TagInputProps): React.JSX.Element {
+export function TagInput({ locale, tags, onChange }: TagInputProps): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<readonly string[]>([]);
 
@@ -21,7 +23,7 @@ export function TagInput({ tags, onChange }: TagInputProps): React.JSX.Element {
     }
     let cancelled = false;
     api
-      .searchTags(q)
+      .searchTags(q, locale)
       .then((found) => {
         if (!cancelled) setSuggestions(found.filter((tag) => !tags.includes(tag)));
       })
@@ -29,7 +31,7 @@ export function TagInput({ tags, onChange }: TagInputProps): React.JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [query, tags]);
+  }, [query, locale, tags]);
 
   function add(raw: string): void {
     const slug = slugify(raw);

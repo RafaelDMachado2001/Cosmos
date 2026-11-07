@@ -79,8 +79,9 @@ class PublicationAdminController extends Controller
             'appearance' => ['sometimes', 'nullable', 'array'],
             'appearance.nebula' => ['required_with:appearance', 'numeric', 'between:0,1.6'],
             'appearance.motion' => ['required_with:appearance', 'boolean'],
-            'tags' => ['sometimes', 'array'],
-            'tags.*' => ['string', 'max:255', 'regex:'.self::SLUG_REGEX],
+            'tags' => ['sometimes', 'array:'.implode(',', $locales)],
+            'tags.*' => ['array'],
+            'tags.*.*' => ['string', 'max:255', 'regex:'.self::SLUG_REGEX],
             'references' => ['sometimes', 'array'],
             'references.*.title' => ['required', 'string', 'max:255'],
             'references.*.url' => ['required', 'string', 'max:2048', function (string $attribute, mixed $value, Closure $fail): void {
@@ -115,11 +116,9 @@ class PublicationAdminController extends Controller
         $publication->save();
 
         if (array_key_exists('tags', $data)) {
-            $tagIds = array_map(
-                fn (string $slug): int => Tag::firstOrCreate(['slug' => $slug])->id,
-                $data['tags'],
-            );
-            $publication->tags()->sync($tagIds);
+            foreach ($data['tags'] as $locale => $slugs) {
+                $this->syncTags($publication, $locale, $slugs);
+            }
         }
 
         if (array_key_exists('references', $data)) {
@@ -220,5 +219,19 @@ class PublicationAdminController extends Controller
         $publication->load(['drafts', 'tags', 'references']);
 
         return new PublicationAdminResource($publication);
+    }
+
+    /** @param  list<string>  $slugs */
+    private function syncTags(Publication $publication, string $locale, array $slugs): void
+    {
+        $ids = array_map(
+            fn (string $slug): int => Tag::firstOrCreate(['locale' => $locale, 'slug' => $slug])->id,
+            $slugs,
+        );
+
+        $publication->tags()->detach(
+            $publication->tags()->where('tags.locale', $locale)->whereNotIn('tags.id', $ids)->pluck('tags.id'),
+        );
+        $publication->tags()->syncWithoutDetaching($ids);
     }
 }
