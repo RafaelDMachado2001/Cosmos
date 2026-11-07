@@ -179,6 +179,25 @@ describe('AdminApp', () => {
     expect(preview?.style.getPropertyValue('--cat')).toBe('var(--color-cat-rotina)');
   });
 
+  it('a pré-visualização descreve o diagrama no idioma da aba', async () => {
+    const base = publication();
+    const pt = base.drafts.pt;
+    if (pt === undefined) throw new Error('fixture sem pt');
+    const blocks = [{ id: 'b0', type: 'diagram', source: 'flow f\na "A"\nb "B"\na -> b' }] as const;
+    api.list.mockResolvedValue([
+      publication({ drafts: { pt: { ...pt, blocks }, en: { ...pt, locale: 'en', blocks } } }),
+    ]);
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.click(await screen.findByRole('button', { name: 'Pré-visualizar' }));
+    expect(document.querySelector('desc')?.textContent).toBe('A para B.');
+
+    await user.click(screen.getByRole('tab', { name: 'English' }));
+    expect(document.querySelector('desc')?.textContent).toBe('A to B.');
+  });
+
   it('se o salvamento falha, não publica', async () => {
     api.list.mockResolvedValue([publication()]);
     api.update.mockRejectedValue(new Error('500'));

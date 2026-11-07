@@ -555,6 +555,20 @@ ol.list {
   fill: var(--tone);
 }
 
+.diagramBadge circle {
+  fill: var(--color-bg);
+  stroke: var(--tone);
+  stroke-width: 1.4;
+}
+
+.diagramBadge path {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .diagramPacket {
   display: none;
   fill: var(--tone);
@@ -565,7 +579,7 @@ ol.list {
   @media (prefers-reduced-motion: no-preference) {
     .diagramPacket {
       display: block;
-      animation: diagramPacket 3.2s linear infinite;
+      animation: diagramPacket 2.4s linear infinite alternate;
     }
 
     .diagramLayer [data-tone='slow'] .diagramWire {
@@ -580,16 +594,11 @@ ol.list {
     opacity: 0;
   }
 
-  6% {
+  6%,
+  94% {
     opacity: 1;
   }
 
-  70% {
-    offset-distance: 100%;
-    opacity: 1;
-  }
-
-  78%,
   100% {
     offset-distance: 100%;
     opacity: 0;

@@ -13,6 +13,10 @@ exports[`layoutDiagram: exemplo de referência > horizontal 1`] = `
         "x": 152.7,
         "y": 78,
       },
+      "tip": {
+        "x": 189.2,
+        "y": 78,
+      },
       "to": "nginx",
     },
     {
@@ -23,6 +27,10 @@ exports[`layoutDiagram: exemplo de referência > horizontal 1`] = `
         "text": "arquivo existe?",
         "w": 115,
         "x": 407.7,
+        "y": 40,
+      },
+      "tip": {
+        "x": 517,
         "y": 40,
       },
       "to": "disco",
@@ -37,6 +45,10 @@ exports[`layoutDiagram: exemplo de referência > horizontal 1`] = `
         "x": 407.7,
         "y": 116,
       },
+      "tip": {
+        "x": 520.3,
+        "y": 116,
+      },
       "to": "fpm",
     },
     {
@@ -47,6 +59,10 @@ exports[`layoutDiagram: exemplo de referência > horizontal 1`] = `
         "text": "executa",
         "w": 62.2,
         "x": 695.7,
+        "y": 116,
+      },
+      "tip": {
+        "x": 738.8,
         "y": 116,
       },
       "to": "php",
@@ -108,6 +124,10 @@ exports[`layoutDiagram: exemplo de referência > vertical, com os rótulos curto
         "x": 162,
         "y": 96,
       },
+      "tip": {
+        "x": 162,
+        "y": 128,
+      },
       "to": "nginx",
     },
     {
@@ -119,6 +139,10 @@ exports[`layoutDiagram: exemplo de referência > vertical, com os rótulos curto
         "w": 62.2,
         "x": 83.8,
         "y": 218,
+      },
+      "tip": {
+        "x": 83.8,
+        "y": 260,
       },
       "to": "disco",
     },
@@ -132,6 +156,10 @@ exports[`layoutDiagram: exemplo de referência > vertical, com os rótulos curto
         "x": 240.1,
         "y": 218,
       },
+      "tip": {
+        "x": 240.1,
+        "y": 260,
+      },
       "to": "fpm",
     },
     {
@@ -143,6 +171,10 @@ exports[`layoutDiagram: exemplo de referência > vertical, com os rótulos curto
         "w": 62.2,
         "x": 240.1,
         "y": 340,
+      },
+      "tip": {
+        "x": 240.1,
+        "y": 372,
       },
       "to": "php",
     },

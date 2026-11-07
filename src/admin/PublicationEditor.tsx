@@ -6,6 +6,8 @@ import { blocksToDraftBlocks, draftBlocksToMarkdown } from '../core/draftBlocks'
 import { wordCount } from '../core/draftValidation';
 import { LOCALES } from '../core/types';
 import type { Locale } from '../core/types';
+import { DICTIONARIES } from '../i18n/dictionaries';
+import { LocaleContext } from '../i18n/LocaleContext';
 import { BlockEditor } from './BlockEditor';
 import styles from './PublicationEditor.module.css';
 import type { PublicationEditorState } from './usePublicationEditor';
@@ -97,7 +99,11 @@ export function PublicationEditor({ editor }: PublicationEditorProps): React.JSX
 
       {preview ? (
         <div className={styles.preview} data-brand="cosmos" style={categoryThemeStyle(editor.category)}>
-          <ArticleBody markdown={draftBlocksToMarkdown(editor.currentDraft.blocks)} />
+          <LocaleContext.Provider
+            value={{ locale: editor.locale, t: DICTIONARIES[editor.locale], setLocale: editor.setLocale }}
+          >
+            <ArticleBody markdown={draftBlocksToMarkdown(editor.currentDraft.blocks)} />
+          </LocaleContext.Provider>
         </div>
       ) : (
         <BlockEditor

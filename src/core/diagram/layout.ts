@@ -369,6 +369,7 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
   const edges = diagram.edges.map((edge, index): DiagramLayoutEdge => {
     const route = (routes[index] ?? []).map(shift);
     const label = (links[index] ?? []).map((link) => labels.get(link)).find((entry) => entry !== undefined);
+    const tip = route.at(-1) ?? { x: 0, y: 0 };
     return {
       from: edge.from,
       to: edge.to,
@@ -376,6 +377,7 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
       arrow: arrowPoints(route)
         .map((point) => `${String(round(point.x))},${String(round(point.y))}`)
         .join(' '),
+      tip: { x: round(tip.x), y: round(tip.y) },
       label:
         label === undefined
           ? null

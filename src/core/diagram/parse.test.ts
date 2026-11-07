@@ -55,6 +55,12 @@ describe('parseDiagram: sintaxe livre', () => {
     expect(valid(body('a "C# # rápido" / sub # fora')).nodes[0]).toMatchObject({ label: 'C# # rápido', sub: 'sub' });
   });
 
+  it('\\# é uma cerquilha literal, dentro e fora de aspas', () => {
+    const diagram = valid(['flow f', 'title: Pedido \\#42 # comentário', 'a "C\\#"'].join('\n'));
+    expect(diagram.title).toBe('Pedido #42');
+    expect(diagram.nodes[0]?.label).toBe('C#');
+  });
+
   it('direção e nós declarados depois da aresta', () => {
     const diagram = valid(body('direction: down', 'a -> b', 'a "A"', 'b "B"'));
     expect(diagram.direction).toBe('down');

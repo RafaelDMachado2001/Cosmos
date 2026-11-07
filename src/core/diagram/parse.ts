@@ -61,12 +61,17 @@ interface StateDraft {
 }
 
 function stripComment(line: string): string {
+  const chars = [...line];
+  let kept = '';
   let quoted = false;
-  for (const [index, char] of [...line].entries()) {
+  for (const [index, char] of chars.entries()) {
+    if (char === '\\' && chars[index + 1] === '#') continue;
+    const escaped = chars[index - 1] === '\\';
     if (char === '"') quoted = !quoted;
-    if (char === '#' && !quoted) return [...line].slice(0, index).join('');
+    if (char === '#' && !quoted && !escaped) return kept;
+    kept += char;
   }
-  return line;
+  return kept;
 }
 
 function hasOddQuotes(line: string): boolean {

@@ -46,6 +46,7 @@ test.describe('cenários do diagrama', () => {
     await expect(panel).toBeVisible();
     await expect(horizontal(page).locator('[data-tone="broken"]').first()).toBeVisible();
     await expect(horizontal(page).locator('[data-tone="down"]').first()).toBeVisible();
+    await expect(horizontal(page).locator('[data-state="3"] [data-badge="err"]')).toHaveCSS('display', 'inline');
 
     await page.getByRole('radio', { name: 'Visão geral' }).check({ force: true });
     await expect(panel).toHaveCount(0);

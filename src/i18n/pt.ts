@@ -52,7 +52,6 @@ export const pt = {
   },
   diagram: {
     to: 'para',
-    via: 'via',
     when: 'quando',
     isolated: 'sem conexões',
     scenario: 'Cenário',

@@ -5,7 +5,7 @@ import { describeDiagram } from '../../core/diagram/describe';
 import { diagramLayouts } from '../../core/diagram/layout';
 import { LABEL_HEIGHT } from '../../core/diagram/measure';
 import { diagramStateLayer, diagramStateTone } from '../../core/diagram/state';
-import type { DiagramEdgeTone, DiagramNodeTone } from '../../core/diagram/state';
+import type { DiagramEdgeTone, DiagramLayerBadge, DiagramNodeTone } from '../../core/diagram/state';
 import type {
   Diagram as DiagramModel,
   DiagramLayout,
@@ -27,6 +27,8 @@ const NODE_BASELINE = 4.5;
 const NODE_BASELINE_WITH_SUB = -2;
 const SUB_BASELINE = 14;
 const PACKET_RADIUS = 4.5;
+const BADGE_RADIUS = 8;
+const BADGE_GLYPH = 3;
 
 interface DiagramSvgProps {
   readonly diagram: DiagramModel;
@@ -109,6 +111,20 @@ function EdgeLabel({ edge, tone }: EdgeLabelProps) {
   );
 }
 
+function DiagramBadge({ badge }: { readonly badge: DiagramLayerBadge }) {
+  const { x, y, tone } = badge;
+  const glyph =
+    tone === 'err'
+      ? `M${String(x - BADGE_GLYPH)},${String(y - BADGE_GLYPH)} L${String(x + BADGE_GLYPH)},${String(y + BADGE_GLYPH)} M${String(x + BADGE_GLYPH)},${String(y - BADGE_GLYPH)} L${String(x - BADGE_GLYPH)},${String(y + BADGE_GLYPH)}`
+      : `M${String(x)},${String(y - BADGE_GLYPH - 1)} L${String(x)},${String(y)} L${String(x + BADGE_GLYPH)},${String(y + 2)}`;
+  return (
+    <g className={styles.diagramBadge} data-badge={tone} data-tone={tone}>
+      <circle cx={x} cy={y} r={BADGE_RADIUS} />
+      <path d={glyph} />
+    </g>
+  );
+}
+
 function stateNumber(index: number): string {
   return String(index + 1);
 }
@@ -156,6 +172,9 @@ function DiagramSvg({ diagram, layout, description, baseId }: DiagramSvgProps) {
           ))}
           {layer.edges.map(({ edge, tone }) => (
             <EdgeLabel key={`${edge.from}-${edge.to}-label`} edge={edge} tone={tone} />
+          ))}
+          {layer.badges.map((badge) => (
+            <DiagramBadge key={badge.key} badge={badge} />
           ))}
           {layer.route !== null && (
             <circle
