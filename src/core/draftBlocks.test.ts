@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parseBlocks } from './blocks';
 import { REFERENCE_DIAGRAM } from './diagram/fixture';
 import type { Block } from './blocks';
-import { blocksToDraftBlocks, draftBlocksToMarkdown } from './draftBlocks';
+import { blocksToDraftBlocks, draftBlocksToMarkdown, isBlankDraftBlock } from './draftBlocks';
 import type { DraftBlock } from './draftBlocks';
 
 describe('blocksToDraftBlocks', () => {
@@ -281,5 +281,36 @@ describe('fidelidade: rascunho -> Markdown -> leitura', () => {
   it('importar Markdown com escape preserva o texto literal', () => {
     const blocks = blocksToDraftBlocks('Um \\*asterisco\\* literal.');
     expect(read(blocks)).toEqual([paragraph('Um *asterisco* literal.')]);
+  });
+});
+
+describe('isBlankDraftBlock', () => {
+  it.each<DraftBlock>([
+    { id: 'b', type: 'p', text: '  ' },
+    { id: 'b', type: 'h2', text: '' },
+    { id: 'b', type: 'quote', text: '' },
+    { id: 'b', type: 'highlight', text: '' },
+    { id: 'b', type: 'note', title: null, text: '' },
+    { id: 'b', type: 'list', ordered: false, items: [''] },
+    { id: 'b', type: 'flow', steps: ['', ''] },
+    { id: 'b', type: 'code', lang: null, filename: null, text: '' },
+    { id: 'b', type: 'diagram', source: '\n' },
+    { id: 'b', type: 'table', align: [null], header: [''], rows: [['']] },
+    { id: 'b', type: 'img', url: '', mediaId: null, alt: '', caption: null },
+  ])('$type em branco', (block) => {
+    expect(isBlankDraftBlock(block)).toBe(true);
+  });
+
+  it.each<DraftBlock>([
+    { id: 'b', type: 'p', text: 'x' },
+    { id: 'b', type: 'note', title: 'Título', text: '' },
+    { id: 'b', type: 'list', ordered: false, items: ['', 'x'] },
+    { id: 'b', type: 'flow', steps: ['x', ''] },
+    { id: 'b', type: 'code', lang: 'ts', filename: null, text: '' },
+    { id: 'b', type: 'diagram', source: 'flow' },
+    { id: 'b', type: 'table', align: [null], header: [''], rows: [['x']] },
+    { id: 'b', type: 'img', url: '', mediaId: null, alt: 'x', caption: null },
+  ])('$type com algo escrito não é branco', (block) => {
+    expect(isBlankDraftBlock(block)).toBe(false);
   });
 });
