@@ -83,3 +83,39 @@ state 504
   path navegador nginx fpm
   fpm -> php slow
   php slow`;
+
+export const REFERENCE_SPECTRUM = `spectrum extracao
+title: A ordem da extração
+axis: água encontra o pó -> extração completa
+
+zone "Extração de menos" 0-38
+  taste: Azedo, ralo, sem doçura
+  next: Moa um pouco mais fino
+zone "Ponto certo" 38-66
+  taste: Doce, equilibrado
+  next: Não mexa. Anote a receita
+zone "Extração demais" 66-100
+  taste: Amargo, seco, áspero
+  next: Moa um pouco mais grosso
+
+lane "Ácidos e frutados" 0-42
+lane "Doces" 24-74
+lane "Amargos e adstringentes" 58-100`;
+
+export const REFERENCE_SPECTRUM_EN = `spectrum extracao
+title: The order of extraction
+axis: water meets the grounds -> full extraction
+
+zone "Under-extracted" 0-38
+  taste: Sour, thin, no sweetness
+  next: Grind a little finer
+zone "Just right" 38-66
+  taste: Sweet, balanced
+  next: Change nothing. Write the recipe down
+zone "Over-extracted" 66-100
+  taste: Bitter, dry, harsh
+  next: Grind a little coarser
+
+lane "Acids and fruit" 0-42
+lane "Sweetness" 24-74
+lane "Bitterness and astringency" 58-100`;

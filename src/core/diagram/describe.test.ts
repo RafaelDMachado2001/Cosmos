@@ -7,7 +7,7 @@ import type { FlowDiagram } from './types';
 
 function diagram(source: string): FlowDiagram {
   const result = parseDiagram(source);
-  if (!result.ok) throw new Error('fixture inválida');
+  if (!result.ok || result.diagram.kind !== 'flow') throw new Error('fixture inválida');
   return result.diagram;
 }
 

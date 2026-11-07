@@ -48,6 +48,23 @@ fonte-a -> central : envia
 fonte-b -> central : envia
 central -> saida   : entrega`,
   },
+  {
+    id: 'espectro',
+    label: 'Espectro',
+    source: `spectrum espectro
+title: Título do espectro
+axis: início -> fim
+
+zone "Pouco" 0-40
+  taste: O que se percebe aqui
+  next: O que ajustar
+zone "Muito" 40-100
+  taste: O que se percebe aqui
+  next: O que ajustar
+
+lane "Primeira faixa" 0-60
+lane "Segunda faixa" 30-100`,
+  },
 ];
 
 export const DIAGRAM_SYNTAX_EXAMPLE = `flow meu-fluxo                  # sempre a primeira linha
@@ -69,3 +86,15 @@ state 502                       # cenário: vira uma aba
   path a b                      # caminho destacado, nó a nó
   b -> c broken                 # aresta: broken ou slow
   c down                        # nó: down ou slow`;
+
+export const SPECTRUM_SYNTAX_EXAMPLE = `spectrum meu-espectro           # régua de 0 a 100
+title: Legenda da figura         # opcional
+axis: início -> fim              # opcional
+
+zone "Pouco" 0-40                # zona: vira uma aba
+  taste: O que se percebe.       # taste e next são opcionais
+  next: O que ajustar.
+zone "Muito" 40-100              # sem buracos, até 100
+
+lane "Primeira" 0-60             # faixa: uma linha na régua
+lane "Segunda" 30-100`;

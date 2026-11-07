@@ -1,7 +1,6 @@
 import { findReturnEdges } from './cycles';
 import { LABEL_HEIGHT, labelWidth, nodeSize } from './measure';
 import type {
-  Diagram,
   DiagramEdge,
   DiagramLayout,
   DiagramLayoutEdge,
@@ -489,7 +488,7 @@ export function layoutDiagram(diagram: FlowDiagram, orientation: DiagramOrientat
   };
 }
 
-export function diagramLayouts(diagram: Diagram): readonly DiagramLayout[] {
+export function diagramLayouts(diagram: FlowDiagram): readonly DiagramLayout[] {
   if (diagram.direction !== 'auto') return [layoutDiagram(diagram, diagram.direction)];
   const wide = layoutDiagram(diagram, 'right');
   const narrow = layoutDiagram(diagram, 'down');

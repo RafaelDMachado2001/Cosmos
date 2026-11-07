@@ -658,6 +658,144 @@ ol.list {
   }
 }
 
+.spectrum {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px 12px;
+}
+
+.spectrumZones {
+  display: grid;
+  gap: 4px;
+}
+
+.spectrumZone {
+  position: relative;
+  padding: 8px 10px;
+  border-top: 2px solid var(--color-border-soft);
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-hint);
+  line-height: 1.3;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.spectrumZone:hover {
+  color: var(--color-text-primary);
+}
+
+.spectrumZone:has(:checked) {
+  border-color: var(--accent);
+  color: var(--color-text-primary);
+}
+
+.spectrumZone:has(:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.spectrumLanes {
+  position: relative;
+  display: grid;
+  gap: 12px;
+}
+
+.spectrumLane {
+  display: grid;
+  gap: 4px;
+}
+
+.spectrumLaneLabel {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.spectrumTrack {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-round);
+  background: var(--color-border);
+}
+
+.spectrumRange {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+  border-radius: var(--radius-round);
+  background: color-mix(in oklch, var(--accent) 24%, transparent);
+}
+
+.spectrumFill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.spectrumMarker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-text-primary);
+}
+
+.spectrumAxis {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+}
+
+.spectrumReadout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+  padding: 14px 20px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.spectrumReadout dt {
+  margin-bottom: 4px;
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-hint);
+  text-transform: uppercase;
+}
+
+.spectrumReadout dd {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.diagramDescription {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@container (max-width: 640px) {
+  .spectrumReadout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .diagramCaption {
   padding: 10px 16px;
   border-top: 1px solid var(--color-border);

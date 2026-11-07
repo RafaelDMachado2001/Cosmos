@@ -685,6 +685,12 @@ test-runner directives).
   arrives off centre, or `a -> b` with `b -> a` would share a line with the way
   there. With no return edge the extra space is zero and the output is byte for
   byte the same, which the layout snapshots prove.
+- **A spectrum is HTML, not SVG.** It is a grid of bars, so text wraps by itself
+  and nothing needs measuring. Zones are radios and reuse the numbered layer
+  rules of flow scenarios, which is why `SPECTRUM_LIMITS.zones` may not pass
+  `DIAGRAM_LIMITS.states`. A range input cannot drive CSS, so a slider would need
+  JavaScript the static article does not have; the zones trade the gradual
+  movement for a figure that works everywhere.
 - **Starter templates are text.** The Studio's Linear, Branching and Converging
   buttons fill `source`, so the published format stays one thing and a template
   has no meaning after it is chosen. They appear only on an empty block, which

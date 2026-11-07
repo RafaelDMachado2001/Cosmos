@@ -1,4 +1,4 @@
-import type { DiagramState, FlowDiagram } from './types';
+import type { DiagramState, FlowDiagram, SpectrumDiagram } from './types';
 
 export interface DiagramVocabulary {
   readonly to: string;
@@ -10,6 +10,8 @@ export interface DiagramVocabulary {
   readonly broken: string;
   readonly slow: string;
   readonly down: string;
+  readonly rangeFrom: string;
+  readonly rangeTo: string;
 }
 
 export const DIAGRAM_VOCABULARY_PT: DiagramVocabulary = {
@@ -22,6 +24,8 @@ export const DIAGRAM_VOCABULARY_PT: DiagramVocabulary = {
   broken: 'com falha',
   slow: 'lento',
   down: 'fora do ar',
+  rangeFrom: 'de',
+  rangeTo: 'a',
 };
 
 function sentence(text: string): string {
@@ -62,4 +66,19 @@ export function describeDiagram(diagram: FlowDiagram, vocabulary: DiagramVocabul
   const flow = [...sentences, ...isolated].map(sentence);
   const states = diagram.states.map((state) => describeState(diagram, state, vocabulary));
   return [...flow, ...states].join(' ');
+}
+
+export function describeSpectrum(diagram: SpectrumDiagram, vocabulary: DiagramVocabulary = DIAGRAM_VOCABULARY_PT): string {
+  const range = (from: number, to: number): string =>
+    `${vocabulary.rangeFrom} ${String(from)}% ${vocabulary.rangeTo} ${String(to)}%`;
+  return [
+    diagram.axis === null ? null : `${diagram.axis.from} ${vocabulary.to} ${diagram.axis.to}`,
+    ...diagram.zones.map((zone) =>
+      [`${zone.label}, ${range(zone.from, zone.to)}`, zone.taste, zone.next].filter((text) => text !== null).join(': '),
+    ),
+    ...diagram.lanes.map((lane) => `${lane.label}, ${range(lane.from, lane.to)}`),
+  ]
+    .filter((text) => text !== null)
+    .map(sentence)
+    .join(' ');
 }

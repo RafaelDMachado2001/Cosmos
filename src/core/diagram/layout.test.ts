@@ -8,7 +8,7 @@ import type { DiagramLayout, DiagramOrientation, FlowDiagram } from './types';
 
 function diagram(source: string): FlowDiagram {
   const result = parseDiagram(source);
-  if (!result.ok) throw new Error(JSON.stringify(result.errors));
+  if (!result.ok || result.diagram.kind !== 'flow') throw new Error(JSON.stringify(result));
   return result.diagram;
 }
 

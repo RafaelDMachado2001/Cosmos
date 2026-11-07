@@ -7,7 +7,7 @@ import { diagramStateLayer, diagramStateTone } from './state';
 
 function reference() {
   const result = parseDiagram(`${REFERENCE_DIAGRAM}${REFERENCE_STATES}`);
-  if (!result.ok) throw new Error('fixture inválida');
+  if (!result.ok || result.diagram.kind !== 'flow') throw new Error('fixture inválida');
   return { diagram: result.diagram, layout: layoutDiagram(result.diagram, 'right') };
 }
 

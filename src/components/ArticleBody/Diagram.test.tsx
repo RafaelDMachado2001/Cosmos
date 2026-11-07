@@ -5,8 +5,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { ArticleBody } from './ArticleBody';
-import { REFERENCE_DIAGRAM, REFERENCE_STATES } from '../../core/diagram/fixture';
+import { REFERENCE_DIAGRAM, REFERENCE_SPECTRUM, REFERENCE_STATES } from '../../core/diagram/fixture';
 import { DIAGRAM_LIMITS } from '../../core/diagram/parse';
+import { SPECTRUM_LIMITS } from '../../core/diagram/parseSpectrum';
 import { DICTIONARIES } from '../../i18n/dictionaries';
 import { LocaleProvider } from '../../i18n/LocaleProvider';
 
@@ -103,5 +104,32 @@ describe('ArticleBody com diagrama', () => {
       expect(css).toContain(`[data-touched~='${String(state)}']`);
     }
     expect(css).not.toContain(`[data-state='${String(DIAGRAM_LIMITS.states + 1)}']`);
+  });
+});
+
+describe('ArticleBody com espectro', () => {
+  it('desenha zonas e faixas em HTML, com a primeira zona marcada', () => {
+    const html = render(fence(REFERENCE_SPECTRUM));
+    expect(html).not.toContain('<svg');
+    expect(html.match(/type="radio"/g)).toHaveLength(3);
+    expect(html.match(/checked=""/g)).toHaveLength(1);
+    expect(html).toMatch(/<input[^>]*data-state="1"[^>]*checked=""/);
+    expect(html).toContain('grid-template-columns:38fr 28fr 34fr');
+    expect(html).toContain('left:24%;width:50%');
+  });
+
+  it('o leitor de tela recebe zonas e faixas em texto', () => {
+    const html = render(fence(REFERENCE_SPECTRUM));
+    expect(html).toContain('Doces, de 24% a 74%.');
+  });
+
+  it('cada zona traz o diagnóstico, e a legenda sai do título', () => {
+    const html = render(fence(REFERENCE_SPECTRUM));
+    expect(html).toContain('Moa um pouco mais grosso');
+    expect(html).toMatch(/<figcaption[^>]*>A ordem da extração<\/figcaption>/);
+  });
+
+  it('o limite de zonas cabe nas regras de CSS', () => {
+    expect(SPECTRUM_LIMITS.zones).toBeLessThanOrEqual(DIAGRAM_LIMITS.states);
   });
 });
