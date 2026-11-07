@@ -679,6 +679,11 @@ test-runner directives).
   buttons fill `source`, so the published format stays one thing and a template
   has no meaning after it is chosen. They appear only on an empty block, which
   is what keeps them from overwriting anything without a confirmation.
+- **Autosave leaves blank blocks out.** The server refuses an empty block, and
+  a block is empty the moment it is added, so one untouched block used to stop
+  the whole article from saving. `isBlankDraftBlock` keeps it on screen and off
+  the request. It holds no content, so losing it on reload loses nothing; a
+  half-filled block still reaches the server and still fails.
 - **An invalid diagram blocks publishing on the server.** Autosave only checks
   the block's shape, so a half-written diagram is still saved. `publish()` runs
   the same parser through the CLI's `validate-diagrams` before copying anything,

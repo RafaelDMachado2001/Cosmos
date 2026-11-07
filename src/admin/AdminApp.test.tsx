@@ -231,6 +231,22 @@ describe('AdminApp', () => {
     expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull();
   });
 
+  it('bloco em branco fica na tela, mas não vai no salvamento', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.update.mockResolvedValue(publication());
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    await user.click(await screen.findByText('Code review sem atrito'));
+    await user.click(await screen.findByRole('button', { name: '+ Diagrama' }));
+    await user.keyboard('{Control>}s{/Control}');
+
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+    const patch = api.update.mock.calls[0]?.[1] as { drafts: { pt: { blocks: readonly { type: string }[] } } };
+    expect(patch.drafts.pt.blocks.map(({ type }) => type)).not.toContain('diagram');
+    expect(screen.getByRole('textbox', { name: 'Fonte do diagrama' })).toBeDefined();
+  });
+
   it('data futura fora do ar: o botão agenda', async () => {
     api.list.mockResolvedValue([publication({ publishedAt: '2999-01-01T12:00:00.000Z' })]);
     const user = userEvent.setup();

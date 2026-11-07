@@ -118,6 +118,9 @@ test('todos os blocos e uma imagem enviada chegam ao site nas duas línguas', as
   const imageUrl = await page.getByPlaceholder('URL da imagem').inputValue();
 
   await page.getByRole('button', { name: '+ Diagrama' }).click();
+  const savedWithBlank = page.waitForResponse((response) => response.request().method() === 'PATCH');
+  await page.getByPlaceholder(/^Subtítulo/).fill('Resumo da prova, com bloco em branco');
+  expect((await savedWithBlank).status()).toBe(200);
   await page.getByRole('button', { name: 'Ramificado' }).click();
   const diagram = page.getByRole('textbox', { name: 'Fonte do diagrama' });
   await expect(diagram).toHaveValue(/^flow ramificado/);
