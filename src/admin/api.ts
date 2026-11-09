@@ -2,6 +2,7 @@ import type { Appearance } from '../core/appearance';
 import type { DraftBlock } from '../core/draftBlocks';
 import type { Category, Locale } from '../core/types';
 import { createJsonClient, dataOf } from '../data/http';
+import type { AdminEngagement } from './engagement';
 
 export type PublicationStatus = 'draft' | 'scheduled' | 'published';
 
@@ -34,6 +35,7 @@ export interface AdminPublication {
   readonly appearance: Appearance | null;
   readonly status: PublicationStatus;
   readonly pendingChanges: boolean;
+  readonly engagement: AdminEngagement;
   readonly tags: TagsByLocale;
   readonly references: readonly AdminReference[];
   readonly drafts: Partial<Record<Locale, AdminDraft>>;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Content\Http\Resources\Admin;
 
+use App\Modules\Content\Contracts\Engagement;
+use App\Modules\Content\Contracts\PublicationEngagement;
 use App\Modules\Content\Models\Publication;
 use App\Modules\Content\Models\PublicationTranslation;
 use Illuminate\Http\Request;
@@ -11,6 +13,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class PublicationAdminResource extends JsonResource
 {
+    private ?Engagement $engagement = null;
+
+    public function withEngagement(Engagement $engagement): static
+    {
+        $this->engagement = $engagement;
+
+        return $this;
+    }
+
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
@@ -24,12 +35,20 @@ class PublicationAdminResource extends JsonResource
             'appearance' => $this->resource->appearance,
             'status' => $this->resource->status,
             'pendingChanges' => $this->pendingChanges(),
+            'engagement' => ($this->engagement ?? $this->loadEngagement())->toArray(),
             'tags' => $this->tagsByLocale(),
             'references' => PublicationReferenceResource::collection($this->resource->references),
             'drafts' => $this->resource->drafts
                 ->keyBy('locale')
                 ->map(fn ($draft) => new PublicationDraftResource($draft)),
         ];
+    }
+
+    private function loadEngagement(): Engagement
+    {
+        $id = $this->resource->id;
+
+        return app(PublicationEngagement::class)->forPublications([$id])[$id] ?? Engagement::none();
     }
 
     /** @return array<string, list<string>> */

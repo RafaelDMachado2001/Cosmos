@@ -106,10 +106,15 @@
 
 .itemMeta {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   align-items: center;
   font-size: 11px;
   color: var(--color-text-muted);
+}
+
+.itemMeta > * {
+  white-space: nowrap;
 }
 
 .pill_draft,

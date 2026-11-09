@@ -31,6 +31,7 @@ function publication(overrides: Partial<AdminPublication> = {}): AdminPublicatio
     indexable: true,
     status: 'draft',
     pendingChanges: false,
+    engagement: { comments: 0, reactions: 0, moderationUrl: null },
     appearance: null,
     tags: { pt: [], en: [] },
     references: [],
@@ -260,6 +261,24 @@ describe('AdminApp', () => {
       api.publish.mock.invocationCallOrder[0] ?? 0,
     );
     await waitFor(() => expect(screen.queryByText(/ainda não estão no ar/)).toBeNull());
+  });
+
+  it('publicada: mostra comentários e reações, com o atalho para moderar', async () => {
+    const live = publication({
+      status: 'published',
+      engagement: { comments: 2, reactions: 1, moderationUrl: '/admin/comments?filters[publication_id][value]=1' },
+    });
+    api.list.mockResolvedValue([live]);
+    const user = userEvent.setup();
+
+    render(<AdminApp />);
+    expect(await screen.findByText('2 comentários')).not.toBeNull();
+    await user.click(await screen.findByText('Code review sem atrito'));
+
+    expect(await screen.findByText(/2 comentários · 1 reação/)).not.toBeNull();
+    expect(screen.getByRole('link', { name: 'Moderar' }).getAttribute('href')).toBe(
+      '/admin/comments?filters[publication_id][value]=1',
+    );
   });
 
   it('Ctrl+S manda o rascunho sem esperar o autosave', async () => {

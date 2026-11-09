@@ -13,6 +13,7 @@ import { siteHost, siteOrigin } from './site';
 import { TagInput } from './TagInput';
 import type { AdminPublication } from './api';
 import type { PublicationEditorState, SaveStatus } from './usePublicationEditor';
+import { commentsLabel, reactionsLabel } from './engagement';
 
 export interface MetaPanelProps {
   readonly publication: AdminPublication;
@@ -93,6 +94,19 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           <span className={styles.savePill}>{STATUS_PILL_LABEL[editor.status]}</span>
         )}
       </div>
+      {live && (
+        <p className={styles.engagement}>
+          {commentsLabel(publication.engagement)} · {reactionsLabel(publication.engagement)}
+          {publication.engagement.moderationUrl !== null && publication.engagement.comments > 0 && (
+            <>
+              {' · '}
+              <a className={styles.engagementLink} href={publication.engagement.moderationUrl}>
+                Moderar
+              </a>
+            </>
+          )}
+        </p>
+      )}
       {live && publication.pendingChanges && (
         <p className={styles.pendingNote} role="status">
           Há alterações salvas que ainda não estão no ar.
