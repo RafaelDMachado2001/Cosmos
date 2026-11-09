@@ -57,6 +57,7 @@ export function Dialog({
       return;
     }
     if (event.key !== 'Tab') return;
+    event.stopPropagation();
     const panel = panelRef.current;
     if (!panel) return;
     const items = focusables(panel);

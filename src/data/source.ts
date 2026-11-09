@@ -1,3 +1,5 @@
+import { createCommunitySource } from './CommunitySource';
+import type { CommunitySource } from './CommunitySource';
 import { createMemberSource } from './MemberSource';
 import type { MemberSource } from './MemberSource';
 import { PUBLICATIONS } from './publications';
@@ -24,4 +26,8 @@ export function createSnapshot(): SnapshotLoader | null {
 
 export function createMembers(): MemberSource | null {
   return __API_URL__ === null ? null : createMemberSource(__API_URL__);
+}
+
+export function createCommunity(): CommunitySource | null {
+  return __API_URL__ === null ? null : createCommunitySource(__API_URL__);
 }

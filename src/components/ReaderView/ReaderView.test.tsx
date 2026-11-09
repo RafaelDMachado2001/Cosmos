@@ -7,6 +7,7 @@ import type { ReaderCard } from './ReaderView';
 import { DEFAULT_APPEARANCE } from '../../core/appearance';
 import { progressKey } from '../../core/readingProgress';
 import { LocaleProvider } from '../../i18n/LocaleProvider';
+import { Announcer } from '../Announcer/Announcer';
 
 const CARD: ReaderCard = {
   slug: 'indices',
@@ -18,12 +19,15 @@ const CARD: ReaderCard = {
   body: ['## Como o planejador decide', 'Texto.', '### Seletividade', 'Mais texto.', '## Conclusão', 'Fim.'].join('\n\n'),
   appearance: DEFAULT_APPEARANCE,
   tags: [],
+  url: 'https://cosmos.test/pt/publicacoes/indices',
 };
 
 function mount(card: ReaderCard = CARD) {
   return render(
     <LocaleProvider initial="pt">
-      <ReaderView overlayRef={createRef<HTMLDivElement>()} card={card} onClose={() => undefined} />
+      <Announcer>
+        <ReaderView overlayRef={createRef<HTMLDivElement>()} card={card} onClose={() => undefined} />
+      </Announcer>
     </LocaleProvider>,
   );
 }

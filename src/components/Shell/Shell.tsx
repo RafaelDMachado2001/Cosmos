@@ -19,7 +19,9 @@ import type { Route } from '../../core/routing';
 import { placeStars } from '../../core/timeline';
 import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
-import { createSnapshot, createSource } from '../../data/source';
+import { absolute } from '../../core/url';
+import { SITE } from '../../site';
+import { createCommunity, createSnapshot, createSource } from '../../data/source';
 import { useConstellationFilter } from '../../hooks/useConstellationFilter';
 import { useCosmosEngine } from '../../hooks/useCosmosEngine';
 import { usePageHead } from '../../hooks/usePageHead';
@@ -77,6 +79,7 @@ export function Shell({ route }: { route: Route }) {
 
   const source = useMemo(() => createSource(), []);
   const snapshot = useMemo(() => createSnapshot(), []);
+  const community = useMemo(() => createCommunity(), []);
   const collection = usePublications(source, locale, snapshot);
   const summaries = collection.state.items;
 
@@ -323,8 +326,9 @@ export function Shell({ route }: { route: Route }) {
       body: detail.body,
       appearance: resolveAppearance(detail.appearance),
       tags: detail.tags,
+      url: absolute(SITE.origin, articlePath(locale, detail.slug)),
     };
-  }, [reader, article, dateLabel, t]);
+  }, [reader, article, dateLabel, t, locale]);
 
   usePageHead(reader, article, locale, t, summaries);
 
@@ -473,7 +477,12 @@ export function Shell({ route }: { route: Route }) {
         />
 
         {readerCard && (
-          <ReaderView overlayRef={readerRef} card={readerCard} onClose={closeReader} />
+          <ReaderView
+            overlayRef={readerRef}
+            card={readerCard}
+            community={community}
+            onClose={closeReader}
+          />
         )}
       </div>
     </>

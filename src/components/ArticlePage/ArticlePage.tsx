@@ -42,7 +42,7 @@ export function ArticlePage({
   const minutes = readingMinutes(parseBlocks(body));
 
   return (
-    <div className={styles.page} style={categoryThemeStyle(category)}>
+    <div className={styles.page} style={categoryThemeStyle(category)} data-category={category}>
       <header className={styles.top}>
         <a className={styles.brand} href={homeHref}>
           <BrandMark product="cosmos" className={styles.mark} />
