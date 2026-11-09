@@ -1,6 +1,8 @@
 import {
   REFERENCE_DIAGRAM,
   REFERENCE_DIAGRAM_EN,
+  REFERENCE_LAYERS,
+  REFERENCE_LAYERS_EN,
   REFERENCE_SEQUENCE,
   REFERENCE_SEQUENCE_EN,
   REFERENCE_SPECTRUM,
@@ -166,13 +168,13 @@ export const PUBLICATIONS: readonly Publication[] = [
       title: 'Filas e jobs assíncronos no Laravel',
       summary: 'Idempotência, retentativas e o que acontece quando o worker morre no meio.',
       opening:
-        `A pergunta que separa uma fila que funciona de uma que dá dor de cabeça não é como enfileirar, é o que acontece na segunda vez que o mesmo job roda.\n\n\`\`\`diagram\n${REFERENCE_SEQUENCE}\n\`\`\``,
+        `A pergunta que separa uma fila que funciona de uma que dá dor de cabeça não é como enfileirar, é o que acontece na segunda vez que o mesmo job roda.\n\n\`\`\`diagram\n${REFERENCE_SEQUENCE}\n\`\`\`\n\n\`\`\`diagram\n${REFERENCE_LAYERS}\n\`\`\``,
     },
     en: {
       title: 'Queues and async jobs in Laravel',
       summary: 'Idempotency, retries, and what happens when the worker dies halfway.',
       opening:
-        `The question that separates a queue that works from one that hurts is not how to enqueue, it is what happens the second time the same job runs.\n\n\`\`\`diagram\n${REFERENCE_SEQUENCE_EN}\n\`\`\``,
+        `The question that separates a queue that works from one that hurts is not how to enqueue, it is what happens the second time the same job runs.\n\n\`\`\`diagram\n${REFERENCE_SEQUENCE_EN}\n\`\`\`\n\n\`\`\`diagram\n${REFERENCE_LAYERS_EN}\n\`\`\``,
     },
   }),
   seed({

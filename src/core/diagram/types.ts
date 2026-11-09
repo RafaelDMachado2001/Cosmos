@@ -103,7 +103,50 @@ export interface SequenceDiagram {
   readonly messages: readonly SequenceMessage[];
 }
 
-export type Diagram = FlowDiagram | SpectrumDiagram | SequenceDiagram;
+export interface LayerItems {
+  readonly kind: 'items';
+  readonly items: readonly string[];
+  readonly line: number;
+}
+
+export interface LayerGroup {
+  readonly kind: 'group';
+  readonly name: string;
+  readonly highlight: boolean;
+  readonly items: readonly string[];
+  readonly line: number;
+}
+
+export interface LayerNode {
+  readonly kind: 'layer';
+  readonly id: string;
+  readonly name: string;
+  readonly note: string | null;
+  readonly highlight: boolean;
+  readonly depth: number;
+  readonly children: readonly LayerChild[];
+  readonly line: number;
+}
+
+export type LayerChild = LayerItems | LayerGroup | LayerNode;
+
+export interface LayerBand {
+  readonly name: string;
+  readonly note: string | null;
+  readonly items: readonly string[];
+  readonly line: number;
+}
+
+export interface LayersDiagram {
+  readonly kind: 'layers';
+  readonly id: string;
+  readonly title: string | null;
+  readonly root: LayerNode;
+  readonly base: LayerBand | null;
+  readonly asides: readonly LayerBand[];
+}
+
+export type Diagram = FlowDiagram | SpectrumDiagram | SequenceDiagram | LayersDiagram;
 
 export interface DiagramError {
   readonly line: number;

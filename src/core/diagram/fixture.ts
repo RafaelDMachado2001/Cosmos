@@ -143,3 +143,43 @@ app    -> fila   : dispatches the job
 fila   -> worker : hands over the job
 worker -> worker : runs
 worker --> fila  : acknowledges`;
+
+export const REFERENCE_LAYERS = `layers ecossistema-laravel
+title: O ecossistema Laravel
+
+infra "Infraestrutura" / onde a aplicação mora
+  : Forge, Vapor, Cloud, Nightwatch
+  runtime "Servidor / Runtime" / quem recebe a request e roda o PHP
+    : NGINX + PHP-FPM, FrankenPHP, Octane
+    app "Aplicação" / o que você instala e escreve
+      group "Frontend": Blade, Livewire, Inertia (React/Vue), Vite
+      core "laravel/framework" / o núcleo
+        : Container, Providers, Routing, Middleware, Validation,
+          Eloquent, Queues, Events, Cache
+      group "Pacotes": Sanctum, Horizon, Reverb, Scout, Cashier,
+                       Pennant, Pulse, Telescope, AI SDK, MCP
+      group "O seu código" highlight: domínio, casos de uso, integrações
+
+base "A base de tudo": PHP 8.3+, Composer, PSRs, componentes do Symfony
+aside "Desenvolvimento" / não vai para produção
+  : Herd, Sail, Pint, Pest, Dusk, Boost`;
+
+export const REFERENCE_LAYERS_EN = `layers ecossistema-laravel
+title: The Laravel ecosystem
+
+infra "Infrastructure" / where the app lives
+  : Forge, Vapor, Cloud, Nightwatch
+  runtime "Server / Runtime" / takes the request and runs PHP
+    : NGINX + PHP-FPM, FrankenPHP, Octane
+    app "Application" / what you install and write
+      group "Frontend": Blade, Livewire, Inertia (React/Vue), Vite
+      core "laravel/framework" / the core
+        : Container, Providers, Routing, Middleware, Validation,
+          Eloquent, Queues, Events, Cache
+      group "Packages": Sanctum, Horizon, Reverb, Scout, Cashier,
+                        Pennant, Pulse, Telescope, AI SDK, MCP
+      group "Your code" highlight: domain, use cases, integrations
+
+base "The foundation": PHP 8.3+, Composer, PSRs, Symfony components
+aside "Development" / never ships to production
+  : Herd, Sail, Pint, Pest, Dusk, Boost`;

@@ -1,15 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseBlocks } from './blocks';
+import { REFERENCE_LAYERS } from './diagram/fixture';
 import { outline } from './outline';
 import { parseSavedProgress, percentLabel, scrollProgress, shouldOfferResume } from './readingProgress';
-import { readingMinutes } from './readingTime';
+import { readingMinutes, wordCount } from './readingTime';
 
 describe('readingMinutes: diagrama', () => {
   it('não soma tempo, como a imagem', () => {
     const diagram = `\`\`\`diagram\nflow f\nn "N"\n\`\`\``;
     const prose = 'palavra '.repeat(221);
     expect(readingMinutes(parseBlocks(`${prose}\n\n${diagram}`))).toBe(readingMinutes(parseBlocks(prose)));
+  });
+
+  it('camadas contam nomes e itens, sem notas nem título', () => {
+    const fence = (source: string): string => `\`\`\`diagram\n${source}\n\`\`\``;
+    expect(wordCount(parseBlocks(fence('layers l\ntitle: Fora da conta\na "Duas palavras" / nota longa\n  : um item, outro item')))).toBe(6);
+    expect(wordCount(parseBlocks(fence(REFERENCE_LAYERS)))).toBeGreaterThan(50);
   });
 });
 

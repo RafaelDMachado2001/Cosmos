@@ -1,5 +1,6 @@
 import { findReturnEdges } from './cycles';
 import { charCount } from './measure';
+import { parseLayers } from './parseLayers';
 import { parseSpectrum } from './parseSpectrum';
 import { parseSequence } from './parseSequence';
 import { DIRECTIVE_RE, ID_RE, NODE_RE, closest, hasOddQuotes, sortedErrors, sourceLines } from './parseText';
@@ -40,8 +41,8 @@ const STATE_EDGE_RE = /^(\S+?)\s*->\s*(\S+)(?:\s+(\S+))?$/;
 
 const DIRECTIONS: readonly DiagramDirection[] = ['auto', 'right', 'down'];
 const DIRECTIVES = ['title', 'direction'] as const;
-const KINDS: readonly string[] = ['flow', 'spectrum', 'sequence'];
-const KIND_HINT = '"flow", "spectrum" ou "sequence"';
+const KINDS: readonly string[] = ['flow', 'spectrum', 'sequence', 'layers'];
+const KIND_HINT = '"flow", "spectrum", "sequence" ou "layers"';
 const STATE_DIRECTIVES = ['title', 'text', 'hint'] as const;
 const EDGE_MARKS: readonly DiagramEdgeMark[] = ['broken', 'slow'];
 const NODE_MARKS: readonly DiagramNodeMark[] = ['down', 'slow'];
@@ -77,27 +78,37 @@ export function parseDiagram(source: string): DiagramParseResult {
   }
 
   let id = '';
+  let kind = 'flow';
   const header = /->/.test(first.text) ? null : HEADER_RE.exec(first.text);
   let body = lines;
   if (header === null) {
     fail(first.number, 'comece com "flow <id>"');
   } else {
     body = lines.slice(1);
-    const kind = header[1] ?? '';
+    const declared = header[1] ?? '';
     const name = header[2];
-    if (!KINDS.includes(kind)) {
-      fail(first.number, `tipo desconhecido "${kind}". Use ${KIND_HINT}`);
+    const hint = closest(declared, KINDS);
+    if (!KINDS.includes(declared)) {
+      if (hint !== null) kind = hint;
+      fail(
+        first.number,
+        hint === null
+          ? `tipo desconhecido "${declared}". Use ${KIND_HINT}`
+          : `tipo desconhecido "${declared}". Você quis dizer "${hint}"?`,
+      );
     } else if (name === undefined) {
-      fail(first.number, `falta o id. Use "${kind} <id>"`);
+      fail(first.number, `falta o id. Use "${declared} <id>"`);
     } else if (!ID_RE.test(name)) {
       fail(first.number, `id "${name}" inválido; use minúsculas, números e hífen, começando por letra`);
     } else {
       id = name;
     }
+    if (KINDS.includes(declared)) kind = declared;
   }
 
-  if (header?.[1] === 'spectrum') return parseSpectrum(id, body, first.number, errors);
-  if (header?.[1] === 'sequence') return parseSequence(id, body, first.number, errors);
+  if (kind === 'spectrum') return parseSpectrum(id, body, first.number, errors);
+  if (kind === 'sequence') return parseSequence(id, body, first.number, errors);
+  if (kind === 'layers') return parseLayers(id, body, first.number, errors);
 
   let title: string | null = null;
   let direction: DiagramDirection = 'auto';

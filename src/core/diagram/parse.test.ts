@@ -168,11 +168,11 @@ describe('parseDiagram: erros', () => {
   });
 
   it('cabeçalho: vazio, sem id, id inválido, tipo planejado, tipo desconhecido, ausente', () => {
-    expect(errors('  \n# nada')[0]?.message).toBe('diagrama vazio. Comece com "flow", "spectrum" ou "sequence" e um id');
+    expect(errors('  \n# nada')[0]?.message).toBe('diagrama vazio. Comece com "flow", "spectrum", "sequence" ou "layers" e um id');
     expect(errors('flow\na "A"')[0]?.message).toBe('falta o id. Use "flow <id>"');
     expect(errors('flow 1x\na "A"')[0]?.message).toContain('id "1x" inválido');
-    expect(errors('compare x\na "A"')[0]?.message).toBe('tipo desconhecido "compare". Use "flow", "spectrum" ou "sequence"');
-    expect(errors('grafo x\na "A"')[0]?.message).toBe('tipo desconhecido "grafo". Use "flow", "spectrum" ou "sequence"');
+    expect(errors('compare x\na "A"')[0]?.message).toBe('tipo desconhecido "compare". Use "flow", "spectrum", "sequence" ou "layers"');
+    expect(errors('grafo x\na "A"')[0]?.message).toBe('tipo desconhecido "grafo". Use "flow", "spectrum", "sequence" ou "layers"');
     expect(errors('a "A"\nb "B"')[0]).toEqual({ line: 1, message: 'comece com "flow <id>"' });
   });
 

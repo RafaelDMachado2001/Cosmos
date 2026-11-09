@@ -78,6 +78,20 @@ cliente  -> servidor : pedido
 servidor -> servidor : processa
 servidor --> cliente : resposta`,
   },
+  {
+    id: 'camadas',
+    label: 'Camadas',
+    source: `layers camadas
+title: Título do diagrama
+
+fora "Camada de fora" / o que envolve
+  : item, outro item
+  dentro "Camada de dentro" / o que fica no meio
+    group "Grupo": um, dois
+    group "Destaque" highlight: três
+
+base "Base": o que sustenta tudo`,
+  },
 ];
 
 export const DIAGRAM_SYNTAX_EXAMPLE = `flow meu-fluxo                  # sempre a primeira linha
@@ -121,3 +135,16 @@ b "Segundo"
 a -> b : pedido                   # mensagem
 b -> b : processa                 # para si mesmo
 b --> a : resposta                # resposta, tracejada`;
+
+export const LAYERS_SYNTAX_EXAMPLE = `layers minhas-camadas           # caixas dentro de caixas
+title: Legenda da figura         # opcional
+
+fora "Fora" / nota               # camada: id "Nome" / nota
+  : a, b, c                      # itens: um nível abaixo
+  dentro "Dentro" highlight      # 2 espaços por nível
+    group "Grupo": d, e,         # vírgula no fim continua
+                   f
+
+base "Base": g, h                # sem indentação, até 1
+aside "À parte" / nota           # sem indentação, até 2
+  : i, j`;
