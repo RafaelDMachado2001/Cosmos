@@ -86,6 +86,8 @@ export const pt = {
     name: 'Nome',
     handle: '@handle',
     handleHint: 'Minúsculas, números e _, de 3 a 30 caracteres.',
+    handleUnavailable: 'Este @handle não está disponível. Escolha outro.',
+    nameInvalid: 'Escreva um nome de 1 a 80 caracteres.',
     language: 'Idioma',
     save: 'SALVAR',
     saving: 'SALVANDO…',

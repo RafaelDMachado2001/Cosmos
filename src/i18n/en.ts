@@ -87,6 +87,8 @@ export const en: Dictionary = {
     name: 'Name',
     handle: '@handle',
     handleHint: 'Lowercase, numbers and _, 3 to 30 characters.',
+    handleUnavailable: 'This @handle isn’t available. Pick another one.',
+    nameInvalid: 'Enter a name of 1 to 80 characters.',
     language: 'Language',
     save: 'SAVE',
     saving: 'SAVING…',

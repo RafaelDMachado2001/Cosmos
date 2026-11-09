@@ -14,7 +14,7 @@ import {
   settled,
 } from '../../core/reader';
 import type { HoverSide, ReaderState } from '../../core/reader';
-import { articlePath, closeTarget, homePath, parseRoute } from '../../core/routing';
+import { articlePath, closeTarget, homePath, parseRoute, privacyPath } from '../../core/routing';
 import type { Route } from '../../core/routing';
 import { placeStars } from '../../core/timeline';
 import type { PlacedStar } from '../../core/timeline';
@@ -455,6 +455,15 @@ export function Shell({ route }: { route: Route }) {
           />
           <StarIndex items={summaries} label={t.star.indexLabel} hrefFor={hrefFor} />
         </main>
+
+        <a
+          className={styles.privacy}
+          href={privacyPath(locale)}
+          data-visible={engine.phase === 'hero'}
+          {...(engine.phase === 'hero' ? {} : { inert: '', 'aria-hidden': true })}
+        >
+          {t.footer.privacy}
+        </a>
 
         <TimeRuler
           ref={scrubRef}

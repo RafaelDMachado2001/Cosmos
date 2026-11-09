@@ -45,3 +45,14 @@
 .panel[data-tone='danger'] {
   border-color: var(--color-danger-line);
 }
+
+@media (max-width: 760px) {
+  .scrim {
+    padding: 16px;
+  }
+
+  .panel,
+  .panel[data-width='login'] {
+    padding: 22px;
+  }
+}

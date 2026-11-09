@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { COMMENT_MAX_LENGTH } from '../core/comments';
 import { DIAGRAM_SOURCE_MAX_LENGTH } from '../core/diagram/parse';
+import { HANDLE_PATTERN, NAME_MAX_LENGTH } from '../core/session';
 import { CATEGORIES, LOCALES } from '../core/types';
 
 describe('backend/config/publications.php', () => {
@@ -35,5 +36,20 @@ describe('backend/config/diagrams.php', () => {
   it('traz o mesmo teto de caracteres da fonte do diagrama', () => {
     const config = readFileSync('backend/config/diagrams.php', 'utf8');
     expect(config).toContain(`'source_max_length' => ${String(DIAGRAM_SOURCE_MAX_LENGTH)},`);
+  });
+});
+
+describe('regras do perfil', () => {
+  it('o formato do @handle é o mesmo do servidor', () => {
+    const handle = readFileSync('backend/app/Modules/Identity/Support/Handle.php', 'utf8');
+    expect(handle).toContain(`PATTERN = '/${HANDLE_PATTERN.source}/';`);
+  });
+
+  it('o teto do nome é o mesmo da validação do servidor', () => {
+    const controller = readFileSync(
+      'backend/app/Modules/Identity/Http/Controllers/MeController.php',
+      'utf8',
+    );
+    expect(controller).toContain(`'max:${String(NAME_MAX_LENGTH)}'`);
   });
 });

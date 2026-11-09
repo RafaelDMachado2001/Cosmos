@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { robotsTxt, sitemapXml } from './sitemap';
 import type { MetaSite } from './seo';
+import { privacyPath } from './routing';
 import { LOCALES } from './types';
 
 const SITE: MetaSite = {
@@ -120,6 +121,25 @@ describe('sitemapXml', () => {
       { slug: 'explicita-true', publishedAt: '2026-03-01T00:00:00.000Z', locales: LOCALES, indexable: true },
     ]);
     expect(explicitaTrue).toContain('explicita-true');
+  });
+});
+
+describe('páginas fixas no sitemap', () => {
+  const xml = sitemapXml(SITE, PUBLICATIONS, [
+    { path: privacyPath, lastmod: '2026-11-08' },
+  ]);
+
+  it('lista a página nos dois idiomas, com lastmod e as alternativas', () => {
+    expect(xml).toContain('<loc>https://rdmlabs.dev/pt/privacidade</loc>');
+    expect(xml).toContain('<loc>https://rdmlabs.dev/en/privacy</loc>');
+    expect(xml).toContain('<lastmod>2026-11-08</lastmod>');
+    expect(xml).toContain(
+      '<xhtml:link rel="alternate" hreflang="x-default" href="https://rdmlabs.dev/pt/privacidade"/>',
+    );
+  });
+
+  it('sem páginas fixas, nada muda', () => {
+    expect(sitemapXml(SITE, PUBLICATIONS, [])).toBe(sitemapXml(SITE, PUBLICATIONS));
   });
 });
 

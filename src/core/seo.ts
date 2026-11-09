@@ -171,6 +171,37 @@ export function homeMeta(
   };
 }
 
+export function staticPageMeta(
+  site: MetaSite,
+  locale: Locale,
+  path: (locale: Locale) => string,
+  copy: { readonly title: string; readonly description: string },
+  card: OgCard,
+  robots?: string,
+): PageMeta {
+  const canonical = absolute(site.origin, path(locale));
+
+  return {
+    title: copy.title,
+    description: copy.description,
+    canonical,
+    alternates: alternatesFor(site.origin, path),
+    og: {
+      'og:type': 'website',
+      'og:url': canonical,
+      'og:title': copy.title,
+      'og:description': copy.description,
+      'twitter:title': copy.title,
+      'twitter:description': copy.description,
+      'og:site_name': site.siteName,
+      'og:locale': OG_LOCALE[locale],
+      'og:locale:alternate': otherOgLocales(locale),
+      ...ogImageTags(site, card),
+    },
+    ...(robots === undefined ? {} : { robots }),
+  };
+}
+
 export function articleJsonLd(site: MetaSite, locale: Locale, article: MetaArticle): JsonLd {
   const url = absolute(site.origin, articlePath(locale, article.slug));
   const home = absolute(site.origin, homePath(locale));

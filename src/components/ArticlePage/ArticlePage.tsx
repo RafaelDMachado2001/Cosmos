@@ -5,6 +5,7 @@ import type { ArticleLink } from '../ArticleIndex/ArticleIndex';
 import { ArticleTags } from '../ArticleTags/ArticleTags';
 import { BrandMark } from '../BrandMark/BrandMark';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
+import { SiteFooter } from '../SiteFooter/SiteFooter';
 import { parseBlocks } from '../../core/blocks';
 import { readingMinutes } from '../../core/readingTime';
 import type { Category } from '../../core/types';
@@ -81,6 +82,7 @@ export function ArticlePage({
       </article>
 
       <ArticleIndex items={index} className={styles.index} />
+      <SiteFooter className={styles.siteFooter} />
     </div>
   );
 }

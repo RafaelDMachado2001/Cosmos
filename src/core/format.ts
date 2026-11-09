@@ -31,3 +31,17 @@ export function fill(template: string, values: Readonly<Record<string, string | 
 export function countLabel(value: number, locale: Locale): string {
   return new Intl.NumberFormat(DATE_LOCALE[locale]).format(value);
 }
+
+export function dayLabel(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(DATE_LOCALE[locale], {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+    .formatToParts(new Date(Date.parse(iso)))
+    .filter((part) => part.type !== 'literal')
+    .map((part) => part.value.replace(/\./g, ''))
+    .join(' ')
+    .toUpperCase();
+}

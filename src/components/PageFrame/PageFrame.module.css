@@ -1,0 +1,122 @@
+.page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px;
+}
+
+.brand {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-nav);
+  backdrop-filter: blur(var(--blur-header));
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-nav);
+  text-decoration: none;
+  transition: border-color var(--dur-ui) var(--ease);
+}
+
+.brand:hover {
+  border-color: var(--color-accent-line);
+  color: var(--color-text-primary);
+}
+
+.mark {
+  width: 16px;
+  height: 16px;
+}
+
+.back,
+.other {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-nav);
+  color: var(--color-text-ui);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-nav);
+  text-decoration: none;
+  transition: border-color var(--dur-ui) var(--ease);
+}
+
+.back:hover,
+.other:hover {
+  border-color: var(--color-accent-line);
+  color: var(--color-text-primary);
+}
+
+.other {
+  color: var(--color-accent-soft);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.column {
+  width: 100%;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+.column[data-width='account'] {
+  max-width: calc(640px + 48px);
+}
+
+.column[data-width='measure'] {
+  max-width: calc(var(--measure) + 48px);
+}
+
+.main:focus-visible {
+  outline: none;
+}
+
+.footer {
+  margin-top: 60px;
+}
+
+@media (max-width: 760px) {
+  .brand {
+    justify-content: center;
+    width: 36px;
+    padding: 0;
+  }
+
+  .brandText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .back {
+    display: none;
+  }
+
+  .column {
+    padding: 20px 20px 40px;
+  }
+}

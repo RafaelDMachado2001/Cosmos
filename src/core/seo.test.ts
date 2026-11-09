@@ -10,7 +10,9 @@ import {
   homeOgCard,
   notFoundHeadTags,
   renderHeadTags,
+  staticPageMeta,
 } from './seo';
+import { accountPath, privacyPath } from './routing';
 import type { JsonLd, MetaSite } from './seo';
 
 const SITE: MetaSite = {
@@ -433,5 +435,38 @@ describe('og:image', () => {
   it('não duplica a barra quando a origem termina nela', () => {
     const og = articleMeta({ ...SITE, origin: 'https://rdmlabs.dev/' }, 'pt', ARTICLE).og;
     expect(og['og:image']).toMatch(/^https:\/\/rdmlabs\.dev\/og\//);
+  });
+});
+
+describe('staticPageMeta', () => {
+  const card = homeOgCard(SITE, 'pt', { title: 'RDM Labs · Cosmos' });
+
+  it('canoniza no caminho do idioma e lista os dois idiomas', () => {
+    const meta = staticPageMeta(
+      SITE,
+      'en',
+      privacyPath,
+      { title: 'Privacy · RDM Labs', description: 'd' },
+      card,
+    );
+    expect(meta.canonical).toBe('https://rdmlabs.dev/en/privacy');
+    expect(meta.alternates.map((alternate) => alternate.href)).toEqual([
+      'https://rdmlabs.dev/pt/privacidade',
+      'https://rdmlabs.dev/en/privacy',
+      'https://rdmlabs.dev/pt/privacidade',
+    ]);
+    expect(meta.robots).toBeUndefined();
+  });
+
+  it('leva o robots quando a página não deve ser indexada', () => {
+    const meta = staticPageMeta(
+      SITE,
+      'pt',
+      accountPath,
+      { title: 'Minha conta', description: 'd' },
+      card,
+      'noindex',
+    );
+    expect(renderHeadTags(meta, null)).toContain('<meta name="robots" data-head content="noindex">');
   });
 });

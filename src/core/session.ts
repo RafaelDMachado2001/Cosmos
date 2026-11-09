@@ -98,6 +98,16 @@ export function maskEmail(email: string): string {
   return `${first}•••••${email.slice(at)}`;
 }
 
+export const DELETED_NOTICE_KEY = 'rdm:cosmos:account-deleted';
+
+export const HANDLE_PATTERN = /^[a-z0-9_]{3,30}$/;
+
+export const NAME_MAX_LENGTH = 80;
+
+export function isHandleFormat(value: string): boolean {
+  return HANDLE_PATTERN.test(value);
+}
+
 export function confirmsHandle(typed: string, handle: string): boolean {
   return typed.trim().replace(/^@/, '') === handle;
 }

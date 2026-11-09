@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import {
+  DELETED_NOTICE_KEY,
   LOADING,
   SESSION_ERROR,
   loginHref,
@@ -54,6 +55,16 @@ export function SessionProvider({ source, apiUrl, children }: SessionProviderPro
     };
   }, [source, attempt]);
 
+  useEffect(() => {
+    let deleted = false;
+    try {
+      deleted = window.sessionStorage.getItem(DELETED_NOTICE_KEY) !== null;
+      window.sessionStorage.removeItem(DELETED_NOTICE_KEY);
+    } catch {
+    }
+    if (deleted) announce(t.account.deleted);
+  }, [announce, t]);
+
   const loginHrefs = useCallback(
     (returnPath: string) =>
       apiUrl === null
@@ -70,9 +81,10 @@ export function SessionProvider({ source, apiUrl, children }: SessionProviderPro
   }, []);
 
   const retry = useCallback(() => {
+    if (source === null) return;
     setState(LOADING);
     setAttempt((value) => value + 1);
-  }, []);
+  }, [source]);
 
   const signOut = useCallback(async () => {
     if (source === null) return;

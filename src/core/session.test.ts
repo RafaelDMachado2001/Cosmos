@@ -5,6 +5,7 @@ import {
   confirmsHandle,
   displayName,
   initials,
+  isHandleFormat,
   loginHref,
   loginOutcome,
   maskEmail,
@@ -148,5 +149,15 @@ describe('confirmsHandle', () => {
     expect(confirmsHandle('@Camila_r', 'camila_r')).toBe(false);
     expect(confirmsHandle('@camila', 'camila_r')).toBe(false);
     expect(confirmsHandle('', 'camila_r')).toBe(false);
+  });
+});
+
+describe('isHandleFormat', () => {
+  it('segue a regra do servidor: minúsculas, números e _, de 3 a 30', () => {
+    expect(isHandleFormat('camila_r')).toBe(true);
+    expect(isHandleFormat('ab')).toBe(false);
+    expect(isHandleFormat('a'.repeat(31))).toBe(false);
+    expect(isHandleFormat('Camila')).toBe(false);
+    expect(isHandleFormat('camila-r')).toBe(false);
   });
 });

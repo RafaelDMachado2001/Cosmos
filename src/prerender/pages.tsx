@@ -1,12 +1,15 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 
+import { AccountPage } from '../components/AccountPage/AccountPage';
 import { ArticlePage } from '../components/ArticlePage/ArticlePage';
 import type { ArticleLink } from '../components/ArticleIndex/ArticleIndex';
 import { HomePage } from '../components/HomePage/HomePage';
+import { PrivacyPage } from '../components/PrivacyPage/PrivacyPage';
 import { parseBlocks } from '../core/blocks';
 import { monthYearLabel } from '../core/format';
 import { wordCount } from '../core/readingTime';
-import { articlePath, homePath, otherLocale } from '../core/routing';
+import { accountPath, articlePath, homePath, otherLocale, privacyPath } from '../core/routing';
+import { LOADING } from '../core/session';
 import type { OgCard } from '../core/og';
 import {
   articleJsonLd,
@@ -17,6 +20,7 @@ import {
   homeOgCard,
   notFoundHeadTags,
   renderHeadTags,
+  staticPageMeta,
 } from '../core/seo';
 import type { MetaArticle } from '../core/seo';
 import { rssXml } from '../core/rss';
@@ -28,6 +32,9 @@ import { createSource } from '../data/source';
 import type { PublicationsSource } from '../data/PublicationsSource';
 import { DICTIONARIES } from '../i18n/dictionaries';
 import { LocaleProvider } from '../i18n/LocaleProvider';
+import { PRIVACY_UPDATED } from '../i18n/privacy';
+import { SessionContext } from '../session/SessionContext';
+import type { SessionValue } from '../session/SessionContext';
 import { SITE } from '../site';
 
 export interface PrerenderedPage {
@@ -61,8 +68,23 @@ function articleIndex(locale: Locale, summaries: readonly PublicationSummary[]):
   }));
 }
 
+const STATIC_SESSION: SessionValue = {
+  state: LOADING,
+  exportUrl: null,
+  openLogin: () => undefined,
+  loginHrefs: () => null,
+  retry: () => undefined,
+  signOut: () => Promise.resolve(),
+  update: () => Promise.reject(new Error('sem sessão no prerender')),
+  remove: () => Promise.resolve(),
+};
+
 function markup(locale: Locale, node: React.ReactElement): string {
-  return renderToStaticMarkup(<LocaleProvider initial={locale}>{node}</LocaleProvider>);
+  return renderToStaticMarkup(
+    <LocaleProvider initial={locale}>
+      <SessionContext.Provider value={STATIC_SESSION}>{node}</SessionContext.Provider>
+    </LocaleProvider>,
+  );
 }
 
 export async function prerenderPages(
@@ -112,6 +134,44 @@ export async function prerenderPages(
         locale,
         <HomePage otherLocaleHref={homePath(other)} index={index} />,
       ),
+    });
+
+    const homeCard = homeOgCard(SITE, locale, dictionary.meta);
+    const titled = (title: string): string => `${title} · ${dictionary.meta.title}`;
+
+    pages.push({
+      path: privacyPath(locale),
+      lang: LOCALE_TAG[locale],
+      head: renderHeadTags(
+        staticPageMeta(
+          SITE,
+          locale,
+          privacyPath,
+          { title: titled(dictionary.privacy.title), description: dictionary.privacy.description },
+          homeCard,
+        ),
+        null,
+      ),
+      og: homeCard,
+      body: markup(locale, <PrivacyPage otherLocaleHref={privacyPath(other)} />),
+    });
+
+    pages.push({
+      path: accountPath(locale),
+      lang: LOCALE_TAG[locale],
+      head: renderHeadTags(
+        staticPageMeta(
+          SITE,
+          locale,
+          accountPath,
+          { title: titled(dictionary.account.myAccount), description: dictionary.account.anonymous },
+          homeCard,
+          'noindex',
+        ),
+        null,
+      ),
+      og: homeCard,
+      body: markup(locale, <AccountPage otherLocaleHref={accountPath(other)} />),
     });
 
     for (const summary of summaries) {
@@ -192,6 +252,7 @@ export async function prerenderPages(
         ...entry,
         locales: localesForSlug.get(slug) ?? [],
       })),
+      [{ path: privacyPath, lastmod: PRIVACY_UPDATED }],
     ),
     robots: robotsTxt(SITE),
     rss: rss as Record<Locale, string>,

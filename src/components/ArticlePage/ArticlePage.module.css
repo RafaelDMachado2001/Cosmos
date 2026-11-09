@@ -122,3 +122,8 @@
   max-width: var(--page-width);
   margin: 88px auto 0;
 }
+
+.siteFooter {
+  max-width: var(--page-width);
+  margin: 80px auto 0;
+}

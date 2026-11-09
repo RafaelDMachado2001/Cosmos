@@ -1,6 +1,8 @@
 import { useLayoutEffect, useMemo } from 'react';
 
+import { AccountPage } from './components/AccountPage/AccountPage';
 import { Announcer } from './components/Announcer/Announcer';
+import { PrivacyPage } from './components/PrivacyPage/PrivacyPage';
 import { Shell } from './components/Shell/Shell';
 import { parseRoute } from './core/routing';
 import type { Route } from './core/routing';
@@ -27,7 +29,13 @@ export default function App() {
     <LocaleProvider {...(initial === null ? {} : { initial })}>
       <Announcer>
         <SessionProvider source={members} apiUrl={__API_URL__}>
-          <Shell route={route} />
+          {route.kind === 'account' ? (
+            <AccountPage />
+          ) : route.kind === 'privacy' ? (
+            <PrivacyPage />
+          ) : (
+            <Shell route={route} />
+          )}
         </SessionProvider>
       </Announcer>
     </LocaleProvider>
