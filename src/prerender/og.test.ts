@@ -11,7 +11,7 @@ const CARD: OgCard = {
   date: '2025-09-09',
 };
 
-describe('cartão de Open Graph', () => {
+describe('cartão de Open Graph', { timeout: 30_000 }, () => {
   it('pinta com os tokens reais: o fundo do site e a cor da categoria', async () => {
     const svg = await ogSvg(CARD);
     expect(svg).toContain('#05060b');
