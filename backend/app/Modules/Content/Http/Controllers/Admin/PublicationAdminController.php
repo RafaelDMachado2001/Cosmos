@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Content\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Content\Contracts\Engagement;
+use App\Modules\Content\Contracts\PublicationEngagement;
 use App\Modules\Content\Http\Resources\Admin\PublicationAdminResource;
 use App\Modules\Content\Models\Publication;
 use App\Modules\Content\Models\PublicationDraft;
@@ -25,11 +27,15 @@ class PublicationAdminController extends Controller
 
     public function index(): AnonymousResourceCollection
     {
-        return PublicationAdminResource::collection(
-            Publication::with(['drafts', 'tags', 'references'])
-                ->orderByDesc('published_at')
-                ->get()
-        );
+        $publications = Publication::with(['drafts', 'tags', 'references'])
+            ->orderByDesc('published_at')
+            ->get();
+        $engagement = app(PublicationEngagement::class)->forPublications($publications->pluck('id')->all());
+
+        return PublicationAdminResource::collection($publications->map(
+            fn (Publication $publication): PublicationAdminResource => (new PublicationAdminResource($publication))
+                ->withEngagement($engagement[$publication->id] ?? Engagement::none()),
+        ));
     }
 
     public function show(Publication $publication): PublicationAdminResource

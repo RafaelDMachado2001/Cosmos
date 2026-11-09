@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { BrandMark } from '../components/BrandMark/BrandMark';
 import { CATEGORY_LABEL, STATUS_LABEL } from './categoryLabels';
+import { commentsLabel } from './engagement';
 import styles from './PublicationList.module.css';
 import type { AdminPublication, PublicationStatus } from './api';
 
@@ -85,6 +86,9 @@ export function PublicationList({
                   {STATUS_LABEL[publication.status]}
                 </span>
                 <span>{CATEGORY_LABEL[publication.category]}</span>
+                {publication.engagement.comments > 0 && (
+                  <span>{commentsLabel(publication.engagement)}</span>
+                )}
               </span>
             </button>
           </li>

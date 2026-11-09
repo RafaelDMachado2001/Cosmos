@@ -6,6 +6,7 @@ namespace App\Modules\Community\Filament\Resources\Comments\Tables;
 
 use App\Modules\Community\Actions\SetCommentVisibility;
 use App\Modules\Community\Models\Comment;
+use App\Modules\Content\Contracts\PublicationSlugs;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -65,6 +66,14 @@ class CommentsTable
                 SelectFilter::make('status')
                     ->label('Situação')
                     ->options(self::STATUS_LABELS),
+                SelectFilter::make('publication_id')
+                    ->label('Publicação')
+                    ->searchable()
+                    ->getSearchResultsUsing(static fn (string $search): array => array_filter(
+                        self::commentedPublications(),
+                        static fn (string $slug): bool => str_contains($slug, mb_strtolower($search)),
+                    ))
+                    ->getOptionLabelUsing(static fn (mixed $value): string => app(PublicationSlugs::class)->forIds([(int) $value])[(int) $value] ?? '—'),
             ])
             ->recordActions([
                 Action::make('hide')
@@ -81,5 +90,13 @@ class CommentsTable
                     ->visible(fn (Comment $record): bool => $record->status === Comment::STATUS_HIDDEN)
                     ->action(fn (Comment $record) => app(SetCommentVisibility::class)->handle($record, true)),
             ]);
+    }
+
+    /** @return array<int, string> */
+    private static function commentedPublications(): array
+    {
+        return app(PublicationSlugs::class)->forIds(
+            Comment::query()->distinct()->pluck('publication_id')->map(static fn (mixed $id): int => (int) $id)->all(),
+        );
     }
 }

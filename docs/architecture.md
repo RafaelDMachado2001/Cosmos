@@ -739,6 +739,20 @@ test-runner directives).
   once per rendered page (a `WeakMap` keyed by the page's records), so a
   page of 25 comments costs one query per contract, not one per row.
 
+### Backend: engagement in the panel
+
+- **Content asks through its own contract.** `Content/Contracts/PublicationEngagement`
+  returns, for many publications at once, the visible comments, the reactions and the
+  moderation link already filtered. Community implements it; Content never imports
+  Community, so Deptrac stays clean.
+- **Two grouped queries for any list size**: one over comments, one over reactions. The
+  studio list passes the counts into each resource; a single resource asks for its own.
+  The Filament table reads them once per page (`EngagementLookups`, a WeakMap keyed by the
+  page's records, as `CommentLookups` does).
+- **The moderation filter by publication loads its options lazily**: only when searching
+  or when the filter arrives in the URL, so the comments page still reads publications
+  once.
+
 ### Backend: publishing
 
 - **Publishing serializes the draft through the TypeScript grammar.** PHP runs

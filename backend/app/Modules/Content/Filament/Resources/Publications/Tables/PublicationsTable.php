@@ -11,6 +11,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
@@ -63,6 +64,21 @@ class PublicationsTable
                 IconColumn::make('featured')
                     ->label('Destaque')
                     ->boolean(),
+
+                TextColumn::make('engagement_comments')
+                    ->label('Comentários')
+                    ->state(fn (Publication $record, HasTable $livewire): int => EngagementLookups::for($livewire)->of($record->id)->comments)
+                    ->url(function (Publication $record, HasTable $livewire): ?string {
+                        $engagement = EngagementLookups::for($livewire)->of($record->id);
+
+                        return $engagement->comments > 0 ? $engagement->moderationUrl : null;
+                    })
+                    ->alignEnd(),
+
+                TextColumn::make('engagement_reactions')
+                    ->label('Reações')
+                    ->state(fn (Publication $record, HasTable $livewire): int => EngagementLookups::for($livewire)->of($record->id)->reactions)
+                    ->alignEnd(),
             ])
             ->filters([
                 SelectFilter::make('status')
