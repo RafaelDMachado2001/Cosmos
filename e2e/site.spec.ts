@@ -28,6 +28,24 @@ test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async (
   await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30_000 });
 });
 
+test('privacidade e conta existem como páginas, a conta fora do índice', async ({ page }) => {
+  const privacy = await page.goto('/pt/privacidade');
+  expect(privacy?.status()).toBe(200);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacidade');
+  await expect(page.getByRole('contentinfo').getByRole('link', { name: 'CONSTELAÇÃO' })).toBeVisible();
+
+  const account = await page.goto('/en/account');
+  expect(account?.status()).toBe(200);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('My account');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+});
+
+test('o hero leva à privacidade', async ({ page }) => {
+  await page.goto('/pt');
+  await page.getByRole('link', { name: 'PRIVACIDADE' }).click();
+  await expect(page).toHaveURL(/\/pt\/privacidade$/);
+});
+
 test('um slug que não existe responde 404 de verdade', async ({ page }) => {
   const response = await page.goto('/pt/publicacoes/nao-existe');
   expect(response?.status()).toBe(404);

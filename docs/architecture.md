@@ -541,6 +541,38 @@ test-runner directives).
 - **A response that arrives after a newer request is discarded**, as is a
   build snapshot that arrives after the API.
 
+### Reader accounts on the site
+
+- **One session for the whole page.** `SessionProvider` asks `GET /api/me`
+  once, after the page renders, and holds `loading`, `anonymous`, `member` or
+  `error`. It also owns the sign-in dialog and the `?login=` notice, so the
+  header, the account page and later the article can all open sign-in.
+- **The account slot keeps its width from the first frame.** The skeleton and
+  SIGN IN are both `--account-slot` wide; a signed-in reader grows to the left,
+  into the spacer, so nothing to its right moves. When the API is down, or the
+  build has no API, the slot stays empty but keeps the space.
+- **Sign-in is a real link**, `api/auth/{provider}/redirect?return=<path>`. A
+  full page leaves for the provider and comes back; nothing runs in a popup.
+- **One `aria-live` region per page** (`Announcer`). Two regions announcing at
+  once would talk over each other.
+- **Dialogs trap focus and give it back.** `Dialog` stops the Esc key from
+  reaching the reader view, which also closes on Esc.
+- **The menu is a real `role="menu"`**: arrows, Home/End, Esc back to the
+  button, Tab closes it.
+- **Avatars fall back to initials on `onerror`.** The CSP allows only the
+  Google and GitHub avatar hosts; any other URL is refused and the fallback
+  covers it.
+- **The @handle format and the name limit are checked against the PHP** in
+  `vocabulary.test.ts`. Reserved handles stay server-side; a refusal comes
+  back as a field error and is shown as "not available".
+- **Deleting the account reloads the home.** The announcement survives the
+  reload through a `sessionStorage` flag that the provider reads once.
+- **Account and privacy are separate pages, not Shell overlays.** `App` picks
+  `AccountPage` or `PrivacyPage` by route; both have a header with the account
+  slot and the language toggle, and switching language rewrites the URL to the
+  other segment. The account page is prerendered as a `noindex` shell; the
+  privacy page is prerendered in full and listed in the sitemap.
+
 ### Prerender
 
 - **Composition uses replacement functions, never strings**: `String.replace`
@@ -848,8 +880,8 @@ itself.
   site on Vercel, built from the API; the API and the studio on Cloud Run;
   Postgres on Neon; media on R2; the edge Worker in front of the backend hosts.
   The local Docker Compose stack runs the same code with the local drivers.
-- The backend for reader accounts is built: the Identity and Activity modules, social
-  sign-in, the member API, data export and account deletion. The site does not
-  show the session yet: its sign-in interface waits on a design handoff, as
-  does the privacy page.
+- Reader accounts are live end to end: social sign-in, the session in the
+  header, the account page (profile, linked accounts, export, deletion) and the
+  privacy page. Comments and reactions have their API; the site does not show
+  them yet.
 - Community and Gamification are planned.
