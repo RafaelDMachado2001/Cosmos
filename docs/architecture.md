@@ -600,6 +600,24 @@ test-runner directives).
   `/api/publications*`: a reload right after posting or deleting can show the
   previous list. The block itself updates from the POST/DELETE response.
 
+### Audit of accounts and community (phase 34)
+
+- **axe (WCAG 2.1 AA) runs in the e2e** (`e2e/a11y.spec.ts`) on the entry, the
+  reader with the article end, privacy and account. The signed-in states
+  (menu, sign-in dialog, account, comment list, both delete dialogs) were
+  audited with a mocked session: no violations of any impact.
+- **Layout shift stays under 0.02** on every page, with the session and the
+  comments delayed by 1.5 s. What remains is content arriving below its
+  reserved space (the comment list replacing its skeleton, the account page
+  replacing its skeletons), not the header.
+- **The account and privacy pages and the article end are separate chunks**
+  (`React.lazy`). Before that, the three phases added 18 kB gzip to the
+  script every visitor loads; now 7.7 kB (the header session, the sign-in
+  dialog and the strings).
+- **Production paths checked by hand**: every community write reaches Laravel
+  through the edge Worker (401/419 without a session, not an edge 404), and
+  the XSRF cookie is issued for `.rdmlabs.com.br`, so the site can read it.
+
 ### Prerender
 
 - **Composition uses replacement functions, never strings**: `String.replace`
