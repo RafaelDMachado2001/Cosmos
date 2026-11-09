@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default tseslint.config(
-  { ignores: ['dist', 'dist-ssr', 'node_modules', 'backend'] },
+  { ignores: ['dist', 'dist-ssr', 'node_modules', 'backend', '.superpowers'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
     files: ['**/*.{ts,tsx}'],

@@ -865,6 +865,14 @@ test-runner directives).
 - **CI minutes are budgeted.** Text-only changes run nothing; the expensive
   jobs (e2e, production image, integration, infra) run only on pull requests,
   and `main` reruns only the cheap ones the deploy waits for.
+- **Tool majors (phase 37): Vite 8, Vitest 5, satori 0.63.** Vitest dropped
+  `environmentMatchGlobs`, so DOM tests are a `dom` project over
+  `src/components` and `src/admin`; `vite-node` is a direct dependency now that
+  Vitest no longer ships it. Satori 0.63 sizes boxes as `content-box`: the card
+  root needs `boxSizing: 'border-box'`, or the padding pushes the footer out of
+  the 630px canvas (`og.test.ts` checks the content stays inside it). Two
+  transitive advisories are pinned through `overrides` (satori's `fflate`,
+  typescript-estree's `minimatch`); drop them when upstream catches up.
 - **Generated files carry no header.** `config/publications.php` and the
   seed JSON come from `npm run emit:seed`; editing them by hand is caught by
   `vocabulary.test.ts`, not by a comment.

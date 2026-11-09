@@ -23,6 +23,15 @@ describe('cartão de Open Graph', () => {
     expect(svg).toContain('#8c6bff');
   });
 
+  it('o conteúdo cabe no cartão, dentro do respiro de 72px', async () => {
+    const svg = await ogSvg(CARD);
+    const boxes = [...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/g)]
+      .map(([, y, h]) => ({ top: Number(y), bottom: Number(y) + Number(h) }))
+      .filter((box) => box.top > 0);
+    expect(Math.min(...boxes.map((box) => box.top))).toBe(72);
+    expect(Math.max(...boxes.map((box) => box.bottom))).toBe(630 - 72);
+  });
+
   it('sai como PNG de 1200x630', async () => {
     const png = await ogPng(CARD);
     expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
