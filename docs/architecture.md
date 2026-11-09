@@ -830,6 +830,21 @@ test-runner directives).
 - **Search is a generated `tsvector` column**, not a trigger: no write path,
   the admin panel included, can skip indexing. The dictionary comes from the
   row's own locale.
+- **The Studio has a token API (phase 38)** under `/api/studio/*`, on the API
+  host, for the author's own tools (an assistant, a reviewer, a future
+  standalone Studio). It reuses the Studio's controllers, so validation,
+  drafts, publishing and scheduling behave exactly as in the editor. Deleting is left out on
+  purpose: it stays a click in the Studio. Two extras exist only here:
+  `preview` (draft as Markdown, diagram errors, and the published text) and
+  `convert` (Markdown to blocks and back), because a client without the
+  editor writes Markdown.
+- **Studio tokens are not Sanctum tokens.** `auth:sanctum` guards the reader's
+  routes and accepts any tokenable model, so an admin token there would
+  authenticate `/api/me` as a `User`. `studio_tokens` stores only a SHA-256
+  hash, always expires (at most a year), and is checked by its own middleware,
+  which also requires the owner to still be the allowlisted admin. Tokens are
+  issued and revoked at `/admin/studio/tokens` (Google session) or with
+  `php artisan studio:token`; the plain value is shown once.
 
 ### Infrastructure and tooling
 

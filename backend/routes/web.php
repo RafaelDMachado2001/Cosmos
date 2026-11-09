@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\StudioTokenController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Modules\Content\Http\Controllers\Admin\MediaController;
 use App\Modules\Content\Http\Controllers\Admin\PublicationAdminController;
@@ -26,6 +27,12 @@ Route::middleware('throttle:10,1')->prefix('auth/{provider}')->whereIn('provider
 Route::get('/admin/login-gateway', fn () => redirect()->route('auth.google.redirect'))->name('login');
 
 Route::middleware('auth')->get('/admin/studio', [RdmStudioController::class, 'show'])->name('rdm-studio');
+
+Route::middleware('auth')->prefix('admin/studio/tokens')->name('studio-tokens.')->group(function (): void {
+    Route::get('/', [StudioTokenController::class, 'index'])->name('index');
+    Route::post('/', [StudioTokenController::class, 'store'])->name('store');
+    Route::delete('/{token}', [StudioTokenController::class, 'destroy'])->whereNumber('token')->name('destroy');
+});
 
 Route::middleware('auth')->prefix('admin/api')->group(function (): void {
     Route::get('/publications', [PublicationAdminController::class, 'index']);
