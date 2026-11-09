@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { monthLabel, monthYearLabel } from './format';
+import { countLabel, dayLabel, fill, monthLabel, monthYearLabel } from './format';
 
 const SET_2025 = Date.parse('2025-09-12T12:00:00.000Z');
 const JAN_2026 = Date.parse('2026-01-20T12:00:00.000Z');
@@ -32,5 +32,34 @@ describe('monthLabel', () => {
     expect(monthLabel(SET_2025, 'pt')).toBe('SET');
     expect(monthLabel(SET_2025, 'en')).toBe('SEPT');
     expect(monthLabel(Date.parse('2025-02-01T00:30:00.000Z'), 'pt')).toBe('FEV');
+  });
+});
+
+describe('fill', () => {
+  it('troca cada chave pelo valor', () => {
+    expect(fill('{n} acenderam', { n: 13 })).toBe('13 acenderam');
+    expect(fill('digite @{handle}', { handle: 'ana_r' })).toBe('digite @ana_r');
+  });
+
+  it('deixa intacta a chave sem valor', () => {
+    expect(fill('{n} de {max}', { n: 1 })).toBe('1 de {max}');
+  });
+});
+
+describe('countLabel', () => {
+  it('separa milhar como cada idioma escreve', () => {
+    expect(countLabel(2000, 'pt')).toBe('2.000');
+    expect(countLabel(2000, 'en')).toBe('2,000');
+  });
+});
+
+describe('dayLabel', () => {
+  it('dia, mês abreviado e ano, sem a preposição nem ponto', () => {
+    expect(dayLabel('2026-11-08', 'pt')).toBe('8 NOV 2026');
+    expect(dayLabel('2026-11-08', 'en')).toBe('8 NOV 2026');
+  });
+
+  it('lê a data em UTC', () => {
+    expect(dayLabel('2026-11-01T00:30:00.000Z', 'pt')).toBe('1 NOV 2026');
   });
 });

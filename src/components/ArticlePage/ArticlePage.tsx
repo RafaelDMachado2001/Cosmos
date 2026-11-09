@@ -5,6 +5,7 @@ import type { ArticleLink } from '../ArticleIndex/ArticleIndex';
 import { ArticleTags } from '../ArticleTags/ArticleTags';
 import { BrandMark } from '../BrandMark/BrandMark';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
+import { SiteFooter } from '../SiteFooter/SiteFooter';
 import { parseBlocks } from '../../core/blocks';
 import { readingMinutes } from '../../core/readingTime';
 import type { Category } from '../../core/types';
@@ -41,7 +42,7 @@ export function ArticlePage({
   const minutes = readingMinutes(parseBlocks(body));
 
   return (
-    <div className={styles.page} style={categoryThemeStyle(category)}>
+    <div className={styles.page} style={categoryThemeStyle(category)} data-category={category}>
       <header className={styles.top}>
         <a className={styles.brand} href={homeHref}>
           <BrandMark product="cosmos" className={styles.mark} />
@@ -81,6 +82,7 @@ export function ArticlePage({
       </article>
 
       <ArticleIndex items={index} className={styles.index} />
+      <SiteFooter className={styles.siteFooter} />
     </div>
   );
 }

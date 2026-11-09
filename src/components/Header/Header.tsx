@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 
 import styles from './Header.module.css';
 import { useLocale } from '../../i18n/useLocale';
+import { AccountSlot } from '../AccountSlot/AccountSlot';
 import { BrandMark } from '../BrandMark/BrandMark';
 import { LocaleToggle } from '../LocaleToggle/LocaleToggle';
 import { SearchField } from '../SearchField/SearchField';
@@ -77,6 +78,7 @@ export const Header = forwardRef<HTMLElement, HeaderProps>(function Header(
       <SearchField visible={inCosmos} value={query} onChange={onQueryChange} />
 
       <div className={styles.spacer} />
+      <AccountSlot />
       <LocaleToggle />
     </header>
   );

@@ -30,3 +30,27 @@
   height: 100%;
   padding: 0 24px 40px;
 }
+
+.privacy {
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  z-index: var(--z-hero);
+  color: var(--color-text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-meta);
+  text-decoration: none;
+  transition:
+    color var(--dur-ui) var(--ease),
+    opacity var(--dur-header) ease;
+}
+
+.privacy:hover {
+  color: var(--color-text-ui);
+}
+
+.privacy[data-visible='false'] {
+  opacity: 0;
+  pointer-events: none;
+}

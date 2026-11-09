@@ -26,7 +26,10 @@ final class ReturnUrl
     public static function absolute(string $path, ?string $login = null): string
     {
         if ($login !== null) {
-            $path .= (str_contains($path, '?') ? '&' : '?').'login='.$login;
+            $hash = strpos($path, '#');
+            $fragment = $hash === false ? '' : substr($path, $hash);
+            $path = $hash === false ? $path : substr($path, 0, $hash);
+            $path .= (str_contains($path, '?') ? '&' : '?').'login='.$login.$fragment;
         }
 
         return rtrim((string) config('hosts.site'), '/').$path;

@@ -541,6 +541,65 @@ test-runner directives).
 - **A response that arrives after a newer request is discarded**, as is a
   build snapshot that arrives after the API.
 
+### Reader accounts on the site
+
+- **One session for the whole page.** `SessionProvider` asks `GET /api/me`
+  once, after the page renders, and holds `loading`, `anonymous`, `member` or
+  `error`. It also owns the sign-in dialog and the `?login=` notice, so the
+  header, the account page and later the article can all open sign-in.
+- **The account slot keeps its width from the first frame.** The skeleton and
+  SIGN IN are both `--account-slot` wide; a signed-in reader grows to the left,
+  into the spacer, so nothing to its right moves. When the API is down, or the
+  build has no API, the slot stays empty but keeps the space.
+- **Sign-in is a real link**, `api/auth/{provider}/redirect?return=<path>`. A
+  full page leaves for the provider and comes back; nothing runs in a popup.
+- **One `aria-live` region per page** (`Announcer`). Two regions announcing at
+  once would talk over each other.
+- **Dialogs trap focus and give it back.** `Dialog` stops the Esc key from
+  reaching the reader view, which also closes on Esc.
+- **The menu is a real `role="menu"`**: arrows, Home/End, Esc back to the
+  button, Tab closes it.
+- **Avatars fall back to initials on `onerror`.** The CSP allows only the
+  Google and GitHub avatar hosts; any other URL is refused and the fallback
+  covers it.
+- **The @handle format and the name limit are checked against the PHP** in
+  `vocabulary.test.ts`. Reserved handles stay server-side; a refusal comes
+  back as a field error and is shown as "not available".
+- **Deleting the account reloads the home.** The announcement survives the
+  reload through a `sessionStorage` flag that the provider reads once.
+- **Account and privacy are separate pages, not Shell overlays.** `App` picks
+  `AccountPage` or `PrivacyPage` by route; both have a header with the account
+  slot and the language toggle, and switching language rewrites the URL to the
+  other segment. The account page is prerendered as a `noindex` shell; the
+  privacy page is prerendered in full and listed in the sitemap.
+
+### Community at the end of an article
+
+- **One block, at the end of the reader view.** The prerendered article
+  never runs JavaScript, so the block lives only in `ReaderView`: reaction
+  and share on one row, comments below. Without an API (seed build) only the
+  share links render.
+- **It loads when it gets near the viewport**: an `IntersectionObserver`
+  rooted on the reader overlay (the scroll container) with a 600px margin.
+  Arriving through `#comentarios` loads it at once, scrolls to it and focuses
+  the field.
+- **The reaction is optimistic.** The count moves on click and reverts, with
+  an announcement, if the API refuses.
+- **A new comment is merged into the list by id**, not appended blindly: if
+  later pages are still unloaded, loading them later does not duplicate it.
+- **Own comments are recognised by `@handle`.** The public list carries no
+  member id, and handles are unique.
+- **The draft lives in `sessionStorage` per publication and language**, saved
+  on every keystroke. A 401 keeps it, the sign-in returns to `#comentarios`,
+  and the draft comes back. The backend puts `?login=` before the fragment for
+  this reason.
+- **Share uses the native menu when `navigator.share` exists** (feature
+  detection, not width); otherwise copy, LinkedIn, X and email, all plain
+  links. Nothing third-party loads.
+- **The public comment list is cached for 60 s at the edge**, like the rest of
+  `/api/publications*`: a reload right after posting or deleting can show the
+  previous list. The block itself updates from the POST/DELETE response.
+
 ### Prerender
 
 - **Composition uses replacement functions, never strings**: `String.replace`
@@ -848,8 +907,8 @@ itself.
   site on Vercel, built from the API; the API and the studio on Cloud Run;
   Postgres on Neon; media on R2; the edge Worker in front of the backend hosts.
   The local Docker Compose stack runs the same code with the local drivers.
-- The backend for reader accounts is built: the Identity and Activity modules, social
-  sign-in, the member API, data export and account deletion. The site does not
-  show the session yet: its sign-in interface waits on a design handoff, as
-  does the privacy page.
+- Reader accounts are live end to end: social sign-in, the session in the
+  header, the account page (profile, linked accounts, export, deletion) and the
+  privacy page. Comments, reactions and sharing appear at the end of each
+  article in the reader view.
 - Community and Gamification are planned.

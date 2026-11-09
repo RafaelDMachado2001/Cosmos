@@ -98,7 +98,7 @@ export function PublicationEditor({ editor }: PublicationEditorProps): React.JSX
       )}
 
       {preview ? (
-        <div className={styles.preview} data-brand="cosmos" style={categoryThemeStyle(editor.category)}>
+        <div className={styles.preview} data-brand="cosmos" style={categoryThemeStyle(editor.category)} data-category={editor.category}>
           <LocaleContext.Provider
             value={{ locale: editor.locale, t: DICTIONARIES[editor.locale], setLocale: editor.setLocale }}
           >

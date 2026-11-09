@@ -1,7 +1,7 @@
-import { parseMember, xsrfToken } from '../core/session';
+import { parseMember } from '../core/session';
 import type { Member } from '../core/session';
 import type { Locale } from '../core/types';
-import { createJsonClient } from './http';
+import { createSessionClient } from './sessionClient';
 
 export interface MemberPatch {
   readonly name?: string;
@@ -29,23 +29,7 @@ export function createMemberSource(
   readCookie: () => string = () => document.cookie,
 ): MemberSource {
   const root = baseUrl.replace(/\/+$/, '');
-
-  async function token(): Promise<string> {
-    const existing = xsrfToken(readCookie());
-    if (existing !== null) return existing;
-
-    await fetchImpl(`${root}/api/sanctum/csrf-cookie`, { credentials: 'include' });
-    const fresh = xsrfToken(readCookie());
-    if (fresh === null) throw new Error('a API não entregou o XSRF-TOKEN');
-    return fresh;
-  }
-
-  const client = createJsonClient({
-    baseUrl: root,
-    credentials: 'include',
-    csrfHeaders: async () => ({ 'X-XSRF-TOKEN': await token() }),
-    fetchImpl,
-  });
+  const client = createSessionClient(root, fetchImpl, readCookie);
 
   return {
     async me() {

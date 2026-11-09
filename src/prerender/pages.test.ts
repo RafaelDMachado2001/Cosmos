@@ -13,9 +13,32 @@ const at = (path: string) => output.pages.find((page) => page.path === path);
 
 describe('prerenderPages', () => {
   it('grava a raiz de cada idioma e cada publicação em cada idioma', () => {
-    expect(output.pages).toHaveLength(LOCALES.length * (PUBLICATIONS.length + 1));
+    expect(output.pages).toHaveLength(LOCALES.length * (PUBLICATIONS.length + 3));
     expect(at('/pt')).toBeDefined();
     expect(at('/en')).toBeDefined();
+  });
+
+  it('grava a privacidade nos dois idiomas, indexável e no sitemap', () => {
+    const pt = at('/pt/privacidade');
+    expect(pt?.body).toContain('<h1');
+    expect(pt?.body).toContain('Quais dados guardamos');
+    expect(pt?.body).toContain('href="/en/privacy"');
+    expect(pt?.head).not.toContain('noindex');
+    expect(at('/en/privacy')?.body).toContain('What data we keep');
+    expect(output.sitemap).toContain('/pt/privacidade</loc>');
+  });
+
+  it('grava Minha conta como casca sem índice, fora do sitemap', () => {
+    const account = at('/pt/conta');
+    expect(account?.head).toContain('<meta name="robots" data-head content="noindex">');
+    expect(account?.body).toContain('Minha conta');
+    expect(account?.body).toContain('aria-busy="true"');
+    expect(at('/en/account')).toBeDefined();
+    expect(output.sitemap).not.toContain('/conta');
+  });
+
+  it('o artigo tem rodapé com a privacidade', () => {
+    expect(at('/pt/publicacoes/code-review-sem-atrito')?.body).toContain('href="/pt/privacidade"');
   });
 
   it('usa o caminho traduzido de cada idioma', () => {

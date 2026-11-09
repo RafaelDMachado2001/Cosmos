@@ -14,12 +14,14 @@ import {
   settled,
 } from '../../core/reader';
 import type { HoverSide, ReaderState } from '../../core/reader';
-import { articlePath, closeTarget, homePath, parseRoute } from '../../core/routing';
+import { articlePath, closeTarget, homePath, parseRoute, privacyPath } from '../../core/routing';
 import type { Route } from '../../core/routing';
 import { placeStars } from '../../core/timeline';
 import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
-import { createSnapshot, createSource } from '../../data/source';
+import { absolute } from '../../core/url';
+import { SITE } from '../../site';
+import { createCommunity, createSnapshot, createSource } from '../../data/source';
 import { useConstellationFilter } from '../../hooks/useConstellationFilter';
 import { useCosmosEngine } from '../../hooks/useCosmosEngine';
 import { usePageHead } from '../../hooks/usePageHead';
@@ -77,6 +79,7 @@ export function Shell({ route }: { route: Route }) {
 
   const source = useMemo(() => createSource(), []);
   const snapshot = useMemo(() => createSnapshot(), []);
+  const community = useMemo(() => createCommunity(), []);
   const collection = usePublications(source, locale, snapshot);
   const summaries = collection.state.items;
 
@@ -323,8 +326,9 @@ export function Shell({ route }: { route: Route }) {
       body: detail.body,
       appearance: resolveAppearance(detail.appearance),
       tags: detail.tags,
+      url: absolute(SITE.origin, articlePath(locale, detail.slug)),
     };
-  }, [reader, article, dateLabel, t]);
+  }, [reader, article, dateLabel, t, locale]);
 
   usePageHead(reader, article, locale, t, summaries);
 
@@ -456,6 +460,15 @@ export function Shell({ route }: { route: Route }) {
           <StarIndex items={summaries} label={t.star.indexLabel} hrefFor={hrefFor} />
         </main>
 
+        <a
+          className={styles.privacy}
+          href={privacyPath(locale)}
+          data-visible={engine.phase === 'hero'}
+          {...(engine.phase === 'hero' ? {} : { inert: '', 'aria-hidden': true })}
+        >
+          {t.footer.privacy}
+        </a>
+
         <TimeRuler
           ref={scrubRef}
           railRef={railRef}
@@ -464,7 +477,12 @@ export function Shell({ route }: { route: Route }) {
         />
 
         {readerCard && (
-          <ReaderView overlayRef={readerRef} card={readerCard} onClose={closeReader} />
+          <ReaderView
+            overlayRef={readerRef}
+            card={readerCard}
+            community={community}
+            onClose={closeReader}
+          />
         )}
       </div>
     </>

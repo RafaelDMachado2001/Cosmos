@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { ANONYMOUS, loginHref, loginOutcome, parseMember, sessionOf, xsrfToken } from './session';
+import {
+  ANONYMOUS,
+  confirmsHandle,
+  displayName,
+  initials,
+  isHandleFormat,
+  loginHref,
+  loginOutcome,
+  maskEmail,
+  parseMember,
+  sessionOf,
+  withoutLoginOutcome,
+  xsrfToken,
+} from './session';
 
 const api = {
   data: {
@@ -83,5 +96,68 @@ describe('xsrfToken', () => {
   it('sem o cookie, ou com valor quebrado, é null', () => {
     expect(xsrfToken('a=1')).toBeNull();
     expect(xsrfToken('XSRF-TOKEN=%E0%A4%A')).toBeNull();
+  });
+});
+
+describe('withoutLoginOutcome', () => {
+  it('tira só o login da busca', () => {
+    expect(withoutLoginOutcome('?login=failed')).toBe('');
+    expect(withoutLoginOutcome('?q=cafe&login=unverified')).toBe('?q=cafe');
+    expect(withoutLoginOutcome('')).toBe('');
+  });
+});
+
+describe('initials', () => {
+  it('usa as duas primeiras palavras do nome', () => {
+    expect(initials('Ana Ribeiro Costa', 'anarib')).toBe('AR');
+  });
+
+  it('cai no handle quando o nome está vazio, separando por _', () => {
+    expect(initials('', 'lucas_dev')).toBe('LD');
+    expect(initials('   ', 'mcosta')).toBe('M');
+  });
+
+  it('não parte um caractere fora do plano básico', () => {
+    expect(initials('𝓐na', 'x')).toBe('𝓐');
+  });
+});
+
+describe('displayName', () => {
+  it('é o nome, ou o @handle sem nome', () => {
+    expect(displayName({ name: 'Ana', handle: 'ana' })).toBe('Ana');
+    expect(displayName({ name: '', handle: 'ana' })).toBe('@ana');
+  });
+});
+
+describe('maskEmail', () => {
+  it('mostra só a primeira letra e o domínio', () => {
+    expect(maskEmail('camila@gmail.com')).toBe('c•••••@gmail.com');
+  });
+
+  it('devolve intacto o que não parece e-mail', () => {
+    expect(maskEmail('sem-arroba')).toBe('sem-arroba');
+  });
+});
+
+describe('confirmsHandle', () => {
+  it('aceita com ou sem @, com espaço nas pontas', () => {
+    expect(confirmsHandle('@camila_r', 'camila_r')).toBe(true);
+    expect(confirmsHandle(' camila_r ', 'camila_r')).toBe(true);
+  });
+
+  it('recusa qualquer diferença, inclusive de caixa', () => {
+    expect(confirmsHandle('@Camila_r', 'camila_r')).toBe(false);
+    expect(confirmsHandle('@camila', 'camila_r')).toBe(false);
+    expect(confirmsHandle('', 'camila_r')).toBe(false);
+  });
+});
+
+describe('isHandleFormat', () => {
+  it('segue a regra do servidor: minúsculas, números e _, de 3 a 30', () => {
+    expect(isHandleFormat('camila_r')).toBe(true);
+    expect(isHandleFormat('ab')).toBe(false);
+    expect(isHandleFormat('a'.repeat(31))).toBe(false);
+    expect(isHandleFormat('Camila')).toBe(false);
+    expect(isHandleFormat('camila-r')).toBe(false);
   });
 });

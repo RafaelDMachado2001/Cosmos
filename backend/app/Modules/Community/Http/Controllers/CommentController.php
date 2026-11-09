@@ -30,10 +30,12 @@ class CommentController extends Controller
         $target = PublicationTarget::fromRequest($request, $slug);
         $after = (int) ($request->validate(['after' => ['sometimes', 'integer', 'min:1']])['after'] ?? 0);
 
-        $comments = Comment::query()
+        $visible = Comment::query()
             ->visible()
             ->where('publication_id', $target->id)
-            ->where('locale', $target->locale)
+            ->where('locale', $target->locale);
+
+        $comments = (clone $visible)
             ->where('id', '>', $after)
             ->orderBy('id')
             ->limit(self::PAGE_SIZE + 1)
@@ -47,6 +49,7 @@ class CommentController extends Controller
             'meta' => [
                 'count' => $page->count(),
                 'next' => $comments->count() > self::PAGE_SIZE ? $page->last()?->id : null,
+                'total' => $visible->count(),
             ],
         ]);
     }

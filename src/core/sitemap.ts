@@ -48,9 +48,21 @@ function urlEntry(
   ].join('\n');
 }
 
-export function sitemapXml(site: MetaSite, entries: readonly SitemapEntry[]): string {
+export interface StaticSitemapPage {
+  readonly path: (locale: Locale) => string;
+  readonly lastmod: string;
+}
+
+export function sitemapXml(
+  site: MetaSite,
+  entries: readonly SitemapEntry[],
+  pages: readonly StaticSitemapPage[] = [],
+): string {
   const urls = [
     ...LOCALES.map((locale) => urlEntry(site.origin, homePath, locale, null, LOCALES)),
+    ...pages.flatMap((page) =>
+      LOCALES.map((locale) => urlEntry(site.origin, page.path, locale, day(page.lastmod), LOCALES)),
+    ),
     ...entries
       .filter((entry) => entry.indexable !== false)
       .flatMap((entry) =>

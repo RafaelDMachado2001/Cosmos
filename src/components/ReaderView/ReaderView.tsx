@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 
 import styles from './ReaderView.module.css';
 import { ArticleBody } from '../ArticleBody/ArticleBody';
+import { ArticleEnd } from '../ArticleEnd/ArticleEnd';
 import { ArticleTags } from '../ArticleTags/ArticleTags';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
 import { Nebula } from '../Nebula/Nebula';
@@ -11,6 +12,7 @@ import { parseBlocks } from '../../core/blocks';
 import { outline } from '../../core/outline';
 import { readingMinutes } from '../../core/readingTime';
 import type { Category } from '../../core/types';
+import type { CommunitySource } from '../../data/CommunitySource';
 import { useActiveHeading } from '../../hooks/useActiveHeading';
 import { useReadingProgress } from '../../hooks/useReadingProgress';
 import { useLocale } from '../../i18n/useLocale';
@@ -25,17 +27,20 @@ export interface ReaderCard {
   readonly body: string;
   readonly appearance: Appearance;
   readonly tags: readonly string[];
+  readonly url: string;
 }
 
 export interface ReaderViewProps {
   readonly overlayRef: RefObject<HTMLDivElement>;
   readonly card: ReaderCard;
+  readonly community?: CommunitySource | null;
   readonly onClose: () => void;
 }
 
 const TITLE_ID = 'leitura-titulo';
 
-const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const TOC_OFFSET_PX = 80;
 
@@ -46,7 +51,7 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
+export function ReaderView({ overlayRef, card, community = null, onClose }: ReaderViewProps) {
   const { t } = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
   const barRef = useRef<HTMLSpanElement>(null);
@@ -132,6 +137,7 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
       aria-modal="true"
       aria-labelledby={TITLE_ID}
       style={categoryThemeStyle(card.category)}
+      data-category={card.category}
     >
       <aside className={styles.aside} onPointerMove={tiltOrb} onPointerLeave={resetOrb}>
         <Nebula
@@ -249,6 +255,14 @@ export function ReaderView({ overlayRef, card, onClose }: ReaderViewProps) {
           <div className={styles.body}>
             <ArticleBody markdown={card.body} />
           </div>
+
+          <ArticleEnd
+            source={community}
+            slug={card.slug}
+            title={card.title}
+            url={card.url}
+            scrollRootRef={overlayRef}
+          />
 
           <footer className={styles.footer}>
             <button type="button" className={styles.back} onClick={onClose}>

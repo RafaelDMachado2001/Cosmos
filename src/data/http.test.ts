@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   PayloadTooLargeError,
   RateLimitedError,
+  UnauthorizedError,
   ValidationError,
   createJsonClient,
   dataOf,
@@ -98,6 +99,14 @@ describe('createJsonClient', () => {
     await expect(
       client(() => Promise.resolve(respond(429))).send('POST', '/x'),
     ).rejects.toBeInstanceOf(RateLimitedError);
+  });
+
+  it('sessão ausente (401) ou CSRF vencido (419) é UnauthorizedError', async () => {
+    for (const status of [401, 419]) {
+      await expect(
+        client(() => Promise.resolve(respond(status))).send('POST', '/x'),
+      ).rejects.toBeInstanceOf(UnauthorizedError);
+    }
   });
 
   it('outro status de erro diz o método, o endereço e o status', async () => {

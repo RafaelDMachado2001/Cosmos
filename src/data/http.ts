@@ -23,6 +23,13 @@ export class RateLimitedError extends Error {
   }
 }
 
+export class UnauthorizedError extends Error {
+  constructor(readonly url: string) {
+    super(`${url} recusou: sessão ausente ou expirada`);
+    this.name = 'UnauthorizedError';
+  }
+}
+
 export interface JsonClientOptions {
   readonly baseUrl: string;
   readonly credentials: RequestCredentials;
@@ -42,6 +49,7 @@ async function checked(method: string, url: string, response: Response): Promise
     const payload = (await response.json()) as { errors?: FieldErrors };
     throw new ValidationError(payload.errors ?? {});
   }
+  if (response.status === 401 || response.status === 419) throw new UnauthorizedError(url);
   if (response.status === 413) throw new PayloadTooLargeError(url);
   if (response.status === 429) throw new RateLimitedError(url);
   if (!response.ok) throw new Error(`${method} ${url} respondeu ${String(response.status)}`);

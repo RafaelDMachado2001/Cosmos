@@ -28,6 +28,38 @@ test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async (
   await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30_000 });
 });
 
+test('privacidade e conta existem como páginas, a conta fora do índice', async ({ page }) => {
+  const privacy = await page.goto('/pt/privacidade');
+  expect(privacy?.status()).toBe(200);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacidade');
+  await expect(page.getByRole('contentinfo').getByRole('link', { name: 'CONSTELAÇÃO' })).toBeVisible();
+
+  const account = await page.goto('/en/account');
+  expect(account?.status()).toBe(200);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('My account');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+});
+
+test('a privacidade rola até o rodapé', async ({ page }) => {
+  await page.goto('/pt/privacidade');
+  await page.mouse.move(400, 400);
+  await page.mouse.wheel(0, 6000);
+  await expect(page.getByRole('contentinfo')).toBeInViewport();
+});
+
+test('o fim da leitura oferece compartilhar', async ({ page }) => {
+  await page.goto('/pt/publicacoes/code-review-sem-atrito');
+  const end = page.locator('#comentarios');
+  await end.scrollIntoViewIfNeeded({ timeout: 30_000 });
+  await expect(end.getByRole('link', { name: 'Compartilhar no LinkedIn' })).toBeVisible();
+});
+
+test('o hero leva à privacidade', async ({ page }) => {
+  await page.goto('/pt');
+  await page.getByRole('link', { name: 'PRIVACIDADE' }).click();
+  await expect(page).toHaveURL(/\/pt\/privacidade$/);
+});
+
 test('um slug que não existe responde 404 de verdade', async ({ page }) => {
   const response = await page.goto('/pt/publicacoes/nao-existe');
   expect(response?.status()).toBe(404);
@@ -78,7 +110,9 @@ test('o contato de segurança é servido, apesar da regra que esconde arquivos c
 test('o site isola a própria janela', async ({ request }) => {
   const response = await request.get('/pt');
   expect(response.headers()['cross-origin-opener-policy']).toBe('same-origin');
-  expect(response.headers()['content-security-policy']).toContain("img-src 'self' data:;");
+  expect(response.headers()['content-security-policy']).toContain(
+    "img-src 'self' data: https://lh3.googleusercontent.com https://avatars.githubusercontent.com;",
+  );
 });
 
 test('a CSP do Nginx não bloqueia nada do próprio site', async ({ page }) => {

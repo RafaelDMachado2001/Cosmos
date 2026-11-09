@@ -44,10 +44,12 @@ describe('vercel.json', () => {
     expect(headerFor('/en/rss.xml', 'Access-Control-Allow-Origin')).toBe('*');
   });
 
-  it('isola a janela e restringe imagens à origem e ao host de mídia', () => {
+  it('isola a janela e restringe imagens à origem, ao host de mídia e aos avatares dos provedores', () => {
     expect(headerFor('/pt', 'Cross-Origin-Opener-Policy')).toBe('same-origin');
     const csp = headerFor('/pt', 'Content-Security-Policy') ?? '';
-    expect(csp).toContain("img-src 'self' data: https://media.rdmlabs.com.br;");
+    expect(csp).toContain(
+      "img-src 'self' data: https://media.rdmlabs.com.br https://lh3.googleusercontent.com https://avatars.githubusercontent.com;",
+    );
     expect(csp).not.toMatch(/img-src[^;]*https:(;| )/);
     expect(csp).toContain("script-src 'self';");
   });

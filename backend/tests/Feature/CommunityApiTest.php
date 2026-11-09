@@ -58,6 +58,7 @@ class CommunityApiTest extends TestCase
             ->assertJsonPath('data.0.body', 'Primeiro')
             ->assertJsonPath('data.0.author', ['name' => 'Ana', 'handle' => 'ana', 'avatarUrl' => null])
             ->assertJsonPath('meta.next', null)
+            ->assertJsonPath('meta.total', 1)
             ->assertJsonMissingPath('data.0.memberId');
     }
 
@@ -70,12 +71,14 @@ class CommunityApiTest extends TestCase
         $first = $this->getJson('/api/publications/no-ar/comments')
             ->assertJsonCount(20, 'data')
             ->assertJsonPath('data.0.body', 'C1')
-            ->assertJsonPath('meta.next', $comments[19]->id);
+            ->assertJsonPath('meta.next', $comments[19]->id)
+            ->assertJsonPath('meta.total', 21);
 
         $this->getJson('/api/publications/no-ar/comments?after='.$first->json('meta.next'))
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.body', 'C21')
-            ->assertJsonPath('meta.next', null);
+            ->assertJsonPath('meta.next', null)
+            ->assertJsonPath('meta.total', 21);
     }
 
     public function test_publicacao_fora_do_ar_ou_inexistente_e_404(): void

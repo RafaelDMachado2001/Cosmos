@@ -138,6 +138,15 @@ class MemberLoginTest extends TestCase
         $this->get('/auth/google/callback')->assertRedirect(self::SITE.'/en?login=failed');
     }
 
+    public function test_o_aviso_entra_antes_do_fragmento(): void
+    {
+        Socialite::fake('google', fn () => throw new InvalidStateException);
+        $this->get('/auth/google/redirect?return='.urlencode('/pt/publicacoes/primeira#comentarios'));
+
+        $this->get('/auth/google/callback')
+            ->assertRedirect(self::SITE.'/pt/publicacoes/primeira?login=failed#comentarios');
+    }
+
     public function test_provedor_desconhecido_ou_sem_credencial_nao_existe(): void
     {
         $this->get('/auth/facebook/redirect')->assertNotFound();
