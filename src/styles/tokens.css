@@ -25,6 +25,14 @@
   --color-status-err: #ff5d6a;
   --color-status-warn: #f5b656;
 
+  --color-danger: #ff6b8b;
+  --color-danger-line: rgba(255, 107, 139, 0.42);
+  --color-danger-wash: rgba(255, 107, 139, 0.08);
+  --color-skeleton: rgba(255, 255, 255, 0.05);
+  --color-field: rgba(255, 255, 255, 0.025);
+  --color-field-raised: rgba(255, 255, 255, 0.03);
+  --color-scrim: rgba(3, 4, 9, 0.72);
+
   --color-brand-cosmos: #8c6bff;
   --color-brand-studio: #ff8a4c;
 
@@ -70,6 +78,7 @@
   --blur-header: 14px;
   --blur-cats: 18px;
   --blur-hover: 20px;
+  --blur-scrim: 6px;
 
   --shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.55);
 
@@ -78,6 +87,7 @@
   --dur-header: 600ms;
   --dur-filter: 700ms;
   --dur-ui: 400ms;
+  --dur-toast: 2400ms;
 
   --star-hit: 88px;
   --star-core: 30px;
@@ -92,6 +102,9 @@
   --cats-panel-width: 260px;
   --close-size: 46px;
   --measure: 70ch;
+  --avatar-xs: 22px;
+  --avatar-sm: 32px;
+  --account-slot: 104px;
 
   --z-canvas: 0;
   --z-vignette: 1;
@@ -100,7 +113,9 @@
   --z-scrub: 30;
   --z-header: 40;
   --z-cats: 45;
+  --z-notice: 50;
   --z-reader: 60;
+  --z-dialog: 80;
 
   --vignette: radial-gradient(
     130% 100% at 50% 48%,
@@ -125,6 +140,11 @@
   --color-border-accent: rgba(124, 92, 255, 0.22);
   --color-border-accent-strong: rgba(124, 92, 255, 0.4);
   --color-border-accent-faint: rgba(124, 92, 255, 0.14);
+}
+
+[data-category] {
+  --cat-wash: color-mix(in oklab, var(--cat) 14%, transparent);
+  --cat-line: color-mix(in oklab, var(--cat) 45%, transparent);
 }
 
 @media (max-width: 640px) {

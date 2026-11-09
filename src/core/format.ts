@@ -21,3 +21,13 @@ export function monthLabel(timestamp: number, locale: Locale): string {
     .replace(/\./g, '')
     .toUpperCase();
 }
+
+export function fill(template: string, values: Readonly<Record<string, string | number>>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in values ? String(values[key]) : match,
+  );
+}
+
+export function countLabel(value: number, locale: Locale): string {
+  return new Intl.NumberFormat(DATE_LOCALE[locale]).format(value);
+}
