@@ -3,7 +3,7 @@ import type { Category, Locale } from './types';
 
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 
-const OG_DESIGN = 3;
+const OG_DESIGN = 4;
 
 export interface OgCard {
   readonly locale: Locale;

@@ -56,6 +56,7 @@ function cardElement(card: OgCard) {
         position: 'relative',
         width: '100%',
         height: '100%',
+        boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',

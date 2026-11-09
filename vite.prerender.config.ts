@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-import { resolveSiteOrigin } from './src/core/siteOrigin';
+import { resolveSiteOrigin } from './src/core/siteOrigin.ts';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');

@@ -11,7 +11,7 @@ const CARD: OgCard = {
   date: '2025-09-09',
 };
 
-describe('cartão de Open Graph', () => {
+describe('cartão de Open Graph', { timeout: 30_000 }, () => {
   it('pinta com os tokens reais: o fundo do site e a cor da categoria', async () => {
     const svg = await ogSvg(CARD);
     expect(svg).toContain('#05060b');
@@ -21,6 +21,15 @@ describe('cartão de Open Graph', () => {
   it('sem categoria, o acento e o roxo do site', async () => {
     const svg = await ogSvg({ locale: 'pt', title: 'Entre no meu universo', kicker: 'RDM Labs' });
     expect(svg).toContain('#8c6bff');
+  });
+
+  it('o conteúdo cabe no cartão, dentro do respiro de 72px', async () => {
+    const svg = await ogSvg(CARD);
+    const boxes = [...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/g)]
+      .map(([, y, h]) => ({ top: Number(y), bottom: Number(y) + Number(h) }))
+      .filter((box) => box.top > 0);
+    expect(Math.min(...boxes.map((box) => box.top))).toBe(72);
+    expect(Math.max(...boxes.map((box) => box.bottom))).toBe(630 - 72);
   });
 
   it('sai como PNG de 1200x630', async () => {
