@@ -250,6 +250,17 @@ describe('fim de artigo, sem conta ou sem API', () => {
   });
 });
 
+describe('contagem da reação', () => {
+  it.each([
+    [0, 'Ninguém acendeu ainda'],
+    [1, '1 acendeu'],
+    [2000, '2.000 acenderam'],
+  ])('%i vira "%s"', async (count, text) => {
+    mount(community({ reaction: () => Promise.resolve({ count, reacted: false }) }));
+    expect(await screen.findByText(text)).toBeTruthy();
+  });
+});
+
 describe('compartilhar', () => {
   it('sem menu nativo: copiar avisa e troca o rótulo', async () => {
     const user = userEvent.setup();

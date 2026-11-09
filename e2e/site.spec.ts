@@ -40,6 +40,20 @@ test('privacidade e conta existem como páginas, a conta fora do índice', async
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
 });
 
+test('a privacidade rola até o rodapé', async ({ page }) => {
+  await page.goto('/pt/privacidade');
+  await page.mouse.move(400, 400);
+  await page.mouse.wheel(0, 6000);
+  await expect(page.getByRole('contentinfo')).toBeInViewport();
+});
+
+test('o fim da leitura oferece compartilhar', async ({ page }) => {
+  await page.goto('/pt/publicacoes/code-review-sem-atrito');
+  const end = page.locator('#comentarios');
+  await end.scrollIntoViewIfNeeded({ timeout: 30_000 });
+  await expect(end.getByRole('link', { name: 'Compartilhar no LinkedIn' })).toBeVisible();
+});
+
 test('o hero leva à privacidade', async ({ page }) => {
   await page.goto('/pt');
   await page.getByRole('link', { name: 'PRIVACIDADE' }).click();

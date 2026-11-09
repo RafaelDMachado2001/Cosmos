@@ -19,9 +19,13 @@ export function Reaction({ view, onToggle, onSignIn }: ReactionProps) {
 
   const on = view.status === 'ready' && view.state.reacted;
   const side =
-    view.status === 'ready'
-      ? fill(t.reaction.count, { n: countLabel(view.state.count, locale) })
-      : t.reaction.invite;
+    view.status !== 'ready'
+      ? t.reaction.invite
+      : view.state.count === 0
+        ? t.reaction.countNone
+        : view.state.count === 1
+          ? t.reaction.countOne
+          : fill(t.reaction.count, { n: countLabel(view.state.count, locale) });
 
   return (
     <div className={styles.reaction}>

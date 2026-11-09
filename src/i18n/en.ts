@@ -144,6 +144,8 @@ export const en: Dictionary = {
     off: 'LIGHT UP',
     on: 'LIT',
     count: '{n} lit this',
+    countOne: '1 lit this',
+    countNone: 'Nobody has lit this yet',
     invite: 'Sign in to mark',
     aria: 'Mark this publication',
     failed: 'Couldn’t save the mark.',

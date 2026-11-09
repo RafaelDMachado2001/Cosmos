@@ -142,6 +142,8 @@ export const pt = {
     off: 'ACENDER',
     on: 'ACESA',
     count: '{n} acenderam',
+    countOne: '1 acendeu',
+    countNone: 'Ninguém acendeu ainda',
     invite: 'Entre para marcar',
     aria: 'Marcar esta publicação',
     failed: 'Não foi possível registrar a marcação.',

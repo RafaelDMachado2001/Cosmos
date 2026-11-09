@@ -573,6 +573,33 @@ test-runner directives).
   other segment. The account page is prerendered as a `noindex` shell; the
   privacy page is prerendered in full and listed in the sitemap.
 
+### Community at the end of an article
+
+- **One block, at the end of the reader view.** The prerendered article
+  never runs JavaScript, so the block lives only in `ReaderView`: reaction
+  and share on one row, comments below. Without an API (seed build) only the
+  share links render.
+- **It loads when it gets near the viewport**: an `IntersectionObserver`
+  rooted on the reader overlay (the scroll container) with a 600px margin.
+  Arriving through `#comentarios` loads it at once, scrolls to it and focuses
+  the field.
+- **The reaction is optimistic.** The count moves on click and reverts, with
+  an announcement, if the API refuses.
+- **A new comment is merged into the list by id**, not appended blindly: if
+  later pages are still unloaded, loading them later does not duplicate it.
+- **Own comments are recognised by `@handle`.** The public list carries no
+  member id, and handles are unique.
+- **The draft lives in `sessionStorage` per publication and language**, saved
+  on every keystroke. A 401 keeps it, the sign-in returns to `#comentarios`,
+  and the draft comes back. The backend puts `?login=` before the fragment for
+  this reason.
+- **Share uses the native menu when `navigator.share` exists** (feature
+  detection, not width); otherwise copy, LinkedIn, X and email, all plain
+  links. Nothing third-party loads.
+- **The public comment list is cached for 60 s at the edge**, like the rest of
+  `/api/publications*`: a reload right after posting or deleting can show the
+  previous list. The block itself updates from the POST/DELETE response.
+
 ### Prerender
 
 - **Composition uses replacement functions, never strings**: `String.replace`
@@ -882,6 +909,6 @@ itself.
   The local Docker Compose stack runs the same code with the local drivers.
 - Reader accounts are live end to end: social sign-in, the session in the
   header, the account page (profile, linked accounts, export, deletion) and the
-  privacy page. Comments and reactions have their API; the site does not show
-  them yet.
+  privacy page. Comments, reactions and sharing appear at the end of each
+  article in the reader view.
 - Community and Gamification are planned.
