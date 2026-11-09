@@ -1,8 +1,6 @@
-import { useLayoutEffect, useMemo } from 'react';
+import { Suspense, lazy, useLayoutEffect, useMemo } from 'react';
 
-import { AccountPage } from './components/AccountPage/AccountPage';
 import { Announcer } from './components/Announcer/Announcer';
-import { PrivacyPage } from './components/PrivacyPage/PrivacyPage';
 import { Shell } from './components/Shell/Shell';
 import { parseRoute } from './core/routing';
 import type { Route } from './core/routing';
@@ -11,6 +9,13 @@ import { createMembers } from './data/source';
 import { LocaleProvider } from './i18n/LocaleProvider';
 import { detachShell } from './prerenderShell';
 import { SessionProvider } from './session/SessionProvider';
+
+const AccountPage = lazy(() =>
+  import('./components/AccountPage/AccountPage').then((module) => ({ default: module.AccountPage })),
+);
+const PrivacyPage = lazy(() =>
+  import('./components/PrivacyPage/PrivacyPage').then((module) => ({ default: module.PrivacyPage })),
+);
 
 function routeLocale(route: Route): Locale | null {
   return route.kind === 'notfound' ? null : route.locale;
@@ -30,9 +35,13 @@ export default function App() {
       <Announcer>
         <SessionProvider source={members} apiUrl={__API_URL__}>
           {route.kind === 'account' ? (
-            <AccountPage />
+            <Suspense fallback={null}>
+              <AccountPage />
+            </Suspense>
           ) : route.kind === 'privacy' ? (
-            <PrivacyPage />
+            <Suspense fallback={null}>
+              <PrivacyPage />
+            </Suspense>
           ) : (
             <Shell route={route} />
           )}

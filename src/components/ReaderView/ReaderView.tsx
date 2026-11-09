@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
 
 import styles from './ReaderView.module.css';
 import { ArticleBody } from '../ArticleBody/ArticleBody';
-import { ArticleEnd } from '../ArticleEnd/ArticleEnd';
 import { ArticleTags } from '../ArticleTags/ArticleTags';
 import { categoryThemeStyle } from '../CategoryTheme/themeStyle';
 import { Nebula } from '../Nebula/Nebula';
@@ -36,6 +35,10 @@ export interface ReaderViewProps {
   readonly community?: CommunitySource | null;
   readonly onClose: () => void;
 }
+
+const ArticleEnd = lazy(() =>
+  import('../ArticleEnd/ArticleEnd').then((module) => ({ default: module.ArticleEnd })),
+);
 
 const TITLE_ID = 'leitura-titulo';
 
@@ -256,13 +259,15 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
             <ArticleBody markdown={card.body} />
           </div>
 
-          <ArticleEnd
-            source={community}
-            slug={card.slug}
-            title={card.title}
-            url={card.url}
-            scrollRootRef={overlayRef}
-          />
+          <Suspense fallback={null}>
+            <ArticleEnd
+              source={community}
+              slug={card.slug}
+              title={card.title}
+              url={card.url}
+              scrollRootRef={overlayRef}
+            />
+          </Suspense>
 
           <footer className={styles.footer}>
             <button type="button" className={styles.back} onClick={onClose}>
