@@ -78,7 +78,9 @@ test('o contato de segurança é servido, apesar da regra que esconde arquivos c
 test('o site isola a própria janela', async ({ request }) => {
   const response = await request.get('/pt');
   expect(response.headers()['cross-origin-opener-policy']).toBe('same-origin');
-  expect(response.headers()['content-security-policy']).toContain("img-src 'self' data:;");
+  expect(response.headers()['content-security-policy']).toContain(
+    "img-src 'self' data: https://lh3.googleusercontent.com https://avatars.githubusercontent.com;",
+  );
 });
 
 test('a CSP do Nginx não bloqueia nada do próprio site', async ({ page }) => {

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { articlePath, closeTarget, homePath, parseRoute } from './routing';
+import {
+  accountPath,
+  articlePath,
+  closeTarget,
+  homePath,
+  parseRoute,
+  privacyPath,
+} from './routing';
 import { LOCALES } from './types';
 
 describe('parseRoute', () => {
@@ -107,5 +114,22 @@ describe('closeTarget', () => {
   it('substitui pela raiz do idioma quando a chegada foi direta', () => {
     expect(closeTarget(false, 'pt')).toEqual({ kind: 'replace', path: '/pt' });
     expect(closeTarget(false, 'en')).toEqual({ kind: 'replace', path: '/en' });
+  });
+});
+
+describe('conta e privacidade', () => {
+  it('cada idioma tem o seu segmento, e o caminho volta pelo parse', () => {
+    for (const locale of LOCALES) {
+      expect(parseRoute(accountPath(locale))).toEqual({ kind: 'account', locale });
+      expect(parseRoute(privacyPath(locale))).toEqual({ kind: 'privacy', locale });
+    }
+    expect(accountPath('pt')).toBe('/pt/conta');
+    expect(privacyPath('en')).toBe('/en/privacy');
+  });
+
+  it('o segmento do outro idioma é 404, como no artigo', () => {
+    expect(parseRoute('/pt/account')).toEqual({ kind: 'notfound' });
+    expect(parseRoute('/en/privacidade')).toEqual({ kind: 'notfound' });
+    expect(parseRoute('/pt/qualquer')).toEqual({ kind: 'notfound' });
   });
 });

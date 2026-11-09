@@ -1,0 +1,187 @@
+.slot {
+  position: relative;
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  min-width: var(--account-slot);
+  height: 36px;
+}
+
+.skeleton,
+.signIn {
+  width: var(--account-slot);
+  height: 36px;
+  border-radius: var(--radius-pill);
+}
+
+.skeleton {
+  border: 1px solid var(--color-border);
+  background: var(--color-skeleton);
+}
+
+.signIn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid var(--color-border-accent);
+  background: var(--color-surface-nav);
+  backdrop-filter: blur(var(--blur-header));
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: var(--tracking-nav);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-ui) var(--ease),
+    background var(--dur-ui) var(--ease);
+}
+
+.signIn:hover {
+  border-color: var(--color-border-accent-strong);
+  background: var(--color-accent-wash);
+}
+
+.person {
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+
+.member {
+  position: relative;
+}
+
+.memberButton {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 12px 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-nav);
+  backdrop-filter: blur(var(--blur-header));
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: border-color var(--dur-ui) var(--ease);
+}
+
+.memberButton:hover,
+.memberButton[aria-expanded='true'] {
+  border-color: var(--color-border-accent-strong);
+}
+
+.handle {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  color: var(--color-text-secondary);
+}
+
+.menu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 5;
+  width: 232px;
+  padding: 6px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  backdrop-filter: blur(var(--blur-header));
+  box-shadow: var(--shadow-panel);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 6px;
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.whoName {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whoHandle {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-min);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--radius-menu);
+  background: transparent;
+  color: var(--color-text-ui);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--color-accent-wash);
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 760px) {
+  .slot {
+    min-width: 36px;
+  }
+
+  .skeleton,
+  .signIn {
+    width: 36px;
+  }
+
+  .person {
+    width: 14px;
+    height: 14px;
+  }
+
+  .signInText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .memberButton {
+    justify-content: center;
+    width: 36px;
+    padding: 0;
+  }
+
+  .handle,
+  .chevron {
+    display: none;
+  }
+}

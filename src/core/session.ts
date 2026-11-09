@@ -21,10 +21,12 @@ export interface Member {
 export type SessionState =
   | { readonly kind: 'loading' }
   | { readonly kind: 'anonymous' }
-  | { readonly kind: 'member'; readonly member: Member };
+  | { readonly kind: 'member'; readonly member: Member }
+  | { readonly kind: 'error' };
 
 export const LOADING: SessionState = { kind: 'loading' };
 export const ANONYMOUS: SessionState = { kind: 'anonymous' };
+export const SESSION_ERROR: SessionState = { kind: 'error' };
 
 export function sessionOf(member: Member | null): SessionState {
   return member === null ? ANONYMOUS : { kind: 'member', member };
@@ -66,6 +68,38 @@ export type LoginOutcome = 'failed' | 'unverified';
 export function loginOutcome(search: string): LoginOutcome | null {
   const value = new URLSearchParams(search).get('login');
   return value === 'failed' || value === 'unverified' ? value : null;
+}
+
+export function withoutLoginOutcome(search: string): string {
+  const params = new URLSearchParams(search);
+  params.delete('login');
+  const rest = params.toString();
+  return rest === '' ? '' : `?${rest}`;
+}
+
+export function initials(name: string, handle: string): string {
+  const source = name.trim() === '' ? handle : name;
+  return source
+    .split(/[\s_]+/)
+    .filter((word) => word !== '')
+    .slice(0, 2)
+    .map((word) => [...word][0]?.toLocaleUpperCase() ?? '')
+    .join('');
+}
+
+export function displayName(member: Pick<Member, 'name' | 'handle'>): string {
+  return member.name.trim() === '' ? `@${member.handle}` : member.name;
+}
+
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return email;
+  const first = [...email.slice(0, at)][0] ?? '';
+  return `${first}•••••${email.slice(at)}`;
+}
+
+export function confirmsHandle(typed: string, handle: string): boolean {
+  return typed.trim().replace(/^@/, '') === handle;
 }
 
 export function xsrfToken(cookie: string): string | null {

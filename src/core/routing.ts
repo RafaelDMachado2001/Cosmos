@@ -6,9 +6,21 @@ export const ARTICLE_SEGMENT: Record<Locale, string> = {
   en: 'publications',
 };
 
+export const ACCOUNT_SEGMENT: Record<Locale, string> = {
+  pt: 'conta',
+  en: 'account',
+};
+
+export const PRIVACY_SEGMENT: Record<Locale, string> = {
+  pt: 'privacidade',
+  en: 'privacy',
+};
+
 export type Route =
   | { readonly kind: 'home'; readonly locale: Locale | null }
   | { readonly kind: 'article'; readonly locale: Locale; readonly slug: string }
+  | { readonly kind: 'account'; readonly locale: Locale }
+  | { readonly kind: 'privacy'; readonly locale: Locale }
   | { readonly kind: 'notfound' };
 
 const NOT_FOUND: Route = { kind: 'notfound' };
@@ -31,6 +43,12 @@ export function parseRoute(pathname: string): Route {
 
   if (segments.length === 1) return { kind: 'home', locale: first };
 
+  if (segments.length === 2) {
+    if (second === ACCOUNT_SEGMENT[first]) return { kind: 'account', locale: first };
+    if (second === PRIVACY_SEGMENT[first]) return { kind: 'privacy', locale: first };
+    return NOT_FOUND;
+  }
+
   if (segments.length !== 3 || second !== ARTICLE_SEGMENT[first]) return NOT_FOUND;
 
   const slug = decodeSlug(third ?? '');
@@ -45,6 +63,14 @@ export function articlePath(locale: Locale, slug: string): string {
 
 export function homePath(locale: Locale): string {
   return `/${locale}`;
+}
+
+export function accountPath(locale: Locale): string {
+  return `/${locale}/${ACCOUNT_SEGMENT[locale]}`;
+}
+
+export function privacyPath(locale: Locale): string {
+  return `/${locale}/${PRIVACY_SEGMENT[locale]}`;
 }
 
 export function rssPath(locale: Locale): string {

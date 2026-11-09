@@ -1,3 +1,5 @@
+import { createMemberSource } from './MemberSource';
+import type { MemberSource } from './MemberSource';
 import { PUBLICATIONS } from './publications';
 import { createHttpSource, createStaticSource } from './PublicationsSource';
 import type { PublicationsSource } from './PublicationsSource';
@@ -18,4 +20,8 @@ export function createSource(): PublicationsSource {
 
 export function createSnapshot(): SnapshotLoader | null {
   return __API_URL__ === null ? null : createSnapshotLoader();
+}
+
+export function createMembers(): MemberSource | null {
+  return __API_URL__ === null ? null : createMemberSource(__API_URL__);
 }
