@@ -1,4 +1,5 @@
 import type { Block } from './blocks';
+import { layersTexts } from './diagram/layers';
 import { inlineText } from './outline';
 
 export const WORDS_PER_MINUTE = 220;
@@ -26,8 +27,10 @@ function blockWords(block: Block): number {
       return [block.header, ...block.rows].flat().reduce((sum, cell) => sum + words(inlineText(cell)), 0);
     case 'code':
       return block.code.split('\n').filter((line) => line.trim() !== '').length * WORDS_PER_CODE_LINE;
-    case 'image':
     case 'diagram':
+      if (!block.result.ok || block.result.diagram.kind !== 'layers') return 0;
+      return layersTexts(block.result.diagram).reduce((sum, text) => sum + words(text), 0);
+    case 'image':
       return 0;
   }
 }

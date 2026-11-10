@@ -4,6 +4,7 @@ import { parseDiagram } from './parse';
 import {
   DIAGRAM_SYNTAX_EXAMPLE,
   DIAGRAM_TEMPLATES,
+  LAYERS_SYNTAX_EXAMPLE,
   SEQUENCE_SYNTAX_EXAMPLE,
   SPECTRUM_SYNTAX_EXAMPLE,
 } from './templates';
@@ -48,5 +49,13 @@ describe('modelos do diagrama', () => {
 
   it('o exemplo da sequência é válido', () => {
     expect(parseDiagram(SEQUENCE_SYNTAX_EXAMPLE)).toMatchObject({ ok: true, diagram: { kind: 'sequence' } });
+  });
+
+  it('o exemplo das camadas é válido e mostra a continuação', () => {
+    const result = parseDiagram(LAYERS_SYNTAX_EXAMPLE);
+    if (!result.ok || result.diagram.kind !== 'layers') throw new Error(JSON.stringify(result));
+    const inner = result.diagram.root.children[1];
+    expect(inner).toMatchObject({ kind: 'layer', highlight: true, children: [{ kind: 'group', items: ['d', 'e', 'f'] }] });
+    expect(result.diagram.asides).toHaveLength(1);
   });
 });

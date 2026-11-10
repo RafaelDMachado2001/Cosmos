@@ -2,6 +2,7 @@ import { useContext } from 'react';
 
 import styles from './ArticleBody.module.css';
 import { LabelPill, NodeBox } from './DiagramShapes';
+import { Layers } from './Layers';
 import { Sequence } from './Sequence';
 import { Spectrum } from './Spectrum';
 import { describeDiagram } from '../../core/diagram/describe';
@@ -212,7 +213,14 @@ function FlowFigure({ diagram, instance }: { readonly diagram: FlowDiagram; read
 }
 
 export function Diagram({ diagram, instance }: DiagramProps) {
-  if (diagram.kind === 'spectrum') return <Spectrum diagram={diagram} instance={instance} />;
-  if (diagram.kind === 'sequence') return <Sequence diagram={diagram} instance={instance} />;
-  return <FlowFigure diagram={diagram} instance={instance} />;
+  switch (diagram.kind) {
+    case 'flow':
+      return <FlowFigure diagram={diagram} instance={instance} />;
+    case 'spectrum':
+      return <Spectrum diagram={diagram} instance={instance} />;
+    case 'sequence':
+      return <Sequence diagram={diagram} instance={instance} />;
+    case 'layers':
+      return <Layers diagram={diagram} instance={instance} />;
+  }
 }

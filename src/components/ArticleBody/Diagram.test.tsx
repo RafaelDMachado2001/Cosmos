@@ -5,7 +5,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { ArticleBody } from './ArticleBody';
-import { REFERENCE_DIAGRAM, REFERENCE_SEQUENCE, REFERENCE_SPECTRUM, REFERENCE_STATES } from '../../core/diagram/fixture';
+import {
+  REFERENCE_DIAGRAM,
+  REFERENCE_LAYERS,
+  REFERENCE_SEQUENCE,
+  REFERENCE_SPECTRUM,
+  REFERENCE_STATES,
+} from '../../core/diagram/fixture';
 import { DIAGRAM_LIMITS } from '../../core/diagram/parse';
 import { SPECTRUM_LIMITS } from '../../core/diagram/parseSpectrum';
 import { DICTIONARIES } from '../../i18n/dictionaries';
@@ -145,5 +151,62 @@ describe('ArticleBody com sequência', () => {
 
   it('descreve as mensagens em ordem', () => {
     expect(render(fence(REFERENCE_SEQUENCE))).toContain('4. Worker responde a Fila: confirma.');
+  });
+});
+
+describe('ArticleBody com camadas', () => {
+  const html = render(fence(REFERENCE_LAYERS));
+
+  function element(pattern: RegExp): string {
+    const match = pattern.exec(html);
+    if (match === null) throw new Error(`não achei ${String(pattern)}`);
+    return match[0];
+  }
+
+  it('é HTML, com quatro níveis de role="group" na pilha, de depth-1 a depth-4', () => {
+    expect(html).not.toContain('<svg');
+    for (const depth of [1, 2, 3, 4]) {
+      expect(html.match(new RegExp(`role="group"[^>]*class="[^"]*depth-${String(depth)}[_ "]`, 'g'))).toHaveLength(1);
+    }
+    expect(html).not.toMatch(/depth-5/);
+  });
+
+  it('a ordem do HTML é a ordem declarada', () => {
+    const order = ['Frontend', 'laravel/framework', 'Pacotes', 'O seu código'].map((text) => html.indexOf(`>${text}<`));
+    expect(order.every((position) => position > 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it('itens em ul/li, um item por pílula', () => {
+    expect(html).toContain('>Inertia (React/Vue)</li>');
+    expect(html.match(/<li /g)).toHaveLength(43);
+  });
+
+  it('o grupo "O seu código" leva a classe de highlight', () => {
+    expect(element(/<div class="[^"]*"><span id="[^"]+"[^>]*>O seu código</)).toMatch(/layerHighlight/);
+    expect(element(/<div class="[^"]*"><span id="[^"]+"[^>]*>Frontend</)).not.toMatch(/layerHighlight/);
+  });
+
+  it('base e aside ficam fora da pilha de camadas', () => {
+    const stackEnd = html.indexOf('>A base de tudo<');
+    const lastLayerText = html.indexOf('>integrações<');
+    expect(stackEnd).toBeGreaterThan(lastLayerText);
+    const base = element(/<div role="group" aria-labelledby="[^"]*band-base"[^>]*>/);
+    expect(base).not.toMatch(/layer[_ "]/);
+    expect(base).toMatch(/layersBase/);
+    expect(element(/<div role="group" aria-labelledby="[^"]*band-aside-0"[^>]*>/)).toMatch(/layersAside/);
+    expect(html).toMatch(/<figcaption[^>]*>O ecossistema Laravel<\/figcaption>/);
+  });
+
+  it('sem style nem font-size', () => {
+    expect(html).not.toMatch(/style=|font-size/);
+  });
+
+  it('cada grupo aponta para um rótulo que existe, e os ids não se repetem com o diagrama duas vezes', () => {
+    const twice = render([fence(REFERENCE_LAYERS), fence(REFERENCE_LAYERS)].join('\n\n'));
+    const ids = [...twice.matchAll(/ id="([^"]+)"/g)].map((match) => match[1]);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const match of twice.matchAll(/aria-labelledby="([^"]+)"/g)) expect(ids).toContain(match[1]);
   });
 });

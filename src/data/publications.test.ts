@@ -77,6 +77,16 @@ describe('PUBLICATIONS', () => {
     }
   });
 
+  it('o fixture das camadas existe no artigo de filas, válido nos dois idiomas', () => {
+    const fixture = PUBLICATIONS.find((publication) => publication.slug === 'filas-e-jobs-assincronos-no-laravel');
+    for (const locale of LOCALES) {
+      const kinds = parseBlocks(fixture?.content[locale].body ?? '').flatMap((block) =>
+        block.type === 'diagram' && block.result.ok ? [block.result.diagram.kind] : [],
+      );
+      expect(kinds).toEqual(['sequence', 'layers']);
+    }
+  });
+
   it('destaca exatamente uma publicação', () => {
     expect(PUBLICATIONS.filter((p) => p.featured)).toHaveLength(1);
   });

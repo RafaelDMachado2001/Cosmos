@@ -788,6 +788,16 @@ test-runner directives).
   there is nothing to swap on a phone: it keeps its natural size and scrolls.
   Column gaps grow to fit the longest message between them, and a message that
   spans several columns shares what is missing across all of them.
+- **Layers are HTML, and indentation is the nesting.** Containment is mostly
+  text, so nested boxes with wrapping pills lay themselves out and fit a phone
+  with no measuring, and the structure (`role="group"` named by each layer,
+  `ul`/`li` for items) is what a screen reader gets, with no `describe`. The
+  parser is the only one that keeps leading whitespace: `sourceLines` hands it
+  the raw indent, two spaces per level, a tab is an error, and a line that ends
+  in a comma is continued by any more-indented line, which is why that line may
+  sit at any column. Depth reads through brightness alone (`depth-1` to
+  `depth-5`), and layers count names and items towards reading time, unlike the
+  other kinds, because the reader stops to read them.
 - **Starter templates are text.** The Studio's Linear, Branching and Converging
   buttons fill `source`, so the published format stays one thing and a template
   has no meaning after it is chosen. They appear only on an empty block, which

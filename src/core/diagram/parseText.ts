@@ -7,6 +7,7 @@ export const NODE_RE = /^(\S+)\s+"([^"]*)"\s*(?:\/\s*(.*))?$/;
 export interface SourceLine {
   readonly number: number;
   readonly text: string;
+  readonly indent: string;
 }
 
 function stripComment(line: string): string {
@@ -26,7 +27,10 @@ function stripComment(line: string): string {
 export function sourceLines(source: string): readonly SourceLine[] {
   return source
     .split(/\r?\n/)
-    .map((raw, index) => ({ number: index + 1, text: stripComment(raw).trim() }))
+    .map((raw, index) => {
+      const kept = stripComment(raw);
+      return { number: index + 1, text: kept.trim(), indent: /^\s*/.exec(kept)?.[0] ?? '' };
+    })
     .filter((line) => line.text !== '');
 }
 

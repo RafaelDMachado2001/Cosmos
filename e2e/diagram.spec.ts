@@ -159,3 +159,41 @@ test.describe('diagrama na vista de leitura', () => {
     });
   }
 });
+
+test.describe('camadas', () => {
+  const LAYERS = '/pt/publicacoes/filas-e-jobs-assincronos-no-laravel';
+
+  for (const [name, viewport] of [
+    ['desktop', WIDE],
+    ['celular', NARROW],
+  ] as const) {
+    test(`${name}: sem JavaScript, na cor da categoria, sem rolagem e com a pílula mais larga inteira`, async ({ browser }) => {
+      const context = await browser.newContext({ javaScriptEnabled: false, viewport });
+      const page = await context.newPage();
+      await page.goto(LAYERS);
+
+      const figure = page.locator('figure').filter({ has: page.getByText('O ecossistema Laravel', { exact: true }) });
+      await expect(figure).toBeVisible();
+      await expect(figure.getByRole('group', { name: 'laravel/framework' })).toBeVisible();
+
+      const accent = await figure.evaluate((element) => getComputedStyle(element).getPropertyValue('--cat').trim());
+      expect(accent.toLowerCase()).toBe('#34d399');
+
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBe(0);
+
+      const pill = figure.getByText('componentes do Symfony', { exact: true });
+      const box = await pill.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport.width);
+
+      const escaped = await figure.evaluate((element) => {
+        const edge = element.getBoundingClientRect().right;
+        return Array.from(element.querySelectorAll('li')).filter((item) => item.getBoundingClientRect().right > edge + 0.5).length;
+      });
+      expect(escaped).toBe(0);
+      await context.close();
+    });
+  }
+});

@@ -4,6 +4,7 @@ import { diagramErrorMessages } from '../core/diagram/parse';
 import {
   DIAGRAM_SYNTAX_EXAMPLE,
   DIAGRAM_TEMPLATES,
+  LAYERS_SYNTAX_EXAMPLE,
   SEQUENCE_SYNTAX_EXAMPLE,
   SPECTRUM_SYNTAX_EXAMPLE,
 } from '../core/diagram/templates';
@@ -312,7 +313,7 @@ function DiagramFields({
       <AutoTextarea
         className={styles.textareaMono}
         aria-label="Fonte do diagrama"
-        placeholder={'flow meu-fluxo\n\na "Origem"\nb "Destino"\n\na -> b : rótulo'}
+        placeholder={'# flow, spectrum, sequence ou layers\nflow meu-fluxo\n\na "Origem"\nb "Destino"\n\na -> b : rótulo'}
         spellCheck={false}
         value={block.source}
         onChange={(event) => onChange({ ...block, source: event.target.value })}
@@ -330,6 +331,7 @@ function DiagramFields({
         <pre className={styles.helpText}>{DIAGRAM_SYNTAX_EXAMPLE}</pre>
         <pre className={styles.helpText}>{SPECTRUM_SYNTAX_EXAMPLE}</pre>
         <pre className={styles.helpText}>{SEQUENCE_SYNTAX_EXAMPLE}</pre>
+        <pre className={styles.helpText}>{LAYERS_SYNTAX_EXAMPLE}</pre>
       </details>
     </div>
   );
