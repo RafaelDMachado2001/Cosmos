@@ -1,7 +1,9 @@
+import { useRef } from 'react';
 import type { ReactNode } from 'react';
 
 import styles from './PageFrame.module.css';
 import { homePath } from '../../core/routing';
+import { useSmoothScroll } from '../../hooks/useSmoothScroll';
 import { useLocale } from '../../i18n/useLocale';
 import { AccountSlot } from '../AccountSlot/AccountSlot';
 import { BrandMark } from '../BrandMark/BrandMark';
@@ -18,9 +20,11 @@ export interface PageFrameProps {
 export function PageFrame({ width, current, otherLocaleHref, children }: PageFrameProps) {
   const { locale, t } = useLocale();
   const home = homePath(locale);
+  const pageRef = useRef<HTMLDivElement>(null);
+  useSmoothScroll(pageRef);
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
       <header className={styles.top}>
         <a className={styles.brand} href={home}>
           <BrandMark product="cosmos" className={styles.mark} />

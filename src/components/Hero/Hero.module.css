@@ -19,9 +19,9 @@
   margin: 0;
   color: var(--color-text-primary);
   font-size: clamp(27px, min(5.2vw, 6.4vh), 64px);
-  font-weight: 300;
+  font-weight: var(--weight-light);
   line-height: 1.06;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-display);
   text-wrap: balance;
 }
 

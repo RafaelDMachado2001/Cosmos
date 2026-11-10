@@ -22,8 +22,8 @@
   margin: 0;
   color: var(--color-text-title);
   font-size: 48px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-display);
 }
 
 .skeletons {

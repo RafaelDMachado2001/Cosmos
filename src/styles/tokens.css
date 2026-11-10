@@ -66,6 +66,11 @@
   --tracking-hint: 0.22em;
   --tracking-meta: 0.22em;
   --tracking-nav: 0.14em;
+  --tracking-body: 0;
+  --tracking-heading: -0.01em;
+  --tracking-display: -0.02em;
+
+  --weight-light: 300;
 
   --text-min: 11px;
 
@@ -150,5 +155,9 @@
 @media (max-width: 640px) {
   :root {
     --text-min: 12px;
+    --tracking-body: 0.012em;
+    --tracking-heading: 0;
+    --tracking-display: -0.005em;
+    --weight-light: 400;
   }
 }

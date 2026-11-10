@@ -393,6 +393,22 @@ test-runner directives).
 - **Tab moves the camera only when the focused star is out of frame**, with a
   margin of half a label plus 24px. Sliding on every Tab between neighbours
   would undo the return the reader view promised.
+- **Wheel scrolling is eased in JavaScript** (`useSmoothScroll`, maths in
+  `core/smoothScroll.ts`) on the reader overlay and on plain pages: the wheel
+  moves a target, one `requestAnimationFrame` damps `scrollTop` towards it
+  (10% per frame at 60 fps, frame-rate independent) and stops exactly on it.
+  Touch, ctrl+wheel (zoom), sideways wheels, keyboard and the scrollbar stay
+  native; an inner box that can still scroll keeps the wheel; a `scrollTop`
+  that moved by someone else cancels the animation. Reduced motion turns it
+  off. The table of contents and "resume" go through the same animation.
+- **The page calms down while it scrolls.** The scroller carries
+  `data-scrolling` until 180 ms after the last `scroll` event (native touch
+  scrolling included): the fixed starfield dims to 35% and every animation in
+  the reader pauses. The starfield is fully masked under the text column; at
+  12% the twinkling dots stayed put while letters slid across them, and the
+  text read as scrambled. Written `scrollTop` is snapped to the device pixel
+  so the slow tail of the easing does not shimmer, and nebula blobs get their
+  own layer so their blur is not repainted per frame.
 
 ### Diagrams
 
@@ -657,6 +673,16 @@ test-runner directives).
   `overflow: hidden` on `html` and `body`. Its accent is the Studio's orange
   with dark text (light text measured 2:1); the article preview switches back
   to the Cosmos purple.
+- **Text opens up below 640px** (`--tracking-body`, `--tracking-heading`,
+  `--tracking-display`, `--weight-light` in `tokens.css`): light Roboto with
+  negative tracking looked cramped and soft on phones, so titles and ledes go
+  to weight 400 and the body gains 0.012em. Code and diagrams pin
+  `letter-spacing: 0`, since diagram boxes are measured from the mono metrics.
+- **Moving layers never sit on a fractional pixel or an almost-identity
+  transform** (`core/crisp.ts`): damped values snap to their target within
+  1e-3, translations round to the device pixel, `scale(1)` and `blur(0)` are
+  written as nothing. A composited layer at `scale(1.0000001)` or 0.3px off is
+  resampled, and every label in it goes soft.
 
 ### Backend: requests and boundaries
 

@@ -2,6 +2,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  contain: strict;
   pointer-events: none;
   isolation: isolate;
 }
@@ -10,6 +11,7 @@
   position: absolute;
   border-radius: 50%;
   mix-blend-mode: screen;
+  will-change: transform;
 }
 
 .dust {

@@ -14,6 +14,7 @@ import type { Category } from '../../core/types';
 import type { CommunitySource } from '../../data/CommunitySource';
 import { useActiveHeading } from '../../hooks/useActiveHeading';
 import { useReadingProgress } from '../../hooks/useReadingProgress';
+import { useSmoothScroll } from '../../hooks/useSmoothScroll';
 import { useLocale } from '../../i18n/useLocale';
 
 export interface ReaderCard {
@@ -47,13 +48,6 @@ const FOCUSABLE =
 
 const TOC_OFFSET_PX = 80;
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
-}
-
 export function ReaderView({ overlayRef, card, community = null, onClose }: ReaderViewProps) {
   const { t } = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -68,6 +62,7 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
 
   const active = useActiveHeading(ids, overlayRef);
   const resumeAt = useReadingProgress(overlayRef, card.slug, { bar: barRef, label: percentRef });
+  const smooth = useSmoothScroll(overlayRef);
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -99,7 +94,7 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
   }, [overlayRef]);
 
   function scrollToTop(top: number): void {
-    overlayRef.current?.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    smooth.scrollTo(top);
   }
 
   function goToHeading(id: string): void {
