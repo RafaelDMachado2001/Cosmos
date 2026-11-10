@@ -401,6 +401,14 @@ test-runner directives).
   native; an inner box that can still scroll keeps the wheel; a `scrollTop`
   that moved by someone else cancels the animation. Reduced motion turns it
   off. The table of contents and "resume" go through the same animation.
+- **The page calms down while it scrolls.** The scroller carries
+  `data-scrolling` until 180 ms after the last `scroll` event (native touch
+  scrolling included): the fixed starfield dims to 35% and every animation in
+  the reader pauses. The starfield is fully masked under the text column; at
+  12% the twinkling dots stayed put while letters slid across them, and the
+  text read as scrambled. Written `scrollTop` is snapped to the device pixel
+  so the slow tail of the easing does not shimmer, and nebula blobs get their
+  own layer so their blur is not repainted per frame.
 
 ### Diagrams
 

@@ -341,14 +341,26 @@
   height: 100vh;
   margin-bottom: -100vh;
   pointer-events: none;
+  contain: strict;
+  transition: opacity var(--dur-ui) var(--ease);
   --text-half: min(var(--reading-column) / 2, 50% - var(--reading-gutter));
   mask-image: linear-gradient(
     90deg,
     #000000 calc(50% - var(--text-half) - 64px),
-    rgba(0, 0, 0, 0.12) calc(50% - var(--text-half)),
-    rgba(0, 0, 0, 0.12) calc(50% + var(--text-half)),
+    transparent calc(50% - var(--text-half)),
+    transparent calc(50% + var(--text-half)),
     #000000 calc(50% + var(--text-half) + 64px)
   );
+}
+
+.overlay[data-scrolling='true'] .starfield {
+  opacity: 0.35;
+}
+
+.overlay[data-scrolling='true'] *,
+.overlay[data-scrolling='true'] *::before,
+.overlay[data-scrolling='true'] *::after {
+  animation-play-state: paused !important;
 }
 
 .inner {

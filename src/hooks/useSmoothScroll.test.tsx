@@ -113,6 +113,40 @@ describe('useSmoothScroll', () => {
     expect(frames).toHaveLength(0);
   });
 
+  it('a posição escrita cai sempre no pixel do aparelho', () => {
+    vi.stubGlobal('devicePixelRatio', 2);
+    const { scroller, inner } = mount();
+    const written: number[] = [];
+    let top = 0;
+    Object.defineProperty(scroller, 'scrollTop', {
+      configurable: true,
+      get: () => top,
+      set: (value: number) => {
+        written.push(value);
+        top = value;
+      },
+    });
+    wheel(inner, { deltaY: 333 });
+    act(() => runFrames(200));
+    expect(written.length).toBeGreaterThan(5);
+    expect(written.every((value) => Number.isInteger(value * 2))).toBe(true);
+    expect(top).toBe(333);
+  });
+
+  it('marca a caixa enquanto rola e desmarca quando para', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const { scroller } = mount();
+    scroller.dispatchEvent(new Event('scroll'));
+    expect(scroller.dataset.scrolling).toBe('true');
+    vi.advanceTimersByTime(100);
+    scroller.dispatchEvent(new Event('scroll'));
+    vi.advanceTimersByTime(150);
+    expect(scroller.dataset.scrolling).toBe('true');
+    vi.advanceTimersByTime(100);
+    expect(scroller.dataset.scrolling).toBeUndefined();
+    vi.useRealTimers();
+  });
+
   it('scrollTo anima até o alvo e respeita o movimento reduzido', () => {
     const { scroller, api } = mount();
     act(() => api().scrollTo(900));

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { RefObject } from 'react';
 
+import { snapToPixel } from '../core/crisp';
 import { MAX_FRAME_DELTA_S } from '../core/motion';
 import {
+  SCROLL_IDLE_MS,
   SMOOTH_SCROLL_LAMBDA,
   canScrollVertically,
   clampScroll,
@@ -69,7 +71,7 @@ export function useSmoothScroll(scroller: RefObject<HTMLElement>): SmoothScroll 
       m.previous = now;
       const step = stepScroll(m.current, m.target, SMOOTH_SCROLL_LAMBDA, delta);
       m.current = step.top;
-      element.scrollTop = step.top;
+      element.scrollTop = snapToPixel(step.top, window.devicePixelRatio);
       m.lastWritten = element.scrollTop;
       if (!step.done) m.frame = requestAnimationFrame(tick);
     };
@@ -123,9 +125,23 @@ export function useSmoothScroll(scroller: RefObject<HTMLElement>): SmoothScroll 
       controls.scrollBy(element, pixels);
     };
 
+    let idle = 0;
+    const onScroll = (): void => {
+      if (idle === 0) element.dataset.scrolling = 'true';
+      else window.clearTimeout(idle);
+      idle = window.setTimeout(() => {
+        idle = 0;
+        delete element.dataset.scrolling;
+      }, SCROLL_IDLE_MS);
+    };
+
     element.addEventListener('wheel', onWheel, { passive: false });
+    element.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       element.removeEventListener('wheel', onWheel);
+      element.removeEventListener('scroll', onScroll);
+      window.clearTimeout(idle);
+      delete element.dataset.scrolling;
       controls.stop();
     };
   }, [scroller, controls]);
