@@ -98,7 +98,7 @@ Quality checks are part of the development workflow and run on every pull reques
 **Next**
 - Monitoring before opening reader accounts to the public.
 - Fix mobile layout
-- New saga about ([Nina](https://github.com/RafaelDMachado2001/nina)
+- New saga about [Nina](https://github.com/RafaelDMachado2001/nina)
 - Full API-based communication for articles
 - RDM Studio own project
 - German translation
