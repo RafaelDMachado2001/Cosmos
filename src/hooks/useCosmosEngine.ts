@@ -4,6 +4,7 @@ import type { MutableRefObject, RefObject } from 'react';
 import { atmosphereIntensity, generateSky, yearLayerTransform } from '../core/atmosphere';
 import type { Rgb } from '../core/atmosphere';
 import * as camera from '../core/camera';
+import { blurFilter, snapNear, snapToPixel } from '../core/crisp';
 import { isDrag, lambdas, stepInertia } from '../core/motion';
 import {
   coreOpacity,
@@ -234,8 +235,8 @@ export function useCosmosEngine(
 
         const reader = readerRef.current;
 
-        s.enterS = damp(s.enterS, s.enter, lambda.enter, delta);
-        s.zoomS = damp(s.zoomS, zoomTarget(reader.state), lambda.zoom, delta);
+        s.enterS = snapNear(damp(s.enterS, s.enter, lambda.enter, delta), s.enter);
+        s.zoomS = snapNear(damp(s.zoomS, zoomTarget(reader.state), lambda.zoom, delta), zoomTarget(reader.state));
         s.panS = damp(s.panS, s.pan, lambda.pan, delta);
         s.mouseXS = damp(s.mouseXS, s.mouseX, lambda.mouse, delta);
         s.mouseYS = damp(s.mouseYS, s.mouseY, lambda.mouse, delta);
@@ -250,8 +251,8 @@ export function useCosmosEngine(
         const hero = refs.hero.current;
         if (hero) {
           hero.style.opacity = String(1 - fade);
-          hero.style.transform = `scale(${1 + enter * 0.5})`;
-          hero.style.filter = `blur(${fade * 8}px)`;
+          hero.style.transform = enter === 0 ? 'none' : `scale(${1 + enter * 0.5})`;
+          hero.style.filter = blurFilter(fade * 8);
           hero.style.pointerEvents = fade > 0.4 ? 'none' : 'auto';
         }
 
@@ -266,16 +267,20 @@ export function useCosmosEngine(
         if (layer) {
           const parallax = s.mouseXS * 10 * (1 - zoom);
           const push_ = zoomPush(s.focusX, widthRef.current, zoom);
-          const x = -s.panS + parallax - push_;
+          const ratio = window.devicePixelRatio;
+          const x = snapToPixel(-s.panS + parallax - push_, ratio);
+          const y = snapToPixel(s.mouseYS * -6, ratio);
           layer.style.transform =
-            `translate3d(${x}px, ${s.mouseYS * -6}px, 0) scale(${zoomScale(zoom)})`;
+            zoom === 0 ? `translate3d(${x}px, ${y}px, 0)` : `translate3d(${x}px, ${y}px, 0) scale(${zoomScale(zoom)})`;
           layer.style.transformOrigin = `${s.focusX}px 55%`;
-          layer.style.filter = `blur(${zoomBlurPx(zoom)}px)`;
+          layer.style.filter = blurFilter(zoomBlurPx(zoom));
 
           const years = refs.years.current;
           if (years) {
             const t = yearLayerTransform(s.panS, parallax, push_, zoom);
-            years.style.transform = `translate3d(${t.x}px, 0, 0) scale(${t.scale})`;
+            const yearsX = snapToPixel(t.x, ratio);
+            years.style.transform =
+              t.scale === 1 ? `translate3d(${yearsX}px, 0, 0)` : `translate3d(${yearsX}px, 0, 0) scale(${t.scale})`;
           }
         }
 

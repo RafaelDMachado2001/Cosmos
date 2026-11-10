@@ -33,7 +33,7 @@
 .heading2 {
   font-size: var(--reading-h2, 24px);
   line-height: 1.25;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-heading);
 }
 
 .heading3 {
@@ -111,6 +111,7 @@ ol.list {
 
 .codeText {
   margin: 0;
+  letter-spacing: 0;
   color: var(--color-text-reading);
   font-family: var(--font-mono);
   font-size: clamp(13.5px, calc(var(--reading-size, 16px) * 0.74), 15.5px);
@@ -238,7 +239,7 @@ ol.list {
   background: linear-gradient(90deg, color-mix(in oklch, var(--accent) 12%, transparent), transparent 85%);
   color: var(--color-text-primary);
   font-size: calc(var(--reading-size, 16px) * 1.05);
-  font-weight: 300;
+  font-weight: var(--weight-light);
   line-height: 1.6;
   text-wrap: pretty;
 }
@@ -357,6 +358,7 @@ ol.list {
 .diagram {
   container-type: inline-size;
   margin: 0 0 30px;
+  letter-spacing: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
