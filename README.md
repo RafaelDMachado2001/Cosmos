@@ -1,8 +1,8 @@
 # Cosmos
 
-My personal blog, built as an interactive 3D star map. Each post is a star, placed in the sky by its publication date. Available in Portuguese and English.
+My place to share my ideas, my routine as a software engineer and a little bit of curiosities! That's my Cosmos.
 
-**Live:** [cosmos.rdmlabs.com.br](https://cosmos.rdmlabs.com.br) · **Architecture:** [docs/architecture.md](docs/architecture.md)
+Available in Portuguese and English.
 
 <!-- TODO: Add a short GIF showing the constellation, navigation and opening an article -->
 <!-- ![Exploring the Cosmos constellation](docs/media/cosmos.gif) -->
@@ -101,6 +101,7 @@ Quality checks are part of the development workflow and run on every pull reques
 - New saga about ([Nina](https://github.com/RafaelDMachado2001/nina)
 - Full API-based communication for articles
 - RDM Studio own project
+- German translation
 
 ## Trade-offs
 
