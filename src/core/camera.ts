@@ -5,14 +5,12 @@ export interface CameraState {
   readonly enterS: number;
   readonly pan: number;
   readonly panS: number;
-  readonly zoomS: number;
-  readonly focusX: number;
+  readonly veilS: number;
   readonly velocity: number;
 }
 
 export interface CameraTarget {
   readonly pan: number;
-  readonly x: number;
 }
 
 function clamp(pan: number, bounds: PanBounds): number {
@@ -34,19 +32,12 @@ export function jumpTo<S extends CameraState>(state: S, target: CameraTarget | n
     ...crossed,
     pan: target.pan,
     panS: target.pan,
-    focusX: target.x - target.pan,
-    zoomS: 1,
+    veilS: 1,
   };
 }
 
-export function openStar<S extends CameraState>(state: S, target: CameraTarget): S {
-  return {
-    ...state,
-    enter: 1,
-    velocity: 0,
-    pan: target.pan,
-    focusX: target.x - target.pan,
-  };
+export function openStar<S extends CameraState>(state: S): S {
+  return { ...state, enter: 1, velocity: 0 };
 }
 
 export function closeReader<S extends CameraState>(

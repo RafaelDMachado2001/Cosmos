@@ -5,7 +5,6 @@ import {
   isDrag,
   INERTIA,
   MAX_FRAME_DELTA_S,
-  OPEN_DELAY_MS,
   PER_FRAME_K,
   PULSE_DECAY_PER_FRAME,
   PULSE_INTERVAL_S,
@@ -23,15 +22,15 @@ describe('PER_FRAME_K', () => {
     expect(PER_FRAME_K.normal).toEqual({
       enter: 0.055,
       pan: 0.062,
-      zoom: 0.055,
-      readerFade: 0.085,
+      veil: 0.35,
+      readerFade: 0.35,
       mouse: 0.05,
     });
     expect(PER_FRAME_K.reduced).toEqual({
       enter: 0.16,
       pan: 0.3,
-      zoom: 0.3,
-      readerFade: 0.3,
+      veil: 0.9,
+      readerFade: 0.9,
       mouse: 0.05,
     });
   });
@@ -39,9 +38,23 @@ describe('PER_FRAME_K', () => {
   it('acelera tudo com movimento reduzido, menos o mouse', () => {
     expect(PER_FRAME_K.reduced.enter).toBeGreaterThan(PER_FRAME_K.normal.enter);
     expect(PER_FRAME_K.reduced.pan).toBeGreaterThan(PER_FRAME_K.normal.pan);
-    expect(PER_FRAME_K.reduced.zoom).toBeGreaterThan(PER_FRAME_K.normal.zoom);
+    expect(PER_FRAME_K.reduced.veil).toBeGreaterThan(PER_FRAME_K.normal.veil);
     expect(PER_FRAME_K.reduced.readerFade).toBeGreaterThan(PER_FRAME_K.normal.readerFade);
     expect(PER_FRAME_K.reduced.mouse).toBe(PER_FRAME_K.normal.mouse);
+  });
+
+  it('a leitura fica opaca em ~200ms e, com movimento reduzido, em poucos quadros', () => {
+    const framesToOpaque = (k: number): number => {
+      let fade = 0;
+      let frames = 0;
+      while (fade < 0.995) {
+        fade = damp(fade, 1, lambdaFor(k), 1 / REFERENCE_FPS);
+        frames += 1;
+      }
+      return frames;
+    };
+    expect(framesToOpaque(PER_FRAME_K.normal.readerFade)).toBeLessThanOrEqual(13);
+    expect(framesToOpaque(PER_FRAME_K.reduced.readerFade)).toBeLessThanOrEqual(3);
   });
 });
 
@@ -109,8 +122,6 @@ describe('constantes de interação', () => {
     expect(INERTIA.decay).toBe(0.955);
     expect(INERTIA.stopBelow).toBe(0.15);
     expect(DRAG_CLICK_THRESHOLD_PX).toBe(6);
-    expect(OPEN_DELAY_MS.normal).toBe(760);
-    expect(OPEN_DELAY_MS.reduced).toBe(120);
   });
 
   it('limita o delta de quadro para a aba em segundo plano não dar salto', () => {

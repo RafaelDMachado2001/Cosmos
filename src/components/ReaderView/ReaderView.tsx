@@ -24,7 +24,7 @@ export interface ReaderCard {
   readonly dateLabel: string;
   readonly title: string;
   readonly summary: string;
-  readonly body: string;
+  readonly body: string | null;
   readonly appearance: Appearance;
   readonly tags: readonly string[];
   readonly url: string;
@@ -48,6 +48,11 @@ const FOCUSABLE =
 
 const TOC_OFFSET_PX = 80;
 
+const SKELETON = [
+  [100, 96, 100, 88],
+  [100, 94, 100, 72],
+] as const;
+
 export function ReaderView({ overlayRef, card, community = null, onClose }: ReaderViewProps) {
   const { t } = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -55,13 +60,14 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
   const percentRef = useRef<HTMLSpanElement>(null);
   const orbRef = useRef<HTMLDivElement>(null);
 
-  const blocks = useMemo(() => parseBlocks(card.body), [card.body]);
+  const ready = card.body !== null;
+  const blocks = useMemo(() => parseBlocks(card.body ?? ''), [card.body]);
   const entries = useMemo(() => outline(blocks), [blocks]);
   const ids = useMemo(() => entries.map((entry) => entry.id), [entries]);
   const minutes = useMemo(() => readingMinutes(blocks), [blocks]);
 
   const active = useActiveHeading(ids, overlayRef);
-  const resumeAt = useReadingProgress(overlayRef, card.slug, { bar: barRef, label: percentRef });
+  const resumeAt = useReadingProgress(overlayRef, card.slug, { bar: barRef, label: percentRef }, ready);
   const smooth = useSmoothScroll(overlayRef);
 
   useEffect(() => {
@@ -162,9 +168,11 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
             <span className={styles.dot} aria-hidden="true" />
             {card.categoryLabel}
           </p>
-          <p className={styles.asideDate}>
-            {minutes} {t.reader.minutes}
-          </p>
+          {ready && (
+            <p className={styles.asideDate}>
+              {minutes} {t.reader.minutes}
+            </p>
+          )}
           <p className={styles.asidePosition}>{card.dateLabel}</p>
         </div>
 
@@ -201,7 +209,7 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
           <span className={styles.progressTrack} aria-hidden="true">
             <span ref={barRef} className={styles.progressBar} />
           </span>
-          {resumeAt !== null && (
+          {ready && resumeAt !== null && (
             <button type="button" className={styles.resume} onClick={resume}>
               {t.reader.resume} · {Math.round(resumeAt * 100)}%
             </button>
@@ -209,7 +217,7 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
         </div>
       </aside>
 
-      <article className={styles.article}>
+      <article className={styles.article} aria-busy={!ready}>
         <div className={styles.starfield} aria-hidden="true">
           <Nebula
             seed={`${card.slug}/campo`}
@@ -251,18 +259,32 @@ export function ReaderView({ overlayRef, card, community = null, onClose }: Read
           </header>
 
           <div className={styles.body}>
-            <ArticleBody markdown={card.body} />
+            {card.body === null ? (
+              <div className={styles.skeleton} role="status" aria-label={t.reader.loadingBody}>
+                {SKELETON.map((paragraph, index) => (
+                  <span key={index} className={styles.skeletonParagraph}>
+                    {paragraph.map((width, line) => (
+                      <span key={line} className={styles.skeletonLine} style={{ width: `${width}%` }} />
+                    ))}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <ArticleBody markdown={card.body} />
+            )}
           </div>
 
-          <Suspense fallback={null}>
-            <ArticleEnd
-              source={community}
-              slug={card.slug}
-              title={card.title}
-              url={card.url}
-              scrollRootRef={overlayRef}
-            />
-          </Suspense>
+          {ready && (
+            <Suspense fallback={null}>
+              <ArticleEnd
+                source={community}
+                slug={card.slug}
+                title={card.title}
+                url={card.url}
+                scrollRootRef={overlayRef}
+              />
+            </Suspense>
+          )}
 
           <footer className={styles.footer}>
             <button type="button" className={styles.back} onClick={onClose}>

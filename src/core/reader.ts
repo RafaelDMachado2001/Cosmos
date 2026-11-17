@@ -1,6 +1,6 @@
 import type { PlacedStar } from './timeline';
 
-export type ReaderPhase = 'closed' | 'opening' | 'open' | 'closing';
+export type ReaderPhase = 'closed' | 'open' | 'closing';
 
 export interface ReaderState {
   readonly phase: ReaderPhase;
@@ -11,23 +11,17 @@ export interface ReaderState {
 export const CLOSED: ReaderState = { phase: 'closed', slug: null, originPan: null };
 
 export function open(state: ReaderState, slug: string, originPan: number): ReaderState {
-  if (state.phase === 'opening' || state.phase === 'open') return state;
-  return { phase: 'opening', slug, originPan };
+  if (state.phase === 'open') return state;
+  return { phase: 'open', slug, originPan };
 }
 
 export function landed(state: ReaderState, slug: string): ReaderState {
-  if (state.phase === 'opening' || state.phase === 'open') return state;
+  if (state.phase === 'open') return state;
   return { phase: 'open', slug, originPan: null };
 }
 
-export function mounted(state: ReaderState): ReaderState {
-  if (state.phase !== 'opening') return state;
-  return { ...state, phase: 'open' };
-}
-
 export function close(state: ReaderState): ReaderState {
-  if (state.phase === 'closed' || state.phase === 'closing') return state;
-  if (state.phase === 'opening') return CLOSED;
+  if (state.phase !== 'open') return state;
   return { ...state, phase: 'closing' };
 }
 
@@ -40,8 +34,8 @@ export function isMounted(state: ReaderState): boolean {
   return state.phase === 'open' || state.phase === 'closing';
 }
 
-export function zoomTarget(state: ReaderState): number {
-  return state.phase === 'opening' || state.phase === 'open' ? 1 : 0;
+export function veilTarget(state: ReaderState): number {
+  return state.phase === 'open' ? 1 : 0;
 }
 
 export const HOVER_FLIP_PX = 58 + 330 + 24;
@@ -72,34 +66,14 @@ export function timelinePosition(
   return { position: star.index + 1, total: stars.length };
 }
 
-export const ZOOM_SCALE = 1.35;
-
-export const ZOOM_BLUR_PX = 3;
-
-export const ZOOM_DIM = 0.72;
-
-export const READER_MOBILE_MAX_PX = 780;
+export const VEIL_DIM = 0.72;
 
 export const SETTLE_BELOW = 0.02;
 
-export function asideCenterX(viewportWidth: number): number {
-  return viewportWidth * (viewportWidth < READER_MOBILE_MAX_PX ? 0.5 : 0.125);
-}
+export const OPAQUE_ABOVE = 0.995;
 
-export function zoomPush(focusX: number, viewportWidth: number, zoom: number): number {
-  return zoom * (focusX - asideCenterX(viewportWidth));
-}
-
-export function zoomScale(zoom: number): number {
-  return 1 + zoom * ZOOM_SCALE;
-}
-
-export function zoomBlurPx(zoom: number): number {
-  return zoom * ZOOM_BLUR_PX;
-}
-
-export function zoomDim(zoom: number): number {
-  return 1 - zoom * ZOOM_DIM;
+export function veilDim(veil: number): number {
+  return 1 - veil * VEIL_DIM;
 }
 
 export function timelineLabel(position: TimelinePosition, dateLabel: string): string {

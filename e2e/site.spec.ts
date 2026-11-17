@@ -28,6 +28,52 @@ test('abrir uma estrela troca a URL, e voltar fecha a vista de leitura', async (
   await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30_000 });
 });
 
+test('abrir uma estrela não move a constelação e mostra a leitura logo', async ({ page }) => {
+  test.setTimeout(60_000);
+
+  await page.goto('/pt');
+  const star = await enterCosmos(page);
+  await star.hover();
+  await page.waitForTimeout(1500);
+  const layer = page.locator('[class*="_layer_"]').first();
+  const before = await layer.evaluate((element) => (element as HTMLElement).style.transform);
+
+  await page.evaluate(() => {
+    const probe = window as unknown as { openedAfterMs?: number };
+    window.addEventListener(
+      'click',
+      () => {
+        const clickedAt = performance.now();
+        const watch = (): void => {
+          if (document.querySelector('[role="dialog"]')) {
+            probe.openedAfterMs = performance.now() - clickedAt;
+            return;
+          }
+          requestAnimationFrame(watch);
+        };
+        watch();
+      },
+      { capture: true, once: true },
+    );
+  });
+  await star.click();
+  await expect(page.getByRole('dialog')).toHaveCSS('opacity', '1', { timeout: 5000 });
+  const openedAfterMs = await page.evaluate(
+    () => (window as unknown as { openedAfterMs?: number }).openedAfterMs ?? Infinity,
+  );
+  expect(openedAfterMs).toBeLessThan(250);
+
+  const after = await layer.evaluate((element) => ({
+    transform: (element as HTMLElement).style.transform,
+    filter: (element as HTMLElement).style.filter,
+  }));
+  expect(after).toEqual({ transform: before, filter: '' });
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 30_000 });
+  expect(await layer.evaluate((element) => (element as HTMLElement).style.transform)).toBe(before);
+});
+
 test('privacidade e conta existem como páginas, a conta fora do índice', async ({ page }) => {
   const privacy = await page.goto('/pt/privacidade');
   expect(privacy?.status()).toBe(200);

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { resolveAppearance } from '../../core/appearance';
-import { OPEN_DELAY_MS } from '../../core/motion';
 import { needsSlide } from '../../core/navigation';
 import {
   CLOSED,
@@ -9,7 +8,6 @@ import {
   hoverSide,
   isMounted,
   landed,
-  mounted,
   open as openReaderState,
   settled,
 } from '../../core/reader';
@@ -21,6 +19,7 @@ import type { PlacedStar } from '../../core/timeline';
 import type { Viewport } from '../../core/types';
 import { absolute } from '../../core/url';
 import { SITE } from '../../site';
+import { createDetailCache } from '../../data/detailCache';
 import { createCommunity, createSnapshot, createSource } from '../../data/source';
 import { useConstellationFilter } from '../../hooks/useConstellationFilter';
 import { useCosmosEngine } from '../../hooks/useCosmosEngine';
@@ -79,6 +78,7 @@ export function Shell({ route }: { route: Route }) {
 
   const source = useMemo(() => createSource(), []);
   const snapshot = useMemo(() => createSnapshot(), []);
+  const details = useMemo(() => createDetailCache(source), [source]);
   const community = useMemo(() => createCommunity(), []);
   const collection = usePublications(source, locale, snapshot);
   const summaries = collection.state.items;
@@ -140,13 +140,14 @@ export function Shell({ route }: { route: Route }) {
         setHovered(null);
         return;
       }
+      details.prefetch(star.slug, locale);
       setHovered({
         slug: star.slug,
         side: hoverSide(star.x - engine.targetPan(), viewport.width),
         via,
       });
     },
-    [starBySlug, engine, viewport.width],
+    [starBySlug, engine, viewport.width, details, locale],
   );
 
   const onFocusStar = useCallback(
@@ -180,7 +181,7 @@ export function Shell({ route }: { route: Route }) {
       returnFocusRef.current =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setHovered(null);
-      const originPan = engine.openStar(star);
+      const originPan = engine.openStar();
       setReader((current) => openReaderState(current, star.slug, originPan));
       window.history.pushState(null, '', articlePath(locale, star.slug));
       ownsEntryRef.current = true;
@@ -206,17 +207,6 @@ export function Shell({ route }: { route: Route }) {
     window.history.replaceState(null, '', target.path);
     ownsEntryRef.current = false;
   }, [applyClose, locale, reader.phase]);
-
-  useEffect(() => {
-    if (reader.phase !== 'opening') return;
-    const delay = reducedMotion ? OPEN_DELAY_MS.reduced : OPEN_DELAY_MS.normal;
-    const timer = window.setTimeout(() => {
-      setReader(mounted);
-    }, delay);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [reader.phase, reducedMotion]);
 
   useEffect(() => {
     if (reader.phase === 'closed') return;
@@ -293,7 +283,7 @@ export function Shell({ route }: { route: Route }) {
   useEffect(() => {
     if (lastLocaleRef.current === locale) return;
     lastLocaleRef.current = locale;
-    const openSlug = isMounted(reader) || reader.phase === 'opening' ? reader.slug : null;
+    const openSlug = isMounted(reader) ? reader.slug : null;
     window.history.replaceState(
       null,
       '',
@@ -301,7 +291,7 @@ export function Shell({ route }: { route: Route }) {
     );
   }, [locale, reader]);
 
-  const article = useArticle(source, reader.slug, locale);
+  const article = useArticle(details, reader.slug, locale);
 
   useEffect(() => {
     if (article.status !== 'missing') return;
@@ -310,25 +300,25 @@ export function Shell({ route }: { route: Route }) {
   }, [article.status, reader.phase, closeReader]);
 
   const readerCard = useMemo<ReaderCard | null>(() => {
-    if (!isMounted(reader) || article.status !== 'ready') return null;
-    const { detail } = article;
-    if (detail.slug !== reader.slug) return null;
-
-    const date = dateLabel(Date.parse(detail.publishedAt));
+    if (!isMounted(reader) || reader.slug === null) return null;
+    const detail =
+      article.status === 'ready' && article.detail.slug === reader.slug ? article.detail : null;
+    const known = detail ?? summaryBySlug.get(reader.slug);
+    if (!known) return null;
 
     return {
-      slug: detail.slug,
-      category: detail.category,
-      categoryLabel: t.categories[detail.category],
-      dateLabel: date,
-      title: detail.title,
-      summary: detail.summary,
-      body: detail.body,
-      appearance: resolveAppearance(detail.appearance),
-      tags: detail.tags,
-      url: absolute(SITE.origin, articlePath(locale, detail.slug)),
+      slug: known.slug,
+      category: known.category,
+      categoryLabel: t.categories[known.category],
+      dateLabel: dateLabel(Date.parse(known.publishedAt)),
+      title: known.title,
+      summary: known.summary,
+      body: detail?.body ?? null,
+      appearance: resolveAppearance(detail?.appearance),
+      tags: detail?.tags ?? [],
+      url: absolute(SITE.origin, articlePath(locale, known.slug)),
     };
-  }, [reader, article, dateLabel, t, locale]);
+  }, [reader, article, summaryBySlug, dateLabel, t, locale]);
 
   usePageHead(reader, article, locale, t, summaries);
 

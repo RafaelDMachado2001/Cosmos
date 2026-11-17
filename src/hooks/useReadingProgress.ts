@@ -35,6 +35,7 @@ export function useReadingProgress(
   scroller: RefObject<HTMLElement>,
   slug: string,
   targets: ReadingProgressTargets,
+  ready = true,
 ): number | null {
   const [resumeAt, setResumeAt] = useState<number | null>(() => {
     const saved = readSaved(slug);
@@ -43,7 +44,7 @@ export function useReadingProgress(
 
   useEffect(() => {
     const element = scroller.current;
-    if (!element) return;
+    if (!element || !ready) return;
 
     let frame = 0;
     let lastSaved = 0;
@@ -73,7 +74,7 @@ export function useReadingProgress(
       if (frame !== 0) cancelAnimationFrame(frame);
       if (latest > 0) save(slug, latest);
     };
-  }, [scroller, slug, targets.bar, targets.label]);
+  }, [scroller, slug, targets.bar, targets.label, ready]);
 
   return resumeAt;
 }

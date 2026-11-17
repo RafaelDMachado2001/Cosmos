@@ -86,4 +86,23 @@ describe('ReaderView', () => {
     mount({ ...CARD, body: 'Só um parágrafo.' });
     expect(screen.queryByRole('navigation', { name: 'Neste artigo' })).toBeNull();
   });
+
+  it('sem o corpo ainda, abre com título e resumo e reserva o texto', () => {
+    mount({ ...CARD, body: null });
+
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Fundamentos de índices');
+    expect(screen.getByText('Quando um índice ajuda.')).not.toBeNull();
+    expect(screen.getByRole('status', { name: 'Carregando o texto' })).not.toBeNull();
+    expect(screen.getByRole('article').getAttribute('aria-busy')).toBe('true');
+    expect(screen.queryByRole('navigation', { name: 'Neste artigo' })).toBeNull();
+    expect(screen.queryByText(/min de leitura/)).toBeNull();
+  });
+
+  it('sem o corpo, não oferece continuar nem grava progresso', () => {
+    window.localStorage.setItem(progressKey('indices'), '0.42');
+    mount({ ...CARD, body: null });
+
+    expect(screen.queryByRole('button', { name: /Continuar de onde parou/ })).toBeNull();
+    expect(window.localStorage.getItem(progressKey('indices'))).toBe('0.42');
+  });
 });

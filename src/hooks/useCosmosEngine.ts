@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MutableRefObject, RefObject } from 'react';
 
-import { atmosphereIntensity, generateSky, yearLayerTransform } from '../core/atmosphere';
+import { atmosphereIntensity, generateSky, yearLayerX } from '../core/atmosphere';
 import type { Rgb } from '../core/atmosphere';
 import * as camera from '../core/camera';
 import { blurFilter, snapNear, snapToPixel } from '../core/crisp';
@@ -14,14 +14,7 @@ import {
   phaseFor,
 } from '../core/navigation';
 import type { Phase } from '../core/navigation';
-import {
-  SETTLE_BELOW,
-  zoomBlurPx,
-  zoomDim,
-  zoomPush,
-  zoomScale,
-  zoomTarget,
-} from '../core/reader';
+import { OPAQUE_ABOVE, SETTLE_BELOW, veilDim, veilTarget } from '../core/reader';
 import type { ReaderState } from '../core/reader';
 import { homePan, panBounds, panBucket, panForStar, yearAtCenter } from '../core/geometry';
 import type { PlacedStar } from '../core/timeline';
@@ -67,7 +60,7 @@ export interface CosmosEngine {
   goCosmos: () => void;
   slideTo: (star: PlacedStar) => void;
   jumpTo: (star: PlacedStar | null) => void;
-  openStar: (star: PlacedStar) => number;
+  openStar: () => number;
   closeReader: (originPan: number | null) => void;
   didDrag: () => boolean;
   onCosmosPointerDown: (event: React.PointerEvent) => void;
@@ -83,8 +76,7 @@ function categoryRgb(category: Category): Rgb {
 interface MutableState extends InputState {
   mouseXS: number;
   mouseYS: number;
-  zoomS: number;
-  focusX: number;
+  veilS: number;
   readerFade: number;
 }
 
@@ -106,8 +98,7 @@ export function useCosmosEngine(
     mouseY: 0,
     mouseXS: 0,
     mouseYS: 0,
-    zoomS: 0,
-    focusX: 0,
+    veilS: 0,
     readerFade: 0,
     velocity: 0,
     dragging: false,
@@ -169,22 +160,17 @@ export function useCosmosEngine(
 
   const jumpTo = useCallback(
     (star: PlacedStar | null) => {
-      const target =
-        star === null ? null : { pan: panForStar(stars, star, window.innerWidth, 0.5), x: star.x };
+      const target = star === null ? null : { pan: panForStar(stars, star, window.innerWidth, 0.5) };
       Object.assign(state.current, camera.jumpTo(state.current, target));
     },
     [stars],
   );
 
-  const openStar = useCallback(
-    (star: PlacedStar) => {
-      const originPan = state.current.pan;
-      const target = { pan: panForStar(stars, star, window.innerWidth, 0.5), x: star.x };
-      Object.assign(state.current, camera.openStar(state.current, target));
-      return originPan;
-    },
-    [stars],
-  );
+  const openStar = useCallback(() => {
+    const originPan = state.current.pan;
+    Object.assign(state.current, camera.openStar(state.current));
+    return originPan;
+  }, []);
 
   const closeReader = useCallback((originPan: number | null) => {
     Object.assign(state.current, camera.closeReader(state.current, originPan, boundsRef.current));
@@ -236,7 +222,8 @@ export function useCosmosEngine(
         const reader = readerRef.current;
 
         s.enterS = snapNear(damp(s.enterS, s.enter, lambda.enter, delta), s.enter);
-        s.zoomS = snapNear(damp(s.zoomS, zoomTarget(reader.state), lambda.zoom, delta), zoomTarget(reader.state));
+        const veilGoal = veilTarget(reader.state);
+        s.veilS = snapNear(damp(s.veilS, veilGoal, lambda.veil, delta), veilGoal);
         s.panS = damp(s.panS, s.pan, lambda.pan, delta);
         s.mouseXS = damp(s.mouseXS, s.mouseX, lambda.mouse, delta);
         s.mouseYS = damp(s.mouseYS, s.mouseY, lambda.mouse, delta);
@@ -244,7 +231,7 @@ export function useCosmosEngine(
         panRef.current = s.panS;
 
         const enter = s.enterS;
-        const zoom = s.zoomS;
+        const veil = s.veilS;
         const fade = heroFade(enter);
         const reveal = cosmosReveal(enter);
 
@@ -256,38 +243,46 @@ export function useCosmosEngine(
           hero.style.pointerEvents = fade > 0.4 ? 'none' : 'auto';
         }
 
+        const overlay = refs.reader.current;
+        if (overlay) {
+          const target = reader.state.phase === 'open' ? 1 : 0;
+          s.readerFade = snapNear(damp(s.readerFade, target, lambda.readerFade, delta), target);
+          overlay.style.opacity = String(s.readerFade);
+          if (target === 0 && s.readerFade < SETTLE_BELOW) {
+            s.readerFade = 0;
+            reader.onSettled();
+          }
+        } else {
+          s.readerFade = 0;
+        }
+        const covered = reader.state.phase === 'open' && s.readerFade >= OPAQUE_ABOVE;
+
         const cosmos = refs.cosmos.current;
         if (cosmos) {
-          cosmos.style.opacity = String(reveal * zoomDim(zoom));
+          cosmos.style.visibility = covered ? 'hidden' : '';
+          cosmos.style.opacity = String(reveal * veilDim(veil));
           cosmos.style.transform = `scale(${0.94 + reveal * 0.06})`;
           cosmos.style.pointerEvents = reveal > 0.9 ? 'auto' : 'none';
         }
 
         const layer = refs.layer.current;
         if (layer) {
-          const parallax = s.mouseXS * 10 * (1 - zoom);
-          const push_ = zoomPush(s.focusX, widthRef.current, zoom);
+          const parallax = s.mouseXS * 10;
           const ratio = window.devicePixelRatio;
-          const x = snapToPixel(-s.panS + parallax - push_, ratio);
+          const x = snapToPixel(-s.panS + parallax, ratio);
           const y = snapToPixel(s.mouseYS * -6, ratio);
-          layer.style.transform =
-            zoom === 0 ? `translate3d(${x}px, ${y}px, 0)` : `translate3d(${x}px, ${y}px, 0) scale(${zoomScale(zoom)})`;
-          layer.style.transformOrigin = `${s.focusX}px 55%`;
-          layer.style.filter = blurFilter(zoomBlurPx(zoom));
+          layer.style.transform = `translate3d(${x}px, ${y}px, 0)`;
 
           const years = refs.years.current;
           if (years) {
-            const t = yearLayerTransform(s.panS, parallax, push_, zoom);
-            const yearsX = snapToPixel(t.x, ratio);
-            years.style.transform =
-              t.scale === 1 ? `translate3d(${yearsX}px, 0, 0)` : `translate3d(${yearsX}px, 0, 0) scale(${t.scale})`;
+            years.style.transform = `translate3d(${snapToPixel(yearLayerX(s.panS, parallax), ratio)}px, 0, 0)`;
           }
         }
 
         const scrub = refs.scrub.current;
         if (scrub) {
-          scrub.style.opacity = String(reveal * 0.95 * (1 - zoom));
-          scrub.style.pointerEvents = reveal > 0.9 && zoom <= 0.3 ? 'auto' : 'none';
+          scrub.style.opacity = String(reveal * 0.95 * (1 - veil));
+          scrub.style.pointerEvents = reveal > 0.9 && veil <= 0.3 ? 'auto' : 'none';
         }
         const fraction = panToScrubFraction(s.panS, boundsRef.current);
         const marker = refs.marker.current;
@@ -310,29 +305,15 @@ export function useCosmosEngine(
         const fallback = refs.fallback.current;
         if (fallback) fallback.style.opacity = String(coreOpacity(enter));
         const skyFallback = refs.skyFallback.current;
-        if (skyFallback) skyFallback.style.opacity = String(atmosphereIntensity(reveal, zoom));
-
-        const overlay = refs.reader.current;
-        if (overlay) {
-          const target = reader.state.phase === 'open' ? 1 : 0;
-          s.readerFade = damp(s.readerFade, target, lambda.readerFade, delta);
-          overlay.style.opacity = String(s.readerFade);
-          overlay.style.transform = s.readerFade > 0.995 ? 'none' : `scale(${1.06 - s.readerFade * 0.06})`;
-          if (target === 0 && s.readerFade < SETTLE_BELOW) {
-            s.readerFade = 0;
-            reader.onSettled();
-          }
-        } else {
-          s.readerFade = 0;
-        }
+        if (skyFallback) skyFallback.style.opacity = String(atmosphereIntensity(reveal, veil));
 
         const scene = sceneRef.current;
-        if (scene) {
+        if (scene && !covered) {
           try {
             scene.setEnter(enter);
             scene.setPointer(s.mouseXS, s.mouseYS);
             scene.setSky(skyRef.current);
-            scene.setAtmosphere(s.panS, atmosphereIntensity(reveal, zoom));
+            scene.setAtmosphere(s.panS, atmosphereIntensity(reveal, veil));
             scene.render(delta);
           } catch (error) {
             console.error('cena 3D falhou durante o render; caindo para o fallback em CSS', error);

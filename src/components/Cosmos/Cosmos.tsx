@@ -103,7 +103,7 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
         if (
           event.pointerType === 'touch' &&
           hover !== null &&
-          !(event.target instanceof Element && event.target.closest('a'))
+          !(event.target instanceof Element && event.target.closest('a, [data-opens="true"]'))
         ) {
           onHover(null);
         }
@@ -205,6 +205,9 @@ export const Cosmos = forwardRef<HTMLDivElement, CosmosProps>(function Cosmos(
               ? { edge: 'top', offsetPx: viewport.headerPx + 8 }
               : { edge: 'bottom', offsetPx: viewport.rulerPx + 24 }
           }
+          onOpen={() => {
+            onActivate(hoveredStar);
+          }}
         />
       )}
     </div>

@@ -23,6 +23,14 @@ export interface StarProps {
   readonly onFocusStar: (star: PlacedStar) => void;
 }
 
+function fromKeyboard(element: Element): boolean {
+  try {
+    return element.matches(':focus-visible');
+  } catch {
+    return true;
+  }
+}
+
 export const Star = memo(function Star({
   star,
   yPx,
@@ -74,7 +82,8 @@ export const Star = memo(function Star({
       onPointerLeave={(event) => {
         if (event.pointerType !== 'touch') onHover(null);
       }}
-      onFocus={() => {
+      onFocus={(event) => {
+        if (!fromKeyboard(event.currentTarget)) return;
         onFocusStar(star);
         onHover(star.slug);
       }}

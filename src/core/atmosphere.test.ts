@@ -7,7 +7,7 @@ import {
   emptyCull,
   generateSky,
   giantYearX,
-  yearLayerTransform,
+  yearLayerX,
 } from './atmosphere';
 import type { Nebula, Rgb } from './atmosphere';
 import { placeStars } from './timeline';
@@ -161,14 +161,10 @@ describe('atmosphereIntensity', () => {
 describe('anos gigantes', () => {
   it('ficam a 75% da posição do ano e andam a 75% do pan', () => {
     const x = giantYearX(4000);
-    const { x: offset, scale } = yearLayerTransform(1000, 0, 0, 0);
-    expect(x + offset).toBe((4000 - 1000) * 0.75);
-    expect(scale).toBe(1);
+    expect(x + yearLayerX(1000, 0)).toBe((4000 - 1000) * 0.75);
   });
 
-  it('seguem só parte da parallax, do avanço e do zoom da constelação', () => {
-    expect(yearLayerTransform(0, 10, 0, 0).x).toBeCloseTo(4);
-    expect(yearLayerTransform(0, 0, 100, 0).x).toBeCloseTo(-60);
-    expect(yearLayerTransform(0, 0, 0, 1).scale).toBeCloseTo(1.4);
+  it('seguem só parte da parallax do ponteiro', () => {
+    expect(yearLayerX(0, 10)).toBeCloseTo(4);
   });
 });

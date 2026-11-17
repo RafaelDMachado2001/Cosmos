@@ -49,6 +49,7 @@ export const en: Dictionary = {
     minutes: 'min read',
     progress: 'Reading progress',
     resume: 'Pick up where you left off',
+    loadingBody: 'Loading the text',
     tags: 'Tags',
   },
   diagram: {

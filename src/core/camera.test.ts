@@ -9,8 +9,7 @@ function base(overrides: Partial<CameraState> = {}): CameraState {
     enterS: 1,
     pan: 0,
     panS: 0,
-    zoomS: 0,
-    focusX: 0,
+    veilS: 0,
     velocity: 0,
     ...overrides,
   };
@@ -19,7 +18,7 @@ function base(overrides: Partial<CameraState> = {}): CameraState {
 describe('câmera', () => {
   it('fechar o leitor devolve exatamente o pan de onde a estrela foi aberta', () => {
     const bounds = { min: -1000, max: 1000 };
-    const aberto = openStar(base({ pan: 120 }), { pan: 480, x: 1100 });
+    const aberto = openStar(base({ pan: 120 }));
     const fechado = closeReader(aberto, 120, bounds);
 
     expect(fechado.pan).toBe(120);
@@ -37,25 +36,17 @@ describe('câmera', () => {
     );
   });
 
-  it('abrir mede o foco depois do pan limitado, não no meio da tela', () => {
-    const aberto = openStar(base({ pan: 0, enter: 0, velocity: 3 }), { pan: 480, x: 1100 });
+  it('abrir não move a câmera: só para a inércia e fica do lado de dentro do portal', () => {
+    const antes = base({ pan: 300, panS: 290, veilS: 0.4, enter: 0.98, velocity: 3 });
+    const aberto = openStar(antes);
 
-    expect(aberto.pan).toBe(480);
-    expect(aberto.focusX).toBe(620);
-    expect(aberto.enter).toBe(1);
-    expect(aberto.velocity).toBe(0);
-  });
-
-  it('abrir mexe só no alvo: a suavização continua de onde estava', () => {
-    const aberto = openStar(base({ pan: 0, panS: 10 }), { pan: 480, x: 1100 });
-    expect(aberto.panS).toBe(10);
+    expect(aberto).toEqual({ ...antes, enter: 1, velocity: 0 });
   });
 
   it('a chegada pela URL escreve alvo e suavizado juntos, sem encenar a travessia', () => {
-    const chegou = jumpTo(base({ enter: 0, enterS: 0, pan: 0, panS: 0 }), { pan: 480, x: 1100 });
+    const chegou = jumpTo(base({ enter: 0, enterS: 0, pan: 0, panS: 0 }), { pan: 480 });
 
-    expect(chegou).toMatchObject({ enter: 1, enterS: 1, pan: 480, panS: 480, zoomS: 1 });
-    expect(chegou.focusX).toBe(620);
+    expect(chegou).toMatchObject({ enter: 1, enterS: 1, pan: 480, panS: 480, veilS: 1 });
   });
 
   it('a chegada sem estrela só atravessa o portal', () => {
@@ -70,7 +61,7 @@ describe('câmera', () => {
   });
 
   it('deslizar até a estrela muda o alvo sem abrir nada', () => {
-    const deslizou = slideTo(base({ enter: 0, pan: 0, velocity: 5, zoomS: 0 }), 700);
+    const deslizou = slideTo(base({ enter: 0, pan: 0, velocity: 5, veilS: 0 }), 700);
     expect(deslizou).toEqual(base({ enter: 1, pan: 700, velocity: 0 }));
   });
 

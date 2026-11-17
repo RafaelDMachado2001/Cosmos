@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { failed, loaded, loading, retry as retryCollection } from '../core/collection';
 import type { CollectionState } from '../core/collection';
 import type { Locale, PublicationSummary } from '../core/types';
+import type { DetailCache } from '../data/detailCache';
 import type { PublicationDetail, PublicationsSource } from '../data/PublicationsSource';
 import type { SnapshotLoader } from '../data/snapshotLoader';
 
@@ -59,36 +60,49 @@ export type ArticleState =
 
 const IDLE: ArticleState = { status: 'idle' };
 
+const LOADING: ArticleState = { status: 'loading' };
+
 export function useArticle(
-  source: PublicationsSource,
+  cache: DetailCache,
   slug: string | null,
   locale: Locale,
 ): ArticleState {
-  const [state, setState] = useState<ArticleState>(IDLE);
+  const [state, setState] = useState<{ key: string | null; article: ArticleState }>({
+    key: null,
+    article: IDLE,
+  });
 
   useEffect(() => {
-    if (slug === null) {
-      setState(IDLE);
-      return;
-    }
+    if (slug === null) return;
 
     let cancelled = false;
-    setState({ status: 'loading' });
+    const key = `${locale}/${slug}`;
 
-    source
+    cache
       .get(slug, locale)
       .then((detail) => {
         if (cancelled) return;
-        setState(detail === null ? { status: 'missing' } : { status: 'ready', detail });
+        setState({
+          key,
+          article: detail === null ? { status: 'missing' } : { status: 'ready', detail },
+        });
       })
       .catch(() => {
-        if (!cancelled) setState({ status: 'missing' });
+        if (!cancelled) setState({ key, article: { status: 'missing' } });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [source, slug, locale]);
+  }, [cache, slug, locale]);
 
-  return state;
+  const cached = slug === null ? undefined : cache.peek(slug, locale);
+  const fromCache = useMemo<ArticleState | null>(
+    () => (cached ? { status: 'ready', detail: cached } : null),
+    [cached],
+  );
+
+  if (slug === null) return IDLE;
+  if (fromCache) return fromCache;
+  return state.key === `${locale}/${slug}` ? state.article : LOADING;
 }

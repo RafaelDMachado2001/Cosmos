@@ -21,9 +21,10 @@ export interface HoverPanelProps {
   readonly x: number;
   readonly yPx: number;
   readonly dock?: { readonly edge: 'top' | 'bottom'; readonly offsetPx: number } | null;
+  readonly onOpen?: (() => void) | null;
 }
 
-export function HoverPanel({ card, category, x, yPx, dock = null }: HoverPanelProps) {
+export function HoverPanel({ card, category, x, yPx, dock = null, onOpen = null }: HoverPanelProps) {
   const { t } = useLocale();
 
   return (
@@ -31,6 +32,8 @@ export function HoverPanel({ card, category, x, yPx, dock = null }: HoverPanelPr
       className={styles.panel}
       data-side={dock === null ? card.side : undefined}
       data-docked={dock !== null}
+      data-opens={onOpen !== null}
+      onClick={onOpen ?? undefined}
       style={{
         ...(dock === null
           ? { left: `${x}px`, top: `${yPx}px` }

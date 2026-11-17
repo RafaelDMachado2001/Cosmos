@@ -24,6 +24,16 @@ function tocar(element: HTMLElement): void {
   fireEvent.click(element);
 }
 
+function camada(): HTMLElement {
+  const layer = document.querySelector<HTMLElement>('[class*="_layer_"]');
+  if (!layer) throw new Error('camada da constelação não montada');
+  return layer;
+}
+
+function pausa(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function entrarNaConstelacao(user: UserEvent): Promise<HTMLAnchorElement> {
   await user.click(await screen.findByRole('button', { name: 'Role para atravessar' }));
   return waitFor(
@@ -59,6 +69,7 @@ describe('Shell', () => {
   });
 
   afterEach(() => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
     cleanup();
     vi.restoreAllMocks();
   });
@@ -93,18 +104,46 @@ describe('Shell', () => {
     expect(window.location.pathname).toBe('/pt');
   });
 
-  it('Esc durante a abertura fecha sem deixar a câmera no meio do caminho', async () => {
+  it('abrir mostra a leitura no mesmo clique, com a constelação parada atrás', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(await entrarNaConstelacao(user));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    const estrela = await entrarNaConstelacao(user);
+    await user.hover(estrela);
+    await pausa(400);
+    const antes = camada().style.transform;
+
+    await user.click(estrela);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
+      (estrela.getAttribute('aria-label') ?? '').split(' — ')[0],
+    );
+
+    await pausa(600);
+    expect(camada().style.transform).toBe(antes);
+    expect(camada().style.filter).toBe('');
+  });
+
+  it('Esc logo depois de abrir fecha e devolve a constelação onde estava', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+    await user.hover(estrela);
+    await pausa(400);
+    const antes = camada().style.transform;
+
+    await user.click(estrela);
     await user.keyboard('{Escape}');
 
     await waitFor(() => {
       expect(window.location.pathname).toBe('/pt');
     });
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('dialog')).toBeNull();
+      },
+      { timeout: 4000 },
+    );
+    expect(camada().style.transform).toBe(antes);
   });
 
   it('fechar devolve o foco a estrela de onde se saiu', async () => {
@@ -152,6 +191,25 @@ describe('Shell', () => {
 
     tocar(estrela);
     expect(await screen.findByRole('dialog', {}, { timeout: 4000 })).toBeTruthy();
+  });
+
+  it('no celular, o segundo toque pode ser no painel encaixado', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    const user = userEvent.setup();
+    render(<App />);
+    const estrela = await entrarNaConstelacao(user);
+
+    tocar(estrela);
+    await screen.findByText('TOQUE DE NOVO PARA ABRIR');
+    const painel = document.querySelector<HTMLElement>('[data-opens="true"]');
+    expect(painel).not.toBeNull();
+
+    fireEvent(painel as HTMLElement, pointerDown('touch'));
+    fireEvent.pointerUp(window);
+    fireEvent.click(painel as HTMLElement);
+
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(window.location.pathname).toBe(new URL(estrela.href).pathname);
   });
 
   it('tocar numa área vazia fecha o painel', async () => {

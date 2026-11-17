@@ -1,14 +1,14 @@
 export interface MotionProfile {
   readonly enter: number;
   readonly pan: number;
-  readonly zoom: number;
+  readonly veil: number;
   readonly readerFade: number;
   readonly mouse: number;
 }
 
 export const PER_FRAME_K: Record<'normal' | 'reduced', MotionProfile> = {
-  normal: { enter: 0.055, pan: 0.062, zoom: 0.055, readerFade: 0.085, mouse: 0.05 },
-  reduced: { enter: 0.16, pan: 0.3, zoom: 0.3, readerFade: 0.3, mouse: 0.05 },
+  normal: { enter: 0.055, pan: 0.062, veil: 0.35, readerFade: 0.35, mouse: 0.05 },
+  reduced: { enter: 0.16, pan: 0.3, veil: 0.9, readerFade: 0.9, mouse: 0.05 },
 };
 
 export const REFERENCE_FPS = 60;
@@ -23,7 +23,7 @@ export function lambdas(reduced: boolean): MotionProfile {
   return {
     enter: lambdaFor(k.enter),
     pan: lambdaFor(k.pan),
-    zoom: lambdaFor(k.zoom),
+    veil: lambdaFor(k.veil),
     readerFade: lambdaFor(k.readerFade),
     mouse: lambdaFor(k.mouse),
   };
@@ -45,8 +45,6 @@ export const DRAG_CLICK_THRESHOLD_PX = 6;
 export function isDrag(distancePx: number): boolean {
   return distancePx >= DRAG_CLICK_THRESHOLD_PX;
 }
-
-export const OPEN_DELAY_MS = { normal: 760, reduced: 120 } as const;
 
 export const MAX_FRAME_DELTA_S = 0.05;
 

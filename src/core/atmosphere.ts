@@ -111,8 +111,8 @@ export function generateSky(
   return { nebulae, galaxies };
 }
 
-export function atmosphereIntensity(reveal: number, zoom: number): number {
-  return reveal * (1 - zoom * 0.55);
+export function atmosphereIntensity(reveal: number, veil: number): number {
+  return reveal * (1 - veil * 0.55);
 }
 
 export interface SkyCull {
@@ -157,27 +157,12 @@ export function cullSky(
 export const YEAR_LAYER = {
   parallax: 0.75,
   pointerShare: 0.4,
-  pushShare: 0.6,
-  zoomGrowth: 0.4,
 } as const;
 
 export function giantYearX(timelineX: number): number {
   return timelineX * YEAR_LAYER.parallax;
 }
 
-export interface LayerTransform {
-  readonly x: number;
-  readonly scale: number;
-}
-
-export function yearLayerTransform(
-  pan: number,
-  pointerX: number,
-  push: number,
-  zoom: number,
-): LayerTransform {
-  return {
-    x: -pan * YEAR_LAYER.parallax + pointerX * YEAR_LAYER.pointerShare - push * YEAR_LAYER.pushShare,
-    scale: 1 + zoom * YEAR_LAYER.zoomGrowth,
-  };
+export function yearLayerX(pan: number, pointerX: number): number {
+  return -pan * YEAR_LAYER.parallax + pointerX * YEAR_LAYER.pointerShare;
 }

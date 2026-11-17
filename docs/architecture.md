@@ -380,13 +380,31 @@ test-runner directives).
 
 ### Reader
 
-- **Opening is an explicit phase machine** (centre, camera push, mount). The
-  steps are separated by time, not by user events, and a bare `setTimeout`
-  would remount the view after the reader had already closed it.
+- **Opening never moves the constellation.** No pan, no push towards the
+  aside, no scale, no blur: `camera.openStar` only stops inertia. The reader
+  mounts on the same click (`closed → open → closing → closed`, no waiting
+  phase) and fades in by opacity alone in ~200ms; the constellation only dims
+  behind it. The old choreography (centre, push, 760ms wait, then the fetch)
+  read as the page sliding to the start of the timeline and freezing.
+- **The reader is born from the summary.** Title, summary, category and date
+  come from the collection already in memory; body, tags and appearance arrive
+  with the detail, and until then the article shows a skeleton with
+  `aria-busy`. Reading progress is neither read nor saved without a body.
+- **Details are prefetched** (`data/detailCache.ts`) on hover, keyboard focus
+  and the first tap, so the click usually finds the body ready. Failures and
+  misses are never cached.
+- **Nothing under an opaque reader is painted.** Once the fade passes
+  `OPAQUE_ABOVE` the constellation gets `visibility: hidden` and the 3D scene
+  skips `render`; both come back on the first frame of closing.
 - **Closing returns the camera to the exact pan it left from** (`originPan`,
-  clamped again in case the collection changed). A direct arrival by URL has
-  no origin: it opens with no portal crossing or camera push, and closing just
-  undoes the zoom.
+  clamped again in case the collection changed); since opening no longer
+  moves it, this is a guard, not an animation. A direct arrival by URL has
+  no origin: it lands centred on the star with no portal crossing.
+- **Focus only reacts when it comes from the keyboard** (`:focus-visible`).
+  A tap focuses the anchor too, and sliding or opening the panel on that
+  focus moved the camera on the first tap and reopened the panel, with the
+  mouse hint, when closing the reader returned focus on a phone. On a phone
+  the docked panel is also a target for the second tap.
 - **Closing is history navigation.** Opening a star pushes an entry, so the
   "×" and the browser's back button do the same thing. On a direct arrival a
   `back` would leave the site, so the entry is replaced with the locale root.

@@ -4,22 +4,17 @@ import {
   CLOSED,
   HOVER_DOCK_BELOW_PX,
   HOVER_FLIP_PX,
-  asideCenterX,
   close,
   hoverDocked,
   hoverSide,
   isMounted,
   landed,
-  mounted,
   open,
   settled,
   timelineLabel,
   timelinePosition,
-  zoomBlurPx,
-  zoomDim,
-  zoomPush,
-  zoomScale,
-  zoomTarget,
+  veilDim,
+  veilTarget,
 } from './reader';
 import { placeStars } from './timeline';
 import type { PublicationInput } from './types';
@@ -35,27 +30,17 @@ const ITEMS: readonly PublicationInput[] = Array.from({ length: 14 }, (_, i) => 
 const STARS = placeStars(ITEMS);
 
 describe('máquina de estados do leitor', () => {
-  it('abrir guarda o slug e o pan de onde a câmera saiu', () => {
+  it('abrir monta a vista na hora e guarda o pan de onde se saiu', () => {
     const state = open(CLOSED, 'nebulosa', ORIGIN_PAN);
 
-    expect(state.phase).toBe('opening');
-    expect(state.slug).toBe('nebulosa');
-    expect(state.originPan).toBe(ORIGIN_PAN);
-  });
-
-  it('a vista só é montada depois do avanço da câmera', () => {
-    const opening = open(CLOSED, 'nebulosa', ORIGIN_PAN);
-    expect(isMounted(opening)).toBe(false);
-
-    const state = mounted(opening);
     expect(state.phase).toBe('open');
-    expect(isMounted(state)).toBe(true);
     expect(state.slug).toBe('nebulosa');
     expect(state.originPan).toBe(ORIGIN_PAN);
+    expect(isMounted(state)).toBe(true);
   });
 
   it('fechar preserva slug e origem enquanto a vista desaparece', () => {
-    const state = close(mounted(open(CLOSED, 'nebulosa', ORIGIN_PAN)));
+    const state = close(open(CLOSED, 'nebulosa', ORIGIN_PAN));
 
     expect(state.phase).toBe('closing');
     expect(state.slug).toBe('nebulosa');
@@ -64,57 +49,40 @@ describe('máquina de estados do leitor', () => {
   });
 
   it('assentar volta ao estado fechado e esquece a origem', () => {
-    const state = settled(close(mounted(open(CLOSED, 'nebulosa', ORIGIN_PAN))));
+    const state = settled(close(open(CLOSED, 'nebulosa', ORIGIN_PAN)));
 
     expect(state).toEqual(CLOSED);
     expect(isMounted(state)).toBe(false);
   });
 
-  it('fechar durante a abertura interrompe sem nunca montar a vista', () => {
-    expect(close(open(CLOSED, 'nebulosa', ORIGIN_PAN))).toEqual(CLOSED);
-  });
-
   it('abrir com a vista já aberta não troca o pan de origem', () => {
-    const opened = mounted(open(CLOSED, 'nebulosa', ORIGIN_PAN));
-    const state = open(opened, 'quasar', 99);
-
-    expect(state).toEqual(opened);
+    const opened = open(CLOSED, 'nebulosa', ORIGIN_PAN);
+    expect(open(opened, 'quasar', 99)).toBe(opened);
   });
 
-  it('montar e assentar fora da fase correspondente não fazem nada', () => {
-    expect(mounted(CLOSED)).toEqual(CLOSED);
+  it('assentar fora do fechamento não faz nada', () => {
     expect(settled(CLOSED)).toEqual(CLOSED);
-
-    const opened = mounted(open(CLOSED, 'nebulosa', ORIGIN_PAN));
-    expect(settled(opened)).toEqual(opened);
+    const opened = open(CLOSED, 'nebulosa', ORIGIN_PAN);
+    expect(settled(opened)).toBe(opened);
   });
 
   it('fechar o que já está fechado não faz nada', () => {
     expect(close(CLOSED)).toEqual(CLOSED);
   });
 
-  it('reabrir depois de assentar guarda a nova origem', () => {
-    const reopened = open(
-      settled(close(mounted(open(CLOSED, 'nebulosa', ORIGIN_PAN)))),
-      'quasar',
-      640,
-    );
+  it('reabrir durante o fechamento troca de artigo e guarda a nova origem', () => {
+    const reopened = open(close(open(CLOSED, 'nebulosa', ORIGIN_PAN)), 'quasar', 640);
 
-    expect(reopened.slug).toBe('quasar');
-    expect(reopened.originPan).toBe(640);
+    expect(reopened).toEqual({ phase: 'open', slug: 'quasar', originPan: 640 });
   });
 });
 
-describe('zoomTarget', () => {
-  it('avança enquanto abre e enquanto está aberto', () => {
-    const opening = open(CLOSED, 'nebulosa', ORIGIN_PAN);
-    expect(zoomTarget(opening)).toBe(1);
-    expect(zoomTarget(mounted(opening))).toBe(1);
-  });
-
-  it('recua ao fechar e com a vista fechada', () => {
-    expect(zoomTarget(close(mounted(open(CLOSED, 'nebulosa', ORIGIN_PAN))))).toBe(0);
-    expect(zoomTarget(CLOSED)).toBe(0);
+describe('veilTarget', () => {
+  it('escurece a constelação só com a vista aberta', () => {
+    const opened = open(CLOSED, 'nebulosa', ORIGIN_PAN);
+    expect(veilTarget(opened)).toBe(1);
+    expect(veilTarget(close(opened))).toBe(0);
+    expect(veilTarget(CLOSED)).toBe(0);
   });
 });
 
@@ -166,48 +134,10 @@ describe('timelinePosition', () => {
   });
 });
 
-describe('geometria do avanço da câmera', () => {
-  it('no desktop a estrela vai ao centro da coluna de 25%', () => {
-    expect(asideCenterX(1440)).toBe(180);
-  });
-
-  it('no mobile não há coluna: o alvo é o meio da tela', () => {
-    expect(asideCenterX(600)).toBe(300);
-  });
-
-  it('exatamente em 780px já vale a coluna do desktop', () => {
-    expect(asideCenterX(780)).toBe(97.5);
-  });
-
-  it('com a câmera parada nada é empurrado', () => {
-    expect(zoomPush(720, 1440, 0)).toBe(0);
-  });
-
-  it('com a câmera avançada a estrela chega à coluna', () => {
-    expect(zoomPush(720, 1440, 1)).toBe(540);
-  });
-
-  it('o empurrão acompanha o avanço, para o movimento ser um só', () => {
-    expect(zoomPush(720, 1440, 0.5)).toBe(270);
-  });
-
-  it('uma estrela já à esquerda da coluna é puxada de volta', () => {
-    expect(zoomPush(100, 1440, 1)).toBe(-80);
-  });
-
-  it('a constelação cresce de 1 a 2.35', () => {
-    expect(zoomScale(0)).toBe(1);
-    expect(zoomScale(1)).toBeCloseTo(2.35);
-  });
-
-  it('o desfoque vai de nenhum a 3px', () => {
-    expect(zoomBlurPx(0)).toBe(0);
-    expect(zoomBlurPx(1)).toBe(3);
-  });
-
+describe('veilDim', () => {
   it('a opacidade da constelação cai para os 28% do handoff', () => {
-    expect(zoomDim(0)).toBe(1);
-    expect(zoomDim(1)).toBeCloseTo(0.28);
+    expect(veilDim(0)).toBe(1);
+    expect(veilDim(1)).toBeCloseTo(0.28);
   });
 });
 

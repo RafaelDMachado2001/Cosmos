@@ -48,6 +48,7 @@ export const pt = {
     minutes: 'min de leitura',
     progress: 'Progresso da leitura',
     resume: 'Continuar de onde parou',
+    loadingBody: 'Carregando o texto',
     tags: 'Tags',
   },
   diagram: {
