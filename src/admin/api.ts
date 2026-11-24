@@ -27,6 +27,8 @@ export type TagsByLocale = Readonly<Record<Locale, readonly string[]>>;
 
 export interface AdminPublication {
   readonly id: number;
+  /** Versão a devolver em If-Match. Vem do corpo: um proxy que comprime enfraquece o cabeçalho. */
+  readonly etag: string;
   readonly slug: string;
   readonly category: Category;
   readonly publishedAt: string;
@@ -83,8 +85,13 @@ async function read<T>(path: string): Promise<T> {
   return dataOf<T>(await client.get(path));
 }
 
-async function write<T>(method: string, path: string, body?: unknown): Promise<T> {
-  return dataOf<T>(await client.send(method, path, body));
+async function write<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  headers?: Readonly<Record<string, string>>,
+): Promise<T> {
+  return dataOf<T>(await client.send(method, path, body, headers));
 }
 
 export const api = {
@@ -99,8 +106,8 @@ export const api = {
     readonly featured?: boolean;
   }): Promise<AdminPublication> => write('POST', '/publications', data),
 
-  update: (id: number, patch: PublicationPatch): Promise<AdminPublication> =>
-    write('PATCH', `/publications/${String(id)}`, patch),
+  update: (id: number, patch: PublicationPatch, etag: string): Promise<AdminPublication> =>
+    write('PATCH', `/publications/${String(id)}`, patch, { 'If-Match': etag }),
 
   destroy: (id: number): Promise<void> => write('DELETE', `/publications/${String(id)}`),
 

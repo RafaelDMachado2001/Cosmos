@@ -14,10 +14,14 @@ use App\Modules\Content\Models\PublicationTranslation;
 use App\Modules\Content\Models\Tag;
 use App\Modules\Content\Rules\ValidDraftBlocks;
 use App\Modules\Content\Support\DraftBlocksCli;
+use App\Modules\Content\Support\PublicationLock;
+use App\Modules\Content\Support\PublicationVersion;
 use Closure;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -54,26 +58,30 @@ class PublicationAdminController extends Controller
             'featured' => ['sometimes', 'boolean'],
         ]);
 
-        $publication = Publication::create([
-            'slug' => $data['slug'],
-            'category' => $data['category'],
-            'published_at' => $data['publishedAt'],
-            'featured' => $data['featured'] ?? false,
-            'indexable' => true,
-            'status' => Publication::STATUS_DRAFT,
-        ]);
+        return DB::transaction(function () use ($data): PublicationAdminResource {
+            $publication = Publication::create([
+                'slug' => $data['slug'],
+                'category' => $data['category'],
+                'published_at' => $data['publishedAt'],
+                'featured' => $data['featured'] ?? false,
+                'indexable' => true,
+                'status' => Publication::STATUS_DRAFT,
+            ]);
 
-        foreach (PublicationTranslation::locales() as $locale) {
-            $publication->drafts()->create(['locale' => $locale, 'blocks' => []]);
-        }
+            foreach (PublicationTranslation::locales() as $locale) {
+                $publication->drafts()->create(['locale' => $locale, 'blocks' => []]);
+            }
 
-        $publication->load(['drafts', 'tags', 'references']);
-
-        return new PublicationAdminResource($publication);
+            return self::stored($publication);
+        });
     }
 
     public function update(Request $request, Publication $publication): PublicationAdminResource
     {
+        $ifMatch = trim((string) $request->header('If-Match'));
+        // "*" não diz qual versão o cliente leu, então não protege nada.
+        abort_if($ifMatch === '' || $ifMatch === '*', 428, 'Envie em If-Match a ETag da versão que você leu.');
+
         $locales = PublicationTranslation::locales();
 
         $data = $request->validate([
@@ -104,6 +112,22 @@ class PublicationAdminController extends Controller
             'drafts.*.seoDescription' => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
+        return self::locked($publication, function (Publication $locked) use ($data, $ifMatch): PublicationAdminResource {
+            abort_unless(
+                PublicationVersion::matches($locked, $ifMatch),
+                412,
+                'A publicação mudou desde a versão informada. Leia de novo antes de gravar.',
+            );
+
+            $this->apply($locked, $data);
+
+            return self::stored($locked);
+        });
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function apply(Publication $publication, array $data): void
+    {
         $publication->fill(array_filter([
             'slug' => $data['slug'] ?? null,
             'category' => $data['category'] ?? null,
@@ -140,7 +164,7 @@ class PublicationAdminController extends Controller
 
         if (array_key_exists('drafts', $data)) {
             foreach ($data['drafts'] as $locale => $draft) {
-                if (! in_array($locale, $locales, true)) {
+                if (! in_array($locale, PublicationTranslation::locales(), true)) {
                     continue;
                 }
 
@@ -156,10 +180,6 @@ class PublicationAdminController extends Controller
                 );
             }
         }
-
-        $publication->load(['drafts', 'tags', 'references']);
-
-        return new PublicationAdminResource($publication);
     }
 
     public function destroy(Publication $publication): JsonResponse
@@ -170,6 +190,15 @@ class PublicationAdminController extends Controller
     }
 
     public function publish(Publication $publication): PublicationAdminResource
+    {
+        return self::locked($publication, function (Publication $locked): PublicationAdminResource {
+            $this->copyDraftsToTranslations($locked);
+
+            return self::stored($locked);
+        });
+    }
+
+    private function copyDraftsToTranslations(Publication $publication): void
     {
         $publication->load('drafts');
 
@@ -213,16 +242,28 @@ class PublicationAdminController extends Controller
             : Publication::STATUS_PUBLISHED;
         $publication->content_published_at = now()->toImmutable();
         $publication->save();
-
-        $publication->load(['drafts', 'tags', 'references']);
-
-        return new PublicationAdminResource($publication);
     }
 
     public function unpublish(Publication $publication): PublicationAdminResource
     {
-        $publication->update(['status' => Publication::STATUS_DRAFT]);
-        $publication->load(['drafts', 'tags', 'references']);
+        return self::locked($publication, function (Publication $locked): PublicationAdminResource {
+            $locked->update(['status' => Publication::STATUS_DRAFT]);
+
+            return self::stored($locked);
+        });
+    }
+
+    /** @param  Closure(Publication): PublicationAdminResource  $write */
+    private static function locked(Publication $publication, Closure $write): PublicationAdminResource
+    {
+        return PublicationLock::run($publication->id, $write)
+            ?? throw (new ModelNotFoundException)->setModel(Publication::class, [$publication->id]);
+    }
+
+    /** Relê do banco, ainda sob o lock: a ETag devolvida é a que o próximo GET calcula. */
+    private static function stored(Publication $publication): PublicationAdminResource
+    {
+        $publication->refresh()->load(['drafts', 'tags', 'references']);
 
         return new PublicationAdminResource($publication);
     }

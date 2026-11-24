@@ -8,6 +8,8 @@ use App\Modules\Content\Contracts\Engagement;
 use App\Modules\Content\Contracts\PublicationEngagement;
 use App\Modules\Content\Models\Publication;
 use App\Modules\Content\Models\PublicationTranslation;
+use App\Modules\Content\Support\PublicationVersion;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -27,6 +29,7 @@ class PublicationAdminResource extends JsonResource
     {
         return [
             'id' => $this->resource->id,
+            'etag' => PublicationVersion::etag($this->resource),
             'slug' => $this->resource->slug,
             'category' => $this->resource->category,
             'publishedAt' => $this->resource->published_at->toIso8601ZuluString('millisecond'),
@@ -42,6 +45,15 @@ class PublicationAdminResource extends JsonResource
                 ->keyBy('locale')
                 ->map(fn ($draft) => new PublicationDraftResource($draft)),
         ];
+    }
+
+    /**
+     * @param  Request  $request
+     * @param  JsonResponse  $response
+     */
+    public function withResponse($request, $response): void
+    {
+        $response->headers->set('ETag', PublicationVersion::etag($this->resource));
     }
 
     private function loadEngagement(): Engagement

@@ -7,6 +7,7 @@ namespace App\Modules\Content\Console\Commands;
 use App\Modules\Content\Models\Media;
 use App\Modules\Content\Models\PublicationDraft;
 use App\Modules\Content\Models\PublicationTranslation;
+use App\Modules\Content\Support\PublicationLock;
 use App\Modules\Content\Support\SiteRebuild;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -46,22 +47,38 @@ class MigrateMediaToBucket extends Command
 
         $bodies = 0;
         foreach (PublicationTranslation::where('body', 'like', '%'.self::LOCAL_PREFIX.'%')->get() as $translation) {
-            $rewritten = self::rewriteMarkdown($translation->body, $target);
-            if ($rewritten !== $translation->body) {
-                $translation->body = $rewritten;
-                $translation->saveQuietly();
-                $bodies++;
-            }
+            $changed = PublicationLock::run($translation->publication_id, function () use ($translation, $target): bool {
+                $current = $translation->fresh();
+                if ($current === null) {
+                    return false;
+                }
+                $rewritten = self::rewriteMarkdown($current->body, $target);
+                if ($rewritten === $current->body) {
+                    return false;
+                }
+                $current->body = $rewritten;
+
+                return $current->saveQuietly();
+            });
+            $bodies += $changed === true ? 1 : 0;
         }
 
         $drafts = 0;
         foreach (PublicationDraft::all() as $draft) {
-            $blocks = self::rewriteBlocks($draft->blocks, $target);
-            if ($blocks !== $draft->blocks) {
-                $draft->blocks = $blocks;
-                $draft->saveQuietly();
-                $drafts++;
-            }
+            $changed = PublicationLock::run($draft->publication_id, function () use ($draft, $target): bool {
+                $current = $draft->fresh();
+                if ($current === null) {
+                    return false;
+                }
+                $blocks = self::rewriteBlocks($current->blocks, $target);
+                if ($blocks === $current->blocks) {
+                    return false;
+                }
+                $current->blocks = $blocks;
+
+                return $current->saveQuietly();
+            });
+            $drafts += $changed === true ? 1 : 0;
         }
 
         if ($bodies > 0) {

@@ -7,10 +7,11 @@ import { validateDiagramBlocks } from '../core/draftValidation';
 import { slugify } from '../core/slug';
 import { LOCALES } from '../core/types';
 import type { Category, Locale } from '../core/types';
+import { PreconditionFailedError } from '../data/http';
 import { api } from './api';
 import type { AdminPublication, AdminReference, DraftPatch, PublicationPatch, TagsByLocale } from './api';
 
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'conflict';
 
 interface DraftFields {
   readonly title: string;
@@ -71,6 +72,21 @@ export function usePublicationEditor(
   const pendingSave = useRef<(() => Promise<boolean>) | null>(null);
   const inFlightSave = useRef<Promise<boolean> | null>(null);
   const skipNext = useRef(true);
+  const etag = useRef(publication.etag);
+  const conflicted = useRef(false);
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+
+  /** Uma escrita por vez: duas em paralelo levariam a mesma versão, e a segunda conflitaria com a primeira. */
+  function enqueue<T>(write: () => Promise<T>): Promise<T> {
+    const result = queue.current.then(write);
+    queue.current = result.catch(() => undefined);
+    return result;
+  }
+
+  function accept(updated: AdminPublication): void {
+    etag.current = updated.etag;
+    onUpdated(updated);
+  }
 
   function setCurrentDraft(patch: Partial<DraftFields>): void {
     setDrafts((prev) => ({ ...prev, [locale]: { ...prev[locale], ...patch } }));
@@ -95,8 +111,6 @@ export function usePublicationEditor(
     if (timer.current !== null) clearTimeout(timer.current);
 
     const save = (): Promise<boolean> => {
-      setStatus('saving');
-
       const draftPatches: Partial<Record<Locale, DraftPatch>> = {};
       for (const loc of LOCALES) {
         const draft = drafts[loc];
@@ -121,17 +135,19 @@ export function usePublicationEditor(
         drafts: draftPatches,
       };
 
-      const request = api
-        .update(publication.id, patch)
-        .then((updated) => {
+      const request = enqueue(async () => {
+        if (conflicted.current) return false;
+        setStatus('saving');
+        try {
+          accept(await api.update(publication.id, patch, etag.current));
           setStatus('saved');
-          onUpdated(updated);
           return true;
-        })
-        .catch(() => {
-          setStatus('error');
+        } catch (error) {
+          conflicted.current = error instanceof PreconditionFailedError;
+          setStatus(conflicted.current ? 'conflict' : 'error');
           return false;
-        });
+        }
+      });
       inFlightSave.current = request;
       return request;
     };
@@ -186,15 +202,24 @@ export function usePublicationEditor(
 
   async function publish(): Promise<AdminPublication> {
     await flushSave();
-    const updated = await api.publish(publication.id);
-    onUpdated(updated);
-    return updated;
+    return enqueue(async () => {
+      const updated = await api.publish(publication.id);
+      accept(updated);
+      return updated;
+    });
   }
 
-  async function unpublish(): Promise<AdminPublication> {
-    const updated = await api.unpublish(publication.id);
-    onUpdated(updated);
-    return updated;
+  function unpublish(): Promise<AdminPublication> {
+    return enqueue(async () => {
+      const updated = await api.unpublish(publication.id);
+      accept(updated);
+      return updated;
+    });
+  }
+
+  /** Descarta o que está na tela: quem chama remonta o editor com a versão do servidor. */
+  function reload(): Promise<AdminPublication> {
+    return enqueue(() => api.get(publication.id));
   }
 
   async function destroy(): Promise<void> {
@@ -232,6 +257,7 @@ export function usePublicationEditor(
     diagramErrors,
     publish,
     unpublish,
+    reload,
     destroy,
   };
 }

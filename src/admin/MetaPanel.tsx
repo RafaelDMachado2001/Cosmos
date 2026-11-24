@@ -19,6 +19,7 @@ export interface MetaPanelProps {
   readonly publication: AdminPublication;
   readonly editor: PublicationEditorState;
   readonly onDeleted: (id: number) => void;
+  readonly onReloaded: (current: AdminPublication) => void;
 }
 
 const STATUS_PILL_LABEL: Record<SaveStatus, string> = {
@@ -26,9 +27,10 @@ const STATUS_PILL_LABEL: Record<SaveStatus, string> = {
   saving: 'Salvando…',
   saved: 'Salvo',
   error: 'Erro ao salvar',
+  conflict: 'Conflito',
 };
 
-export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): React.JSX.Element {
+export function MetaPanel({ publication, editor, onDeleted, onReloaded }: MetaPanelProps): React.JSX.Element {
   const [armedDelete, setArmedDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -64,6 +66,17 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
     }
   }
 
+  async function handleReload(): Promise<void> {
+    setBusy(true);
+    setActionError(null);
+    try {
+      onReloaded(await editor.reload());
+    } catch {
+      setActionError('Não foi possível recarregar.');
+      setBusy(false);
+    }
+  }
+
   async function handleDelete(): Promise<void> {
     if (!armedDelete) {
       setArmedDelete(true);
@@ -94,6 +107,21 @@ export function MetaPanel({ publication, editor, onDeleted }: MetaPanelProps): R
           <span className={styles.savePill}>{STATUS_PILL_LABEL[editor.status]}</span>
         )}
       </div>
+      {editor.status === 'conflict' && (
+        <div role="alert">
+          <p className={styles.actionError}>
+            Esta publicação mudou em outro lugar e nada mais será salvo aqui. Copie o que quiser manter antes de recarregar.
+          </p>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            disabled={busy}
+            onClick={() => void handleReload()}
+          >
+            Descartar e recarregar
+          </button>
+        </div>
+      )}
       {live && (
         <p className={styles.engagement}>
           {commentsLabel(publication.engagement)} · {reactionsLabel(publication.engagement)}

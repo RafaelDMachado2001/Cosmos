@@ -874,6 +874,31 @@ test-runner directives).
   `preview` (draft as Markdown, diagram errors, and the published text) and
   `convert` (Markdown to blocks and back), because a client without the
   editor writes Markdown.
+- **Studio writes are conditional.** The contract is the same under
+  `/api/studio` and `/admin/api`:
+  - `GET /publications/{id}` returns a strong `ETag`, a SHA-256 of drafts,
+    metadata, tags, references, status and last content publication. It is a
+    version of the editable state, so engagement counts and timestamps do not
+    change it. Every publication body, list items included, repeats it as
+    `data.etag`. Prefer that field behind a proxy: nginx and Cloudflare turn
+    the header into `W/"..."` when they compress.
+  - `PATCH` requires `If-Match`. Missing or `*` answers 428; an obsolete, weak
+    or unquoted version answers 412 and writes nothing; invalid data answers
+    422 before the version is compared. Success returns the new `ETag`.
+  - `POST` create, `publish` and `unpublish` also return the new `ETag`.
+    Publishing needs no `If-Match`: it publishes the draft stored when it gets
+    the lock.
+  - After a 412, read again and merge; do not resend the same body with the new
+    version. A lost PATCH response can also lead to a 412.
+  - Every writer takes `PublicationLock` (a transaction with the publication row
+    `FOR UPDATE`) and reads again inside it: the API, the scheduler,
+    `rdm-studio:seed-drafts`, `media:migrate-to-r2` and the Filament form, which
+    refuses to save if the version changed since it was opened. That version
+    leaves out the published text, so two Filament forms editing only it are
+    still last-write-wins. The observer runs after commit, so a rebuild never
+    reads uncommitted text.
+  - The editor sends one write at a time and, on 412, stops autosave and keeps
+    the text on screen until the author chooses to reload.
 - **Studio tokens are not Sanctum tokens.** `auth:sanctum` guards the reader's
   routes and accepts any tokenable model, so an admin token there would
   authenticate `/api/me` as a `User`. `studio_tokens` stores only a SHA-256

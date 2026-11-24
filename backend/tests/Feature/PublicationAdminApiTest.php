@@ -9,6 +9,7 @@ use App\Modules\Content\Models\Media;
 use App\Modules\Content\Models\Publication;
 use App\Modules\Content\Models\PublicationDraft;
 use App\Modules\Content\Models\Tag;
+use App\Modules\Content\Support\PublicationVersion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,14 @@ class PublicationAdminApiTest extends TestCase
         $publication->drafts()->create(['locale' => 'en', 'blocks' => []]);
 
         return $publication;
+    }
+
+    /** Envia a versão atual, como o editor; o contrato de If-Match é testado em StudioConcurrencyTest. */
+    public function patchJson($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        $publication = Publication::findOrFail((int) basename((string) $uri));
+
+        return parent::patchJson($uri, $data, $headers + ['If-Match' => PublicationVersion::etag($publication)], $options);
     }
 
     public function test_a_api_exige_autenticacao(): void
