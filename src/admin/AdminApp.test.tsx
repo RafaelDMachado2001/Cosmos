@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminApp } from './AdminApp';
+import { PreconditionFailedError } from '../data/http';
 import type { AdminPublication } from './api';
 
 const { api } = vi.hoisted(() => ({
@@ -24,6 +25,7 @@ vi.mock('./api', () => ({ api }));
 function publication(overrides: Partial<AdminPublication> = {}): AdminPublication {
   return {
     id: 1,
+    etag: '"v1"',
     slug: 'code-review-sem-atrito',
     category: 'artigo',
     publishedAt: '2025-09-09T00:00:00.000Z',
@@ -294,6 +296,60 @@ describe('AdminApp', () => {
     await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
     expect(api.publish).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Salvar' })).toBeNull();
+  });
+
+  it('salvamentos não se cruzam, e cada um leva a versão que o anterior devolveu', async () => {
+    api.list.mockResolvedValue([publication()]);
+    let finishFirst: (value: AdminPublication) => void = () => undefined;
+    api.update.mockImplementationOnce(
+      () => new Promise<AdminPublication>((resolve) => { finishFirst = resolve; }),
+    );
+    api.update.mockResolvedValueOnce(publication({ etag: '"v3"' }));
+    const user = userEvent.setup();
+
+    render(<AdminApp initialSelectedId={1} />);
+    const title = await screen.findByDisplayValue('Code review sem atrito');
+    await user.type(title, '!');
+    await user.keyboard('{Control>}s{/Control}');
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
+    await user.type(title, '?');
+    await user.keyboard('{Control>}s{/Control}');
+    expect(api.update).toHaveBeenCalledTimes(1);
+
+    finishFirst(publication({ etag: '"v2"' }));
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
+    expect(api.update.mock.calls.map((call: unknown[]) => call[2])).toEqual(['"v1"', '"v2"']);
+  });
+
+  it('conflito mantém o texto, para de salvar e recarrega só a pedido', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.update.mockRejectedValue(new PreconditionFailedError('/x'));
+    const base = publication();
+    const pt = base.drafts.pt;
+    if (pt === undefined) throw new Error('fixture sem pt');
+    api.get.mockResolvedValue(publication({ etag: '"v9"', drafts: { pt: { ...pt, title: 'Do servidor' } } }));
+    const user = userEvent.setup();
+
+    render(<AdminApp initialSelectedId={1} />);
+    const title = await screen.findByDisplayValue('Code review sem atrito');
+    await user.type(title, '!');
+    await user.keyboard('{Control>}s{/Control}');
+    expect(await screen.findByText(/mudou em outro lugar/)).not.toBeNull();
+
+    await user.type(title, '?');
+    await user.keyboard('{Control>}s{/Control}');
+    expect(api.update).toHaveBeenCalledTimes(1);
+    expect(screen.getByDisplayValue('Code review sem atrito!?')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Descartar e recarregar' }));
+    const reloaded = await screen.findByDisplayValue('Do servidor');
+    expect(screen.queryByText(/mudou em outro lugar/)).toBeNull();
+
+    api.update.mockResolvedValue(publication({ etag: '"v10"' }));
+    await user.type(reloaded, '!');
+    await user.keyboard('{Control>}s{/Control}');
+    await waitFor(() => expect(api.update).toHaveBeenCalledTimes(2));
+    expect(api.update.mock.lastCall?.[2]).toBe('"v9"');
   });
 
   it('bloco em branco fica na tela, mas não vai no salvamento', async () => {

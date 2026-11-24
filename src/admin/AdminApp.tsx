@@ -13,16 +13,18 @@ function EditorPane({
   publication,
   onUpdated,
   onDeleted,
+  onReloaded,
 }: {
   readonly publication: AdminPublication;
   readonly onUpdated: (updated: AdminPublication) => void;
   readonly onDeleted: (id: number) => void;
+  readonly onReloaded: (current: AdminPublication) => void;
 }): React.JSX.Element {
   const editor = usePublicationEditor(publication, onUpdated);
   return (
     <>
       <PublicationEditor editor={editor} />
-      <MetaPanel publication={publication} editor={editor} onDeleted={onDeleted} />
+      <MetaPanel publication={publication} editor={editor} onDeleted={onDeleted} onReloaded={onReloaded} />
     </>
   );
 }
@@ -35,6 +37,7 @@ export function AdminApp({
   const [publications, setPublications] = useState<readonly AdminPublication[] | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId);
   const [error, setError] = useState<string | null>(null);
+  const [reloads, setReloads] = useState(0);
 
   const reload = useCallback(() => {
     api
@@ -66,6 +69,11 @@ export function AdminApp({
     setPublications(
       (prev) => prev?.map((item) => (item.id === updated.id ? updated : item)) ?? prev,
     );
+  }
+
+  function handleReloaded(current: AdminPublication): void {
+    handleUpdated(current);
+    setReloads((count) => count + 1);
   }
 
   function handleDeleted(id: number): void {
@@ -104,10 +112,11 @@ export function AdminApp({
         <div className={styles.empty}>Selecione uma publicação ou crie uma nova.</div>
       ) : (
         <EditorPane
-          key={selected.id}
+          key={`${String(selected.id)}:${String(reloads)}`}
           publication={selected}
           onUpdated={handleUpdated}
           onDeleted={handleDeleted}
+          onReloaded={handleReloaded}
         />
       )}
     </div>

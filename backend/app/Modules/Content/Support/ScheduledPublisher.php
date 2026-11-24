@@ -14,13 +14,22 @@ final class ScheduledPublisher
     /** @return array{transitioned: int, previous: int, eligible: int} */
     public static function run(): array
     {
-        $transitioned = Publication::query()
+        $due = Publication::query()
             ->where('status', Publication::STATUS_SCHEDULED)
             ->where('published_at', '<=', now())
-            ->get();
+            ->pluck('id');
 
-        foreach ($transitioned as $publication) {
-            $publication->update(['status' => Publication::STATUS_PUBLISHED]);
+        $transitioned = 0;
+        foreach ($due as $id) {
+            $changed = PublicationLock::run((int) $id, function (Publication $publication): bool {
+                // Enquanto esperava o lock, alguém pode ter despublicado ou adiado.
+                if ($publication->status !== Publication::STATUS_SCHEDULED || $publication->published_at->isFuture()) {
+                    return false;
+                }
+
+                return $publication->update(['status' => Publication::STATUS_PUBLISHED]);
+            });
+            $transitioned += $changed === true ? 1 : 0;
         }
 
         $eligible = Publication::query()->live()->count();
@@ -32,6 +41,6 @@ final class ScheduledPublisher
             SiteRebuild::request();
         }
 
-        return ['transitioned' => $transitioned->count(), 'previous' => $previous, 'eligible' => $eligible];
+        return ['transitioned' => $transitioned, 'previous' => $previous, 'eligible' => $eligible];
     }
 }

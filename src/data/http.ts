@@ -30,6 +30,13 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export class PreconditionFailedError extends Error {
+  constructor(readonly url: string) {
+    super(`${url} recusou: a versão enviada está obsoleta`);
+    this.name = 'PreconditionFailedError';
+  }
+}
+
 export interface JsonClientOptions {
   readonly baseUrl: string;
   readonly credentials: RequestCredentials;
@@ -39,7 +46,7 @@ export interface JsonClientOptions {
 
 export interface JsonClient {
   get(path: string): Promise<Response>;
-  send(method: string, path: string, body?: unknown): Promise<Response>;
+  send(method: string, path: string, body?: unknown, headers?: HeaderMap): Promise<Response>;
 }
 
 const ACCEPT: HeaderMap = { Accept: 'application/json' };
@@ -50,6 +57,7 @@ async function checked(method: string, url: string, response: Response): Promise
     throw new ValidationError(payload.errors ?? {});
   }
   if (response.status === 401 || response.status === 419) throw new UnauthorizedError(url);
+  if (response.status === 412) throw new PreconditionFailedError(url);
   if (response.status === 413) throw new PayloadTooLargeError(url);
   if (response.status === 429) throw new RateLimitedError(url);
   if (!response.ok) throw new Error(`${method} ${url} respondeu ${String(response.status)}`);
@@ -67,7 +75,7 @@ export function createJsonClient(options: JsonClientOptions): JsonClient {
       return checked('GET', url, response);
     },
 
-    async send(method, path, body) {
+    async send(method, path, body, headers = {}) {
       const url = `${root}${path}`;
       const isForm = body instanceof FormData;
       const response = await fetchImpl(url, {
@@ -77,6 +85,7 @@ export function createJsonClient(options: JsonClientOptions): JsonClient {
           ...ACCEPT,
           ...(await options.csrfHeaders()),
           ...(body === undefined || isForm ? {} : { 'Content-Type': 'application/json' }),
+          ...headers,
         },
         ...(body === undefined ? {} : { body: isForm ? body : JSON.stringify(body) }),
       });

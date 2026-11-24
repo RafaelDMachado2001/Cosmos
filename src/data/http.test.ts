@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   PayloadTooLargeError,
+  PreconditionFailedError,
   RateLimitedError,
   UnauthorizedError,
   ValidationError,
@@ -90,6 +91,15 @@ describe('createJsonClient', () => {
     expect(error).toBeInstanceOf(ValidationError);
     expect((error as ValidationError).fields).toEqual({ handle: ['ocupado'] });
     expect((error as ValidationError).message).toBe('ocupado');
+  });
+
+  it('manda os cabeçalhos extras, e 412 vira PreconditionFailedError', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(() => Promise.resolve(respond(412)));
+
+    await expect(
+      client(fetchImpl).send('PATCH', '/x', {}, { 'If-Match': '"v1"' }),
+    ).rejects.toBeInstanceOf(PreconditionFailedError);
+    expect(fetchImpl.mock.calls[0]?.[1]?.headers).toMatchObject({ 'If-Match': '"v1"' });
   });
 
   it('413 e 429 têm erros próprios', async () => {

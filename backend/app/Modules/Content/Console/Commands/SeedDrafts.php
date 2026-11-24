@@ -7,6 +7,7 @@ namespace App\Modules\Content\Console\Commands;
 use App\Modules\Content\Models\PublicationDraft;
 use App\Modules\Content\Models\PublicationTranslation;
 use App\Modules\Content\Support\DraftBlocksCli;
+use App\Modules\Content\Support\PublicationLock;
 use Illuminate\Console\Command;
 
 class SeedDrafts extends Command
@@ -20,17 +21,28 @@ class SeedDrafts extends Command
         $translations = PublicationTranslation::all();
         $this->info("convertendo {$translations->count()} traduções...");
 
-        foreach ($translations as $translation) {
-            $blocks = DraftBlocksCli::toBlocks($translation->body);
+        foreach ($translations as $listed) {
+            $translation = PublicationLock::run($listed->publication_id, function () use ($listed): ?PublicationTranslation {
+                $translation = $listed->fresh();
+                if ($translation === null) {
+                    return null;
+                }
 
-            PublicationDraft::updateOrCreate(
-                ['publication_id' => $translation->publication_id, 'locale' => $translation->locale],
-                [
-                    'title' => $translation->title,
-                    'subtitle' => $translation->summary,
-                    'blocks' => $blocks,
-                ],
-            );
+                PublicationDraft::updateOrCreate(
+                    ['publication_id' => $translation->publication_id, 'locale' => $translation->locale],
+                    [
+                        'title' => $translation->title,
+                        'subtitle' => $translation->summary,
+                        'blocks' => DraftBlocksCli::toBlocks($translation->body),
+                    ],
+                );
+
+                return $translation;
+            });
+
+            if ($translation === null) {
+                continue;
+            }
 
             $this->line("  {$translation->locale}: publicação #{$translation->publication_id} ok");
         }
