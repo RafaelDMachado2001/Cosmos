@@ -50,6 +50,36 @@ class PublicationAdminApiTest extends TestCase
         return parent::patchJson($uri, $data, $headers + ['If-Match' => PublicationVersion::etag($publication)], $options);
     }
 
+    /** Publicar também leva a versão atual, salvo quando o teste informa outra. */
+    public function postJson($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        if (str_ends_with((string) $uri, '/publish')) {
+            $publication = Publication::findOrFail((int) basename(dirname((string) $uri)));
+            $headers += ['If-Match' => PublicationVersion::etag($publication)];
+        }
+
+        return parent::postJson($uri, $data, $headers, $options);
+    }
+
+    public function test_publicar_pelo_painel_exige_a_versao_lida(): void
+    {
+        $publication = $this->publicationWithDrafts();
+        $publication->drafts()->where('locale', 'pt')->update([
+            'title' => 'Lido',
+            'blocks' => [['id' => 'b0', 'type' => 'p', 'text' => 'Texto.']],
+        ]);
+        $read = PublicationVersion::etag(Publication::findOrFail($publication->id));
+        $publication->drafts()->where('locale', 'pt')->update(['title' => 'Concorrente']);
+        $url = "/admin/api/publications/{$publication->id}/publish";
+        $this->actingAs($this->admin());
+
+        $this->postJson($url, [], ['If-Match' => ''])->assertStatus(428);
+        $this->postJson($url, [], ['If-Match' => $read])->assertStatus(412);
+
+        $this->assertSame(0, $publication->translations()->count());
+        $this->assertSame(Publication::STATUS_DRAFT, $publication->refresh()->status);
+    }
+
     public function test_a_api_exige_autenticacao(): void
     {
         $this->getJson('/admin/api/publications')->assertUnauthorized();

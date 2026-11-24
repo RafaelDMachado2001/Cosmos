@@ -109,7 +109,7 @@ class StudioApiTest extends TestCase
         ])->assertCreated();
         $id = $created->json('data.id');
 
-        $this->withToken($token)->patchJson("/api/studio/publications/{$id}", [
+        $saved = $this->withToken($token)->patchJson("/api/studio/publications/{$id}", [
             'drafts' => ['pt' => [
                 'title' => 'Nova pela API',
                 'subtitle' => 'Resumo',
@@ -119,7 +119,7 @@ class StudioApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.drafts.pt.title', 'Nova pela API');
 
-        $this->withToken($token)->postJson("/api/studio/publications/{$id}/publish")
+        $this->withToken($token)->postJson("/api/studio/publications/{$id}/publish", [], ['If-Match' => (string) $saved->headers->get('ETag')])
             ->assertOk()
             ->assertJsonPath('data.status', Publication::STATUS_PUBLISHED);
 

@@ -111,8 +111,8 @@ export const api = {
 
   destroy: (id: number): Promise<void> => write('DELETE', `/publications/${String(id)}`),
 
-  publish: (id: number): Promise<AdminPublication> =>
-    write('POST', `/publications/${String(id)}/publish`),
+  publish: (id: number, etag: string): Promise<AdminPublication> =>
+    write('POST', `/publications/${String(id)}/publish`, undefined, { 'If-Match': etag }),
 
   unpublish: (id: number): Promise<AdminPublication> =>
     write('POST', `/publications/${String(id)}/unpublish`),

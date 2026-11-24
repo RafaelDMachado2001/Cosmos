@@ -163,7 +163,7 @@ sequenceDiagram
     participant API as Laravel
     participant Vercel
     Author->>Studio: Publish
-    Studio->>API: POST /publish (after flushing autosave)
+    Studio->>API: POST /publish with If-Match (after flushing autosave)
     API->>API: Serialize draft blocks to Markdown, mark site dirty
     API->>Vercel: Deploy hook (debounced)
     Vercel->>API: Build reads all publications
@@ -886,10 +886,12 @@ test-runner directives).
     or unquoted version answers 412 and writes nothing; invalid data answers
     422 before the version is compared. Success returns the new `ETag`.
   - `POST` create, `publish` and `unpublish` also return the new `ETag`.
-    Publishing needs no `If-Match`: it publishes the draft stored when it gets
-    the lock.
+  - `publish` requires `If-Match` under the same 428/412 rules. The version is
+    compared under the lock, before the content checks, so only the drafts and
+    metadata the client read can go live or be scheduled. `unpublish` needs no
+    `If-Match`.
   - After a 412, read again and merge; do not resend the same body with the new
-    version. A lost PATCH response can also lead to a 412.
+    version. A lost PATCH or publish response can also lead to a 412.
   - Every writer takes `PublicationLock` (a transaction with the publication row
     `FOR UPDATE`) and reads again inside it: the API, the scheduler,
     `rdm-studio:seed-drafts`, `media:migrate-to-r2` and the Filament form, which
@@ -897,7 +899,8 @@ test-runner directives).
     leaves out the published text, so two Filament forms editing only it are
     still last-write-wins. The observer runs after commit, so a rebuild never
     reads uncommitted text.
-  - The editor sends one write at a time and, on 412, stops autosave and keeps
+  - The editor sends one write at a time, publishes with the version it read or
+    got from its last write and, on 412, stops saving and publishing and keeps
     the text on screen until the author chooses to reload.
 - **Studio tokens are not Sanctum tokens.** `auth:sanctum` guards the reader's
   routes and accepts any tokenable model, so an admin token there would

@@ -203,9 +203,18 @@ export function usePublicationEditor(
   async function publish(): Promise<AdminPublication> {
     await flushSave();
     return enqueue(async () => {
-      const updated = await api.publish(publication.id);
-      accept(updated);
-      return updated;
+      if (conflicted.current) throw new Error('A publicação está em conflito; recarregue antes de publicar.');
+      try {
+        const updated = await api.publish(publication.id, etag.current);
+        accept(updated);
+        return updated;
+      } catch (error) {
+        if (error instanceof PreconditionFailedError) {
+          conflicted.current = true;
+          setStatus('conflict');
+        }
+        throw error;
+      }
     });
   }
 
