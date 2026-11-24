@@ -148,7 +148,7 @@ describe('AdminApp', () => {
   it('publicar logo depois de editar salva o rascunho antes, e só então publica', async () => {
     api.list.mockResolvedValue([publication()]);
     api.update.mockImplementation((_id: number, patch: unknown) =>
-      Promise.resolve({ ...publication(), patch }),
+      Promise.resolve({ ...publication({ etag: '"v2"' }), patch }),
     );
     api.publish.mockResolvedValue(publication({ status: 'published' }));
     const user = userEvent.setup();
@@ -167,6 +167,36 @@ describe('AdminApp', () => {
     expect(api.update.mock.invocationCallOrder.at(-1)).toBeLessThan(
       api.publish.mock.invocationCallOrder[0] ?? 0,
     );
+    expect(api.publish).toHaveBeenCalledWith(1, '"v2"');
+  });
+
+  it('publicar sem editar leva a versão lida, e o conflito bloqueia até recarregar', async () => {
+    api.list.mockResolvedValue([publication()]);
+    api.publish.mockRejectedValueOnce(new PreconditionFailedError('/x'));
+    api.get.mockResolvedValue(publication({ etag: '"v9"' }));
+    const user = userEvent.setup();
+
+    render(<AdminApp initialSelectedId={1} />);
+    await user.click(await screen.findByRole('button', { name: 'Publicar' }));
+    expect(await screen.findByText(/mudou em outro lugar/)).not.toBeNull();
+    expect(api.publish).toHaveBeenCalledWith(1, '"v1"');
+
+    const title = screen.getByDisplayValue('Code review sem atrito');
+    await user.click(screen.getByRole('button', { name: 'Publicar' }));
+    await user.type(title, '!');
+    await user.keyboard('{Control>}s{/Control}');
+    expect(api.publish).toHaveBeenCalledTimes(1);
+    expect(api.update).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('Code review sem atrito!')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Descartar e recarregar' }));
+    await screen.findByDisplayValue('Code review sem atrito');
+    expect(screen.queryByText(/mudou em outro lugar/)).toBeNull();
+
+    api.publish.mockResolvedValueOnce(publication({ etag: '"v10"', status: 'published' }));
+    await user.click(screen.getByRole('button', { name: 'Publicar' }));
+    await waitFor(() => expect(api.publish).toHaveBeenCalledTimes(2));
+    expect(api.publish).toHaveBeenLastCalledWith(1, '"v9"');
   });
 
   it('diagrama inválido em qualquer idioma impede publicar, sem chamar a API', async () => {

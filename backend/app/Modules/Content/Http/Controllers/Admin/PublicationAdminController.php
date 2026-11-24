@@ -78,10 +78,7 @@ class PublicationAdminController extends Controller
 
     public function update(Request $request, Publication $publication): PublicationAdminResource
     {
-        $ifMatch = trim((string) $request->header('If-Match'));
-        // "*" não diz qual versão o cliente leu, então não protege nada.
-        abort_if($ifMatch === '' || $ifMatch === '*', 428, 'Envie em If-Match a ETag da versão que você leu.');
-
+        $ifMatch = self::requiredIfMatch($request);
         $locales = PublicationTranslation::locales();
 
         $data = $request->validate([
@@ -113,11 +110,7 @@ class PublicationAdminController extends Controller
         ]);
 
         return self::locked($publication, function (Publication $locked) use ($data, $ifMatch): PublicationAdminResource {
-            abort_unless(
-                PublicationVersion::matches($locked, $ifMatch),
-                412,
-                'A publicação mudou desde a versão informada. Leia de novo antes de gravar.',
-            );
+            self::assertVersion($locked, $ifMatch);
 
             $this->apply($locked, $data);
 
@@ -189,9 +182,13 @@ class PublicationAdminController extends Controller
         return response()->json(null, 204);
     }
 
-    public function publish(Publication $publication): PublicationAdminResource
+    public function publish(Request $request, Publication $publication): PublicationAdminResource
     {
-        return self::locked($publication, function (Publication $locked): PublicationAdminResource {
+        $ifMatch = self::requiredIfMatch($request);
+
+        return self::locked($publication, function (Publication $locked) use ($ifMatch): PublicationAdminResource {
+            self::assertVersion($locked, $ifMatch);
+
             $this->copyDraftsToTranslations($locked);
 
             return self::stored($locked);
@@ -251,6 +248,25 @@ class PublicationAdminController extends Controller
 
             return self::stored($locked);
         });
+    }
+
+    private static function requiredIfMatch(Request $request): string
+    {
+        $ifMatch = trim((string) $request->header('If-Match'));
+        // "*" não diz qual versão o cliente leu, então não protege nada.
+        abort_if($ifMatch === '' || $ifMatch === '*', 428, 'Envie em If-Match a ETag da versão que você leu.');
+
+        return $ifMatch;
+    }
+
+    /** Só vale com a publicação travada: fora do lock, a versão pode mudar antes da escrita. */
+    private static function assertVersion(Publication $locked, string $ifMatch): void
+    {
+        abort_unless(
+            PublicationVersion::matches($locked, $ifMatch),
+            412,
+            'A publicação mudou desde a versão informada. Leia de novo antes de gravar.',
+        );
     }
 
     /** @param  Closure(Publication): PublicationAdminResource  $write */

@@ -61,6 +61,19 @@ class StudioConcurrencyTest extends TestCase
         return $this->patchJson($this->url, ['drafts' => ['pt' => ['title' => $title]]], ['If-Match' => $etag]);
     }
 
+    private function publish(string $etag): TestResponse
+    {
+        return $this->postJson("{$this->url}/publish", [], ['If-Match' => $etag]);
+    }
+
+    private function assertNotPublished(): void
+    {
+        $this->assertSame(0, $this->publication->translations()->count());
+        $this->publication->refresh();
+        $this->assertSame(Publication::STATUS_DRAFT, $this->publication->status);
+        $this->assertNull($this->publication->content_published_at);
+    }
+
     private function title(): ?string
     {
         return $this->publication->drafts()->where('locale', 'pt')->firstOrFail()->title;
@@ -163,10 +176,55 @@ class StudioConcurrencyTest extends TestCase
         $this->assertSame('Concorrente', $this->title());
     }
 
+    public function test_publicar_sem_versao_responde_428_e_nao_promove(): void
+    {
+        $this->postJson("{$this->url}/publish")->assertStatus(428);
+        $this->publish('*')->assertStatus(428);
+
+        $this->assertNotPublished();
+    }
+
+    public function test_publicar_com_versao_obsoleta_responde_412_e_nao_promove_nem_agenda(): void
+    {
+        $this->publication->update(['published_at' => now()->addWeek()]);
+        $etag = $this->etag();
+        $current = (string) $this->patchTitle('Concorrente', $etag)->assertOk()->headers->get('ETag');
+
+        $this->publish($etag)->assertStatus(412);
+        $this->publish("W/{$current}")->assertStatus(412);
+
+        $this->assertNotPublished();
+        $this->assertSame($current, $this->etag());
+
+        $this->publish($current)->assertOk()->assertJsonPath('data.status', Publication::STATUS_SCHEDULED);
+        $this->assertSame('Concorrente', $this->publication->translations()->where('locale', 'pt')->value('title'));
+    }
+
+    public function test_publicar_verifica_a_versao_de_dentro_da_transacao(): void
+    {
+        $etag = $this->etag();
+        $raced = false;
+        Publication::retrieved(function (Publication $publication) use (&$raced): void {
+            if ($raced) {
+                return;
+            }
+            $raced = true;
+            DB::table('publication_drafts')
+                ->where('publication_id', $publication->id)
+                ->where('locale', 'pt')
+                ->update(['title' => 'Concorrente']);
+        });
+
+        $this->publish($etag)->assertStatus(412);
+
+        $this->assertTrue($raced);
+        $this->assertNotPublished();
+    }
+
     public function test_os_gravadores_travam_a_linha_da_publicacao(): void
     {
         $this->assertLocks(fn () => $this->patchTitle('Nova', $this->etag())->assertOk());
-        $this->assertLocks(fn () => $this->postJson("{$this->url}/publish")->assertOk());
+        $this->assertLocks(fn () => $this->publish($this->etag())->assertOk());
         $this->assertLocks(fn () => $this->postJson("{$this->url}/unpublish")->assertOk());
         $this->assertLocks(fn () => $this->artisan('rdm-studio:seed-drafts')->assertSuccessful()->run());
 
@@ -210,7 +268,7 @@ class StudioConcurrencyTest extends TestCase
     public function test_publicar_e_despublicar_devolvem_nova_etag(): void
     {
         $draft = $this->etag();
-        $published = (string) $this->postJson("{$this->url}/publish")->assertOk()->headers->get('ETag');
+        $published = (string) $this->publish($draft)->assertOk()->headers->get('ETag');
         $this->assertNotSame($draft, $published);
         $this->assertSame($published, $this->etag());
         $this->patchTitle('Obsoleta', $draft)->assertStatus(412);
